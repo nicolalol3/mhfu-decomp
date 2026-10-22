@@ -1,14 +1,14 @@
-/* Memoria dinamica della libc: il malloc di Doug Lea (versione 2.6 inclusa in newlib),
- * con blocchi allineati a 16 byte. Ogni blocco ("chunk") ha davanti la sua dimensione;
- * i blocchi liberi stanno in 128 liste ("bin") ordinate per dimensione. */
+/* Dynamic memory of the libc: Doug Lea's malloc (version 2.6, included in newlib),
+ * with blocks aligned to 16 bytes. Each block ("chunk") has its size in front of it;
+ * free blocks are kept in 128 lists ("bins") sorted by size. */
 #include "libc.h"
 #include <pspintrman.h>
 
 typedef struct malloc_chunk {
-    u32 prev_size;              /* dimensione del blocco precedente (se libero) */
-    u32 size;                   /* dimensione; bit 0 = blocco precedente in uso */
-    struct malloc_chunk *fd;    /* lista dei liberi: successivo */
-    struct malloc_chunk *bk;    /* lista dei liberi: precedente */
+    u32 prev_size;              /* size of the previous block (if free) */
+    u32 size;                   /* size; bit 0 = previous block in use */
+    struct malloc_chunk *fd;    /* free list: next */
+    struct malloc_chunk *bk;    /* free list: previous */
 } *mchunkptr;
 
 #define SIZE_SZ          4
@@ -30,20 +30,20 @@ typedef struct malloc_chunk {
 #define set_head_size(p, s) ((p)->size = ((p)->size & PREV_INUSE) | (s))
 #define set_foot(p, s)      (chunk_at_offset(p, s)->prev_size = (s))
 
-/* request2size: dimensione richiesta -> dimensione del blocco */
+/* request2size: requested size -> block size */
 #define request2size(req) \
     ((req) + (SIZE_SZ + MALLOC_ALIGN_MASK) < (MINSIZE + MALLOC_ALIGN_MASK) ? MINSIZE \
      : ((req) + (SIZE_SZ + MALLOC_ALIGN_MASK)) & ~MALLOC_ALIGN_MASK)
 
-/* --- stato globale ---------------------------------------------------------- */
-/* av_[0..1]: av_[1] = "binblocks" (un bit ogni 4 liste non vuote);
- * poi per ogni lista i due puntatori fd/bk. La lista 0 contiene "top" (il blocco in
- * cima all'heap), la lista 1 l'ultimo resto ottenuto spezzando un blocco. */
+/* --- global state ---------------------------------------------------------- */
+/* av_[0..1]: av_[1] = "binblocks" (one bit every 4 non-empty lists);
+ * then for each list the two pointers fd/bk. List 0 contains "top" (the block at
+ * the top of the heap), list 1 the last remainder obtained by splitting a block. */
 extern mchunkptr __malloc_av_[];
-extern u8 *__malloc_sbrk_base;          /* inizio dell'heap, -1 finché non usato */
-extern u32 __malloc_trim_threshold;     /* oltre questa cima libera si restituisce memoria */
+extern u8 *__malloc_sbrk_base;          /* start of the heap, -1 until used */
+extern u32 __malloc_trim_threshold;     /* free memory beyond this top is returned */
 extern u32 __malloc_top_pad;            /* margine extra chiesto a sbrk */
-extern u32 __malloc_current_mallinfo;   /* primo campo: memoria ottenuta da sbrk */
+extern u32 __malloc_current_mallinfo;   /* first field: memory obtained from sbrk */
 extern u32 __malloc_max_sbrked_mem;
 extern u32 __malloc_max_total_mem;
 extern int g_malloc_lock_count;
@@ -83,10 +83,10 @@ static inline int bin_index(u32 sz)
     return 126;
 }
 
-/* toglie P dalla sua lista */
+/* removes P from its list */
 #define unlink(P, BK, FD) { BK = (P)->bk; FD = (P)->fd; FD->bk = BK; BK->fd = FD; }
 
-/* inserisce P (dimensione S) nella sua lista; le liste grandi sono ordinate */
+/* inserts P (size S) into its list; the large lists are sorted */
 #define frontlink(P, S, IDX, BK, FD)                                   \
     {                                                                  \
         if ((S) < MAX_SMALLBIN_SIZE) {                                 \
@@ -119,7 +119,7 @@ static inline int bin_index(u32 sz)
 #define clear_last_remainder \
     (last_remainder->fd = last_remainder->bk = last_remainder)
 
-/* copia/azzeramento di blocchi piccoli fatti a mano, gli altri con memcpy/memset */
+/* copy/zeroing of small blocks done by hand, the others with memcpy/memset */
 #define MALLOC_ZERO(charp, nbytes)                                     \
     do {                                                               \
         u32 mzsz = (nbytes);                                           \
@@ -169,8 +169,8 @@ static inline int bin_index(u32 sz)
             memcpy(dest, src, mcsz);                                   \
     } while (0)
 
-/* --- blocco (lock) ----------------------------------------------------------- */
-/* Il "lock" disattiva gli interrupt; può essere preso più volte di seguito. */
+/* --- lock ----------------------------------------------------------- */
+/* The "lock" disables interrupts; it can be taken several times in a row. */
 void __malloc_lock(struct _reent *r)
 {
     int intr = sceKernelCpuSuspendIntr();
@@ -187,7 +187,7 @@ void __malloc_unlock(struct _reent *r)
 }
 
 /* --- malloc -------------------------------------------------------------------- */
-/* Allarga la cima dell'heap chiedendo memoria a sbrk (inclusa in malloc nell'originale). */
+/* Grows the top of the heap by asking sbrk for memory (included in malloc in the original). */
 static inline void malloc_extend_top(struct _reent *r, u32 nb)
 {
     u8 *brk, *new_brk;
@@ -213,7 +213,7 @@ static inline void malloc_extend_top(struct _reent *r, u32 nb)
         if (__malloc_sbrk_base == (u8 *)-1)
             __malloc_sbrk_base = brk;
         else
-            sbrked_mem += brk - old_end; /* qualcun altro ha chiamato sbrk */
+            sbrked_mem += brk - old_end; /* someone else called sbrk */
 
         front_misalign = (u32)chunk2mem(brk) & MALLOC_ALIGN_MASK;
         if (front_misalign > 0) {
@@ -222,7 +222,7 @@ static inline void malloc_extend_top(struct _reent *r, u32 nb)
         } else {
             correction = 0;
         }
-        /* il prossimo sbrk deve partire da un confine di pagina */
+        /* the next sbrk must start from a page boundary */
         correction += PAGESZ - ((u32)(brk + sbrk_size) & (PAGESZ - 1));
 
         new_brk = _sbrk_r(r, correction);
@@ -237,9 +237,9 @@ static inline void malloc_extend_top(struct _reent *r, u32 nb)
         set_head(top, top_size | PREV_INUSE);
 
         if (old_top != initial_top) {
-            /* la vecchia cima non è contigua: la chiudiamo con due blocchi finti */
+            /* the old top is not contiguous: we close it with two fake blocks */
             if (old_top_size < MINSIZE) {
-                set_head(top, PREV_INUSE); /* farà fallire malloc */
+                set_head(top, PREV_INUSE); /* this makes malloc fail */
                 return;
             }
             old_top_size = (old_top_size - 3 * SIZE_SZ) & ~MALLOC_ALIGN_MASK;
@@ -270,7 +270,7 @@ void *_malloc_r(struct _reent *r, size_t bytes)
     __malloc_lock(r);
 
     if (is_small_request(nb)) {
-        /* liste piccole: tutti i blocchi della lista hanno la stessa dimensione */
+        /* small lists: all blocks in the list have the same size */
         idx = smallbin_index(nb);
         q = bin_at(idx);
         victim = last(q);
@@ -281,14 +281,14 @@ void *_malloc_r(struct _reent *r, size_t bytes)
             __malloc_unlock(r);
             return chunk2mem(victim);
         }
-        idx += 2; /* per la ricerca più sotto */
+        idx += 2; /* for the search below */
     } else {
         idx = bin_index(nb);
         bin = bin_at(idx);
         for (victim = last(bin); victim != bin; victim = victim->bk) {
             victim_size = chunksize(victim);
             remainder_size = victim_size - nb;
-            if (remainder_size >= MINSIZE) { /* troppo grande */
+            if (remainder_size >= MINSIZE) { /* too big */
                 --idx;
                 break;
             } else if (remainder_size >= 0) { /* esatto */
@@ -301,11 +301,11 @@ void *_malloc_r(struct _reent *r, size_t bytes)
         ++idx;
     }
 
-    /* prova con l'ultimo resto */
+    /* try with the last remainder */
     if ((victim = last_remainder->fd) != last_remainder) {
         victim_size = chunksize(victim);
         remainder_size = victim_size - nb;
-        if (remainder_size >= MINSIZE) { /* lo spezza di nuovo */
+        if (remainder_size >= MINSIZE) { /* split it again */
             remainder = chunk_at_offset(victim, nb);
             set_head(victim, nb | PREV_INUSE);
             link_last_remainder(remainder);
@@ -315,7 +315,7 @@ void *_malloc_r(struct _reent *r, size_t bytes)
             return chunk2mem(victim);
         }
         clear_last_remainder;
-        if (remainder_size >= 0) { /* lo usa tutto */
+        if (remainder_size >= 0) { /* use all of it */
             set_inuse_bit_at_offset(victim, victim_size);
             __malloc_unlock(r);
             return chunk2mem(victim);
@@ -323,7 +323,7 @@ void *_malloc_r(struct _reent *r, size_t bytes)
         frontlink(victim, victim_size, remainder_size, bck, fwd);
     }
 
-    /* cerca il blocco più adatto nelle liste più grandi, 4 liste alla volta */
+    /* search for the best-fitting block in the larger lists, 4 lists at a time */
     if ((block = idx2binblock(idx)) <= binblocks) {
         if ((block & binblocks) == 0) {
             idx = (idx & ~(BINBLOCKWIDTH - 1)) + BINBLOCKWIDTH;
@@ -357,14 +357,14 @@ void *_malloc_r(struct _reent *r, size_t bytes)
                     }
                 }
                 bin = next_bin(bin);
-                /* con l'allineamento a 16 le liste piccole dispari sono sempre vuote */
+                /* with 16-byte alignment the odd small lists are always empty */
                 if (idx < MAX_SMALLBIN) {
                     bin = next_bin(bin);
                     ++idx;
                 }
             } while ((++idx & (BINBLOCKWIDTH - 1)) != 0);
 
-            /* toglie il bit del gruppo se tutte le sue liste sono vuote */
+            /* clears the group bit if all its lists are empty */
             do {
                 if ((startidx & (BINBLOCKWIDTH - 1)) == 0) {
                     binblocks &= ~block;
@@ -385,7 +385,7 @@ void *_malloc_r(struct _reent *r, size_t bytes)
         }
     }
 
-    /* usa la cima dell'heap, allargandola se serve */
+    /* use the top of the heap, growing it if needed */
     victim = top;
     remainder_size = chunksize(victim) - nb;
     if (chunksize(victim) < nb || remainder_size < MINSIZE) {
@@ -422,7 +422,7 @@ void _free_r(struct _reent *r, void *mem)
     next = chunk_at_offset(p, sz);
     nextsz = chunksize(next);
 
-    if (next == top) { /* si unisce alla cima */
+    if (next == top) { /* merges with the top */
         sz += nextsz;
         if (!(hd & PREV_INUSE)) {
             prevsz = p->prev_size;
@@ -438,10 +438,10 @@ void _free_r(struct _reent *r, void *mem)
         return;
     }
 
-    set_head(next, nextsz); /* il blocco dopo non ha più il precedente in uso */
+    set_head(next, nextsz); /* the block after no longer has the previous one in use */
 
     islr = 0;
-    if (!(hd & PREV_INUSE)) { /* si unisce al blocco prima */
+    if (!(hd & PREV_INUSE)) { /* merges with the block before */
         prevsz = p->prev_size;
         p = chunk_at_offset(p, -prevsz);
         sz += prevsz;
@@ -451,7 +451,7 @@ void _free_r(struct _reent *r, void *mem)
             unlink(p, bck, fwd);
     }
 
-    if (!inuse_bit_at_offset(next, nextsz)) { /* si unisce al blocco dopo */
+    if (!inuse_bit_at_offset(next, nextsz)) { /* merges with the block after */
         sz += nextsz;
         if (!islr && next->fd == last_remainder) {
             islr = 1;
@@ -469,7 +469,7 @@ void _free_r(struct _reent *r, void *mem)
     __malloc_unlock(r);
 }
 
-/* Restituisce al sistema la memoria libera in cima all'heap oltre "pad" byte. */
+/* Returns to the system the free memory at the top of the heap beyond "pad" bytes. */
 int _malloc_trim_r(struct _reent *r, size_t pad)
 {
     int top_size, extra;
@@ -485,7 +485,7 @@ int _malloc_trim_r(struct _reent *r, size_t pad)
     }
 
     current_brk = _sbrk_r(r, 0);
-    if (current_brk != (u8 *)top + top_size) { /* qualcun altro ha usato sbrk */
+    if (current_brk != (u8 *)top + top_size) { /* someone else used sbrk */
         __malloc_unlock(r);
         return 0;
     }
@@ -526,7 +526,7 @@ void *_realloc_r(struct _reent *r, void *oldmem, size_t bytes)
 
     nb = request2size(bytes);
     if ((int)nb < 0 || nb < bytes)
-        return NULL; /* (l'originale non rilascia il lock) */
+        return NULL; /* (the original does not release the lock) */
 
     if ((int)oldsize < (int)nb) {
         /* prova ad allargarsi in avanti */
@@ -552,7 +552,7 @@ void *_realloc_r(struct _reent *r, void *oldmem, size_t bytes)
             nextsize = 0;
         }
 
-        /* prova a spostarsi all'indietro */
+        /* try moving backwards */
         if (!(oldp->size & PREV_INUSE)) {
             prev = prev_chunk(oldp);
             prevsize = chunksize(prev);
@@ -592,13 +592,13 @@ void *_realloc_r(struct _reent *r, void *oldmem, size_t bytes)
             }
         }
 
-        /* deve allocare un blocco nuovo */
+        /* must allocate a new block */
         newmem = _malloc_r(r, bytes);
         if (newmem == NULL) {
             __malloc_unlock(r);
             return NULL;
         }
-        /* il nuovo blocco è proprio quello subito dopo: niente copia */
+        /* the new block is exactly the one right after: no copy */
         if ((newp = mem2chunk(newmem)) == next_chunk(oldp)) {
             newsize += chunksize(newp);
             newp = oldp;
@@ -611,7 +611,7 @@ void *_realloc_r(struct _reent *r, void *oldmem, size_t bytes)
     }
 
 split:
-    /* stacca e libera lo spazio in più */
+    /* detaches and frees the extra space */
     remainder_size = newsize - nb;
     if ((u32)remainder_size >= MINSIZE) {
         remainder = chunk_at_offset(newp, nb);
@@ -627,7 +627,7 @@ split:
     return chunk2mem(newp);
 }
 
-/* --- calloc e free ------------------------------------------------------------- */
+/* --- calloc and free ------------------------------------------------------------- */
 void *_calloc_r(struct _reent *r, size_t n, size_t elem_size)
 {
     void *mem = _malloc_r(r, n * elem_size);

@@ -1,13 +1,13 @@
-/* Menu di gioco: liste di oggetti (8 per pagina) e scheda informazioni.
- * Stessa classe di menu_box.c. (Nomi ipotetici.) */
+/* In-game menu: lists of items (8 per page) and the information panel.
+ * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
 extern const u16 D_089AC870[];
 extern const s16 D_08938554[];
-extern const char D_0893855C[];        /* "%d" (quantità) */
+extern const char D_0893855C[];        /* "%d" (quantity) */
 extern const u8 D_0899D19B[];
-extern const s16 D_08938560[][3];      /* posizione (x, y) e flag di alcune scritte */
-extern const u8 D_08930BDC[];          /* tabella da 0xE byte per voce */
+extern const s16 D_08938560[][3];      /* position (x, y) and flags of some texts */
+extern const u8 D_08930BDC[];          /* table of 0xE bytes per entry */
 extern const u16 D_089AC648[], D_089AC65C[];
 extern const u8 D_0893B0CC[];
 
@@ -23,14 +23,14 @@ int func_0886D644(void *a, u8 id);
 s32 func_0885028C(void *game, u8 id, u8 *out);
 s32 func_08850338(void *game, u8 id, u8 *out);
 f32 func_08850238(void *game, u8 a, u16 b);
-u64 func_08905294(f32 x);    /* float -> double (formato del gioco) */
+u64 func_08905294(f32 x);    /* float -> double (game format) */
 void menu_draw_rating_icon(void *self, const u8 *entry, int x, int y, int v);
 void func_0882AF70(void *self, int x, int y, int w, int h, int a);
 void func_0882FE34(void *self, int x, int y, u8 a, u8 b);
 
 void menu_draw_list_hint(void *self, u32 idx);
 
-/* lista di 8 oggetti (pagina della voce sel) con quantità e colori */
+/* list of 8 items (the page of the selected entry) with quantities and colors */
 void menu_draw_items_page(void *self, s16 *list, int sel, u32 color, u32 flags, int d)
 {
     char title[32];
@@ -115,7 +115,7 @@ void menu_draw_items_page(void *self, s16 *list, int sel, u32 color, u32 flags, 
         menu_draw_list_hint(self, 1);
 }
 
-/* scritta di aiuto accanto alla lista (riquadro opzionale) */
+/* help text next to the list (optional box) */
 void menu_draw_list_hint(void *self, u32 idx_arg)
 {
     u8 idx = idx_arg;
@@ -129,7 +129,7 @@ void menu_draw_list_hint(void *self, u32 idx_arg)
                   func_0885151C(D_089CC438, *(u16 *)0x089ACA00));
 }
 
-/* scheda con le informazioni di una voce (0x5D9 = voce, <0 = nessuna) */
+/* panel with the information of an entry (0x5D9 = entry, <0 = none) */
 void menu_draw_info_card(void *self)
 {
     char title[32], b1[16], b2[16];

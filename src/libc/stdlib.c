@@ -1,10 +1,10 @@
-/* Libreria C: uscita dal programma (abort, atexit, exit), abs e locale minimale. */
+/* C library: program exit (abort, atexit, exit), abs and a minimal locale. */
 #include "libc.h"
 #include <pspintrman.h>
 
 int raise(int sig);
 
-/* stringhe originali: setlocale ritorna proprio questo indirizzo */
+/* original strings: setlocale returns exactly this address */
 extern const char D_089104C0[]; /* "C" */
 extern const char D_089104AC[]; /* "" */
 extern u8 D_089104C4[];         /* struct lconv */
@@ -20,7 +20,7 @@ int abs(int i)
     return i < 0 ? -i : i;
 }
 
-/* Registra una funzione da chiamare all'uscita; ritorna 0, o -1 se manca memoria. */
+/* Registers a function to call at exit; returns 0, or -1 if out of memory. */
 int atexit(void (*fn)(void))
 {
     int intr = sceKernelCpuSuspendIntr();
@@ -31,7 +31,7 @@ int atexit(void (*fn)(void))
     if (p == NULL)
         r->_atexit = p = &r->_atexit0;
     ind = p->_ind;
-    if (ind >= 32) { /* blocco pieno: ne alloca un altro */
+    if (ind >= 32) { /* block full: allocates another one */
         sceKernelCpuResumeIntr(intr);
         p = _malloc_r(r, sizeof(*p));
         if (p == NULL)
@@ -49,7 +49,7 @@ int atexit(void (*fn)(void))
     return 0;
 }
 
-/* Chiama le funzioni registrate (dall'ultima alla prima) e termina il programma. */
+/* Calls the registered functions (from the last to the first) and ends the program. */
 void exit(int code)
 {
     struct _atexit *p;
@@ -66,7 +66,7 @@ void exit(int code)
     _exit(code);
 }
 
-/* Si accettano solo le impostazioni "C" e "" (equivalenti). */
+/* Only the settings "C" and "" are accepted (equivalent). */
 char *_setlocale_r(struct _reent *p, int category, const char *locale)
 {
     if (locale != NULL) {
@@ -93,15 +93,15 @@ void *localeconv(void)
     return _localeconv_r(_REENT);
 }
 
-/* --- numeri casuali ------------------------------------------------------------------ */
-#define RAND_NEXT(r) (*(u64 *)((u8 *)(r) + 0xA8)) /* stato a 64 bit nella struct _reent */
+/* --- random numbers ------------------------------------------------------------------ */
+#define RAND_NEXT(r) (*(u64 *)((u8 *)(r) + 0xA8)) /* 64-bit state in struct _reent */
 
 void srand(unsigned int seed)
 {
     RAND_NEXT(_REENT) = seed;
 }
 
-/* generatore congruenziale lineare a 64 bit; ritorna 31 bit */
+/* linear congruential generator with 64 bits; returns 31 bits */
 int rand(void)
 {
     RAND_NEXT(_REENT) = RAND_NEXT(_REENT) * 6364136223846793005ULL + 1;

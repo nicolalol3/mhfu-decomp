@@ -1,4 +1,4 @@
-/* __kernel_cosf: coseno su [-pi/4, pi/4]; y è la coda di x (fdlibm, Sun Microsystems). */
+/* __kernel_cosf: cosine on [-pi/4, pi/4]; y is the tail of x (fdlibm, Sun Microsystems). */
 #include "libm.h"
 
 static const f32 one = 1.0f;

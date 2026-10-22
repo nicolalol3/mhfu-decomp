@@ -1,5 +1,5 @@
-/* Menu di gioco: scheda del cacciatore (statistiche, equipaggiamento, resistenze, abilità).
- * Stessa classe di menu_box.c. (Nomi ipotetici.) */
+/* In-game menu: hunter status screen (stats, equipment, resistances, skills).
+ * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 #include "vfpu.h"
 
@@ -11,7 +11,7 @@ extern const char D_08938594[], D_089385A8[], D_089385B0[];
 extern const s32 D_0893ABBC[];
 extern const s16 D_08938598[][2];
 extern s16 D_08939704, D_08939706;
-extern const s32 D_0893AEB8[];    /* pezzi di armatura in ordine di visualizzazione */
+extern const s32 D_0893AEB8[];    /* armor pieces in display order */
 extern const u8 D_0893AEB1[];
 extern const u8 D_089385A0[];
 extern void *D_08A62C54;
@@ -38,7 +38,7 @@ void menu_draw_skills(void *self, u8 *hunter, int x, int y);
 void menu_draw_unique_list(void *self, const u8 *list, void *p, int x, int y, s32 step);
 void menu_draw_resist_table(void *self, int x, int y, u32 page, s32 bar, int rows, u32 sel);
 
-/* pagina della scheda del cacciatore (page: 0 = statistiche, 1 = equipaggiamento, ...) */
+/* page of the hunter status screen (page: 0 = stats, 1 = equipment, ...) */
 void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
 {
     s8 page = page_arg;
@@ -72,7 +72,7 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
         return;
     }
 
-    /* pagina 0: etichette */
+    /* page 0: labels */
     func_08890E38(D_08A631A8, 5);
     func_08890DE8(D_08A631A8, 14, 14);
     y = l.ty;
@@ -92,7 +92,7 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
     }
     func_08890E38(D_08A631A8, 0);
 
-    /* valori */
+    /* values */
     x = (s16)(l.tx + 0x46);
     menu_draw_weapon_type(self, x, (s16)(l.ty + l.lh), hunter + 0x4E8);
     func_08890DFC(D_08A631A8, x, (s16)(l.ty + l.lh * 6));
@@ -143,7 +143,7 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
     menu_draw_unique_list(self, D_089CC438 + 0x69942, hunter + 0x4E8, D_0893B038, y2, D_0893B03C);
 }
 
-/* nome dell'arma equipaggiata (tipo) */
+/* name of the equipped weapon (type) */
 void menu_draw_weapon_type(void *self, int x, int y, const u8 *eq)
 {
     u8 t = (u8)func_0885CD18(D_08A62C54, eq[1], *(u16 *)(eq + 2));
@@ -151,7 +151,7 @@ void menu_draw_weapon_type(void *self, int x, int y, const u8 *eq)
     func_08891474(D_08A631A8, x, y, D_08938478, func_0885151C(D_089CC438, D_089AC8AC[t]));
 }
 
-/* elenco dell'equipaggiamento (arma + 5 pezzi di armatura) con le icone */
+/* equipment list (weapon + 5 armor pieces) with icons */
 void menu_draw_equipment(void *self, u8 *hunter, int col)
 {
     s16 ix;
@@ -177,7 +177,7 @@ void menu_draw_equipment(void *self, u8 *hunter, int col)
 
 void menu_draw_skills_ex(void *self, u8 *hunter, int x, int y, const s8 *colors);
 
-/* abilità attive (colori normali) */
+/* active skills (normal colors) */
 void menu_draw_skills(void *self, u8 *hunter, int x, int y)
 {
     s8 colors[6] = { 0, 0, 0, 0, 0, 0 };
@@ -185,7 +185,7 @@ void menu_draw_skills(void *self, u8 *hunter, int x, int y)
     menu_draw_skills_ex(self, hunter, x, y, colors);
 }
 
-/* abilità attive (fino a 6) con i colori indicati; "nessuna" se non ce ne sono */
+/* active skills (up to 6) with the given colors; "none" if there are none */
 void menu_draw_skills_ex(void *self, u8 *hunter, int x, int y, const s8 *colors)
 {
     u32 i;
@@ -214,7 +214,7 @@ void menu_draw_skills_ex(void *self, u8 *hunter, int x, int y, const s8 *colors)
     }
 }
 
-/* elenco senza doppioni delle (fino a 5) voci di list; grigie se non disponibili */
+/* list without duplicates of the (up to 5) entries of list; grey if not available */
 void menu_draw_unique_list(void *self, const u8 *list, void *p, int x, int y, s32 step_arg)
 {
     s16 step = step_arg;
@@ -246,7 +246,7 @@ void menu_draw_unique_list(void *self, const u8 *list, void *p, int x, int y, s3
         func_08891474(D_08A631A8, x, y, D_08938478, func_0885151C(D_089CC438, D_089ACEEC[0]));
 }
 
-/* tabella delle resistenze/punti abilità (righe da 0x12 byte a self+0x684) */
+/* table of resistances/skill points (rows of 0x12 bytes at self+0x684) */
 void menu_draw_resist_table(void *self, int x, int y, u32 page_arg, s32 bar_arg, int rows, u32 sel_arg)
 {
     u8 page = page_arg;

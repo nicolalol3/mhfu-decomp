@@ -1,5 +1,5 @@
-/* Menu di gioco: schede di dettaglio (scambio, valutazione a stelle, tempo).
- * Stessa classe di menu_box.c. (Nomi ipotetici.) */
+/* In-game menu: detail screens (trade, star rating, time).
+ * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
 extern const u8 D_0893B0A4[], D_0893B0B8[];
@@ -9,7 +9,7 @@ extern const u16 D_089AC620[], D_089AC630[];
 s32 func_0885B718(void *a, u32 b, int c, int d);
 char *strcat(char *d, const char *s);
 
-/* dettagli dello scambio selezionato (0x5A8): oggetti richiesti e ricompensa */
+/* details of the selected trade (0x5A8): requested items and reward */
 void menu_draw_trade_info(void *self)
 {
     char title[32];
@@ -82,8 +82,8 @@ void menu_draw_trade_info(void *self)
     func_088915B0(D_08A631A8, (s16)(S16(l2, 12) + 0x46), (s16)(S16(l2, 14) + S16(l2, 16) * 6), c6, D_08938478, t6);
 }
 
-/* icona di valutazione accanto a un valore (v) confrontato con i limiti della voce;
- * restituisce 0 (nessuna), 1 o 2 */
+/* rating icon next to a value (v) compared with the limits of the entry;
+ * returns 0 (none), 1 or 2 */
 s16 menu_draw_rating_icon(void *self, const u8 *ent, s32 x_arg, s32 y_arg, s32 v_arg)
 {
     s16 x = x_arg;
@@ -108,13 +108,13 @@ s16 menu_draw_rating_icon(void *self, const u8 *ent, s32 x_arg, s32 y_arg, s32 v
     return r + 1;
 }
 
-/* numero alle coordinate x, y */
+/* number at coordinates x, y */
 void menu_draw_number(void *self, int x, int y, u32 v)
 {
     func_08891474(D_08A631A8, x, y, D_08938584, v);
 }
 
-/* tempo (in fotogrammi da 1/30 s) come minuti:secondi */
+/* time (in frames of 1/30 s) as minutes:seconds */
 void menu_draw_time(void *self, int x, int y, s32 which_arg)
 {
     s8 which = which_arg;
@@ -127,7 +127,7 @@ void menu_draw_time(void *self, int x, int y, s32 which_arg)
     func_08891474(D_08A631A8, x, y, D_08938588, (t / 30) / 60, (t / 30) % 60);
 }
 
-/* fila di stelle (n); oltre 8 stelle (tranne alcune missioni) aggiunge un prefisso */
+/* row of stars (n); above 8 stars (except some quests) adds a prefix */
 void menu_draw_stars(void *self, int n)
 {
     char buf[64];
@@ -138,7 +138,7 @@ void menu_draw_stars(void *self, int n)
     q = U16(func_088298E4(self), 0x18);
     if ((q < 10000 || q >= 12000) && n > 8) {
         strcat(p, func_0885151C(D_089CC438, *(u16 *)0x089AC57A));
-        p = buf + 1;    /* (così nell'originale) */
+        p = buf + 1;    /* (as in the original) */
         n -= 8;
     }
     for (; n > 0; n--) {

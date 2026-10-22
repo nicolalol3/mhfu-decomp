@@ -1,8 +1,8 @@
-"""Aiuto per capire una differenza trovata da difftest.py: ripete la prova numero N di una
-funzione e stampa le chiamate registrate e i byte di memoria diversi.
+"""Helper to understand a difference found by difftest.py: repeats test number N of a
+function and prints the recorded calls and the memory bytes that differ.
 
-Uso: tools/.venv/Scripts/python.exe -I tools/difftest_debug.py NOME [N]
-(N = numero della prova; senza N usa la prima che dà differenza)
+Usage: tools/.venv/Scripts/python.exe -I tools/difftest_debug.py NAME [N]
+(N = number of the test; without N it uses the first one that shows a difference)
 """
 import os, random, sys
 sys.path.insert(0, os.path.dirname(__file__))
@@ -59,7 +59,7 @@ def main():
                         if shown > 40:
                             break
             return
-    print("nessuna differenza trovata")
+    print("no difference found")
 
 
 if __name__ == "__main__":

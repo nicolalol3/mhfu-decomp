@@ -1,5 +1,5 @@
-// Esporta l'elenco di tutte le funzioni (indirizzo, dimensione, nome, chiamate) in TSV.
-// Uso: -postScript ExportFunctions.java <file_output.tsv>
+// Exports the list of all functions (address, size, name, calls) as TSV.
+// Usage: -postScript ExportFunctions.java <output_file.tsv>
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.listing.*;
 import ghidra.program.model.address.*;
@@ -16,7 +16,7 @@ public class ExportFunctions extends GhidraScript {
             for (Function f : currentProgram.getFunctionManager().getFunctions(true)) {
                 AddressSetView body = f.getBody();
                 Address entry = f.getEntryPoint();
-                // dimensione = range contiguo che parte dall'entry point
+                // size = contiguous range starting from the entry point
                 AddressRange r = body.getRangeContaining(entry);
                 long size = r == null ? 0 : r.getLength();
                 StringBuilder cs = new StringBuilder();

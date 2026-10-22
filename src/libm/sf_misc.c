@@ -1,4 +1,4 @@
-/* Piccole funzioni float che lavorano direttamente sui bit (fdlibm/newlib). */
+/* Small float functions that work directly on the bits (fdlibm/newlib). */
 #include "libm.h"
 
 f32 copysignf(f32 x, f32 y)

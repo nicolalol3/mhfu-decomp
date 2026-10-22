@@ -1,8 +1,8 @@
-/* __ieee754_rem_pio2f: riduce x all'intervallo [-pi/4, pi/4] restituendo x - n*pi/2 in y[0]+y[1]
- * e n come risultato. Base per sinf/cosf/tanf (fdlibm, Sun Microsystems). */
+/* __ieee754_rem_pio2f: reduces x to the interval [-pi/4, pi/4], returning x - n*pi/2 in y[0]+y[1]
+ * and n as the result. Basis for sinf/cosf/tanf (fdlibm, Sun Microsystems). */
 #include "libm.h"
 
-/* cifre di 2/pi, 8 bit per elemento */
+/* digits of 2/pi, 8 bits per element */
 static const s32 two_over_pi[] = {
     0xA2, 0xF9, 0x83, 0x6E, 0x4E, 0x44, 0x15, 0x29, 0xFC, 0x27, 0x57, 0xD1,
     0xF5, 0x34, 0xDD, 0xC0, 0xDB, 0x62, 0x95, 0x99, 0x3C, 0x43, 0x90, 0x41,
@@ -23,7 +23,7 @@ static const s32 two_over_pi[] = {
     0x60, 0xE2, 0x7B, 0xC0, 0x8C, 0x6B,
 };
 
-/* parte alta di n*pi/2 per n = 1..32 */
+/* high part of n*pi/2 for n = 1..32 */
 static const s32 npio2_hw[] = {
     0x3FC90F00, 0x40490F00, 0x4096CB00, 0x40C90F00, 0x40FB5300, 0x4116CB00,
     0x412FED00, 0x41490F00, 0x41623100, 0x417B5300, 0x418A3A00, 0x4196CB00,
@@ -36,12 +36,12 @@ static const s32 npio2_hw[] = {
 static const f32 zero = 0.0f;
 static const f32 half = 0.5f;
 static const f32 two8 = 256.0f;
-static const f32 invpio2 = 0.6366198062896729f;    /* 0x3f22f984: 24 bit di 2/pi */
-static const f32 pio2_1 = 1.5707855224609375f;     /* 0x3fc90f80: primi 17 bit di pi/2 */
+static const f32 invpio2 = 0.6366198062896729f;    /* 0x3f22f984: 24 bits of 2/pi */
+static const f32 pio2_1 = 1.5707855224609375f;     /* 0x3fc90f80: first 17 bits of pi/2 */
 static const f32 pio2_1t = 1.0804334124259185e-05f; /* 0x37354443: pi/2 - pio2_1 */
-static const f32 pio2_2 = 1.0804273188114166e-05f; /* 0x37354400: secondi 17 bit di pi/2 */
+static const f32 pio2_2 = 1.0804273188114166e-05f; /* 0x37354400: second 17 bits of pi/2 */
 static const f32 pio2_2t = 6.07709993438732e-11f;  /* 0x2e85a308 */
-static const f32 pio2_3 = 6.077094383272197e-11f;  /* 0x2e85a300: terzi 17 bit di pi/2 */
+static const f32 pio2_3 = 6.077094383272197e-11f;  /* 0x2e85a300: third 17 bits of pi/2 */
 static const f32 pio2_3t = 6.123234262925839e-17f; /* 0x248d3132 */
 
 s32 __kernel_rem_pio2f(f32 *x, f32 *y, int e0, int nx, int prec, const s32 *ipio2);
@@ -55,7 +55,7 @@ s32 __ieee754_rem_pio2f(f32 x, f32 *y)
 
     hx = f32_bits(x);
     ix = hx & 0x7fffffff;
-    if (ix <= 0x3f490fd8) { /* |x| <= pi/4: nessuna riduzione */
+    if (ix <= 0x3f490fd8) { /* |x| <= pi/4: no reduction */
         y[0] = x;
         y[1] = 0;
         return 0;
@@ -66,7 +66,7 @@ s32 __ieee754_rem_pio2f(f32 x, f32 *y)
             if ((ix & 0xfffffff0) != 0x3fc90fd0) {
                 y[0] = z - pio2_1t;
                 y[1] = (z - y[0]) - pio2_1t;
-            } else { /* vicino a pi/2: serve pi a 24+24+24 bit */
+            } else { /* close to pi/2: needs pi with 24+24+24 bits */
                 z -= pio2_2;
                 y[0] = z - pio2_2t;
                 y[1] = (z - y[0]) - pio2_2t;
@@ -126,8 +126,8 @@ s32 __ieee754_rem_pio2f(f32 x, f32 *y)
         return n;
     }
 
-    /* argomenti grandi */
-    if (ix >= 0x7f800000) { /* inf o NaN */
+    /* large arguments */
+    if (ix >= 0x7f800000) { /* inf or NaN */
         y[0] = y[1] = x - x;
         return 0;
     }

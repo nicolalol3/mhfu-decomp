@@ -1,5 +1,5 @@
-/* Menu di gioco: disegno delle finestre (descrizioni, liste, pagine).
- * Stessa classe di menu_box.c. (Nomi ipotetici.) */
+/* In-game menu: window drawing (descriptions, lists, pages).
+ * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
 #define GAME_FLAGS (*(u32 *)(D_089CC438 + 0x6AF14))
@@ -7,7 +7,7 @@
 
 void menu_draw_page_list(void *self, s32 dim);
 
-/* disegna la parte principale del menu secondo la modalità (0x57E/0x57F) */
+/* draws the main part of the menu according to the mode (0x57E/0x57F) */
 void menu_draw_main(void *self)
 {
     u8 layout[0x28];
@@ -37,7 +37,7 @@ void menu_draw_main(void *self)
     }
 }
 
-/* finestra delle informazioni (pagine 0..3) */
+/* information window (pages 0..3) */
 void menu_draw_info(void *self)
 {
     char buf[64];
@@ -107,7 +107,7 @@ void menu_draw_equip_box(void *self)
                   U8(self, 0x582) | 0x100, 0, 1);
 }
 
-/* finestra di conferma con il nome dell'oggetto selezionato */
+/* confirmation window with the name of the selected item */
 void menu_draw_confirm(void *self)
 {
     u8 layout[0x28];
@@ -168,7 +168,7 @@ void menu_draw_confirm(void *self)
     func_0882F580(self, layout, 0, U8(self, 0x58C), 0xFF, 0);
 }
 
-/* elenco delle voci di una pagina (6 per pagina); dim = disegna in grigio */
+/* list of the entries of one page (6 per page); dim = draw in grey */
 void menu_draw_page_list(void *self, s32 dim_arg)
 {
     s8 dim = dim_arg;
@@ -220,7 +220,7 @@ void menu_draw_page_list(void *self, s32 dim_arg)
     }
 }
 
-/* tasti di aiuto in basso a destra */
+/* help buttons at the bottom right */
 void menu_draw_help_keys(void *self)
 {
     int x = 0x168, w = 0x70;
@@ -236,7 +236,7 @@ void menu_draw_help_keys(void *self)
     func_0882DCA8(self, x, 0xA8, w, 0x20, 0xFF);
 }
 
-/* descrizione della voce corrente */
+/* description of the current entry */
 void menu_draw_entry_desc(void *self)
 {
     s16 id = S16(self, 0x5FC);
@@ -256,7 +256,7 @@ void menu_draw_entry_desc(void *self)
 
 void menu_draw_item_stats(void *self, u32 id, s32 x, s32 y, u32 mode);
 
-/* riquadro di descrizione: kind = tipo di voce, id = oggetto/voce */
+/* description box: kind = entry type, id = item/entry */
 void menu_draw_desc(void *self, u32 kind_arg, u32 id_arg, int arg)
 {
     u8 kind = kind_arg;
@@ -310,7 +310,7 @@ void menu_draw_desc(void *self, u32 kind_arg, u32 id_arg, int arg)
     func_0882FC50(self, layout, s, 0xFF);
 }
 
-/* statistiche di un oggetto (attacco, elementi, ...) nel riquadro di descrizione */
+/* item statistics (attack, elements, ...) in the description box */
 void menu_draw_item_stats(void *self, u32 id_arg, s32 x_arg, s32 y_arg, u32 mode_arg)
 {
     u16 id = id_arg;
@@ -354,11 +354,11 @@ void menu_draw_item_stats(void *self, u32 id_arg, s32 x_arg, s32 y_arg, u32 mode
         func_088915B0(D_08A631A8, x_arg, (s16)(y + 0x1C), 5, func_0885151C(D_089CC438, *(u16 *)0x089AC87C),
                       D_089779D4[n * 0x10]);
     } else if (kind == 0) {
-        func_088920A8(D_08A631A8, x_arg, y_arg, D_08938478, func_08851534(D_089CC438, id_arg)); /* valori ricevuti, non ridotti */
+        func_088920A8(D_08A631A8, x_arg, y_arg, D_08938478, func_08851534(D_089CC438, id_arg)); /* values received, not reduced */
     }
 }
 
-/* lista degli oggetti (24 posti): flag 0x20 = compatta e ordina la lista */
+/* item list (24 slots): flag 0x20 = compact and sort the list */
 void menu_draw_item_list(void *self, int sel, u32 color, u32 flags, int d)
 {
     s16 list[48];
@@ -386,7 +386,7 @@ void menu_draw_item_list(void *self, int sel, u32 color, u32 flags, int d)
             dst[1] = 0;
             dst[0] = 0;
         }
-        func_0885C5DC(list, used);   /* ordina le voci occupate */
+        func_0885C5DC(list, used);   /* sorts the used entries */
         src = list;
         color = 0;
         flags = (flags & 1) ? 0x21 : 0x20;

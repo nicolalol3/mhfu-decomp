@@ -1,5 +1,5 @@
-/* Libreria C del PSP: funzioni di base appoggiate al sistema operativo
- * (file, memoria dinamica "sbrk", uscita dal programma, tempo). */
+/* PSP C library: basic functions built on the operating system
+ * (files, dynamic memory "sbrk", program exit, time). */
 #include "common.h"
 #include <pspiofilemgr.h>
 #include <pspstdio.h>
@@ -12,19 +12,19 @@
 
 #define EBADF 9
 
-extern int sce_newlib_heap_kb_size __attribute__((weak)); /* dimensione heap in KB, scelta dal gioco */
+extern int sce_newlib_heap_kb_size __attribute__((weak)); /* heap size in KB, chosen by the game */
 extern u32 g_sbrk_cur;
 extern u32 g_sbrk_start;
 extern u32 g_sbrk_end;
 extern SceUID g_sbrk_block;
 
 struct _reent;
-extern struct _reent *_getmodreent(void) __attribute__((weak)); /* libc del modulo (reent.c) */
-extern struct _reent *__getreent(void);                         /* libc del thread corrente */
+extern struct _reent *_getmodreent(void) __attribute__((weak)); /* module's libc (reent.c) */
+extern struct _reent *__getreent(void);                         /* libc of the current thread */
 extern void func_0880E19C(struct _reent *r);
 extern SceUID func_0880C7E0(struct _reent *r);
 
-/* I descrittori 0, 1, 2 della libc corrispondono a stdin/stdout/stderr del sistema. */
+/* file descriptors 0, 1, 2 of the libc correspond to the system's stdin/stdout/stderr. */
 static inline int libc_fd_to_sce(int fd)
 {
     switch (fd) {
@@ -40,7 +40,7 @@ int lseek(int fd, int offset, int whence)
     fd = libc_fd_to_sce(fd);
     if (fd < 0)
         return -EBADF;
-    /* l'originale converte il descrittore una seconda volta */
+    /* the original converts the descriptor a second time */
     return (int)sceIoLseek(libc_fd_to_sce(fd), offset, whence);
 }
 
@@ -66,7 +66,7 @@ void _exit(int status)
     sceKernelStopUnloadSelfModuleWithStatus(1, 0, NULL, NULL, NULL);
 }
 
-/* Fa crescere la memoria dinamica della libc; al primo uso alloca il blocco dal sistema. */
+/* Grows the dynamic memory of the libc; on first use it allocates the block from the system. */
 void *sbrk(int incr)
 {
     u32 next;
@@ -124,7 +124,7 @@ int close(int fd)
     return sceIoClose(fd);
 }
 
-/* Tutti i file vengono descritti come dispositivi a caratteri (S_IFCHR). */
+/* All files are described as character devices (S_IFCHR). */
 int fstat(int fd, u32 *st)
 {
     st[1] = 0x2000;
@@ -169,7 +169,7 @@ int gettimeofday(struct timeval *tv, void *tz)
     return sceKernelLibcGettimeofday((SceKernelTimeval *)tv, tz);
 }
 
-/* Installa (o rimuove, se handler è NULL) un gestore sull'interrupt di VBlank (30). */
+/* Installs (or removes, if handler is NULL) a handler on the VBlank interrupt (30). */
 void SetVblankSubIntrHandler(int no, void *handler, void *arg)
 {
     if (handler == NULL) {

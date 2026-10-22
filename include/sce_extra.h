@@ -1,4 +1,4 @@
-/* Funzioni di sistema usate dal gioco ma assenti dagli header del PSPSDK. */
+/* System functions used by the game but missing from the PSPSDK headers. */
 #ifndef SCE_EXTRA_H
 #define SCE_EXTRA_H
 #include <psptypes.h>

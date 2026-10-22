@@ -1,6 +1,6 @@
-/* Libreria C: segnali (raise). Sul PSP non c'è un vero sistema di segnali: se per un
- * segnale non è stato impostato un gestore, si "invia" a sé stessi con kill, che non fa
- * niente. */
+/* C library: signals (raise). The PSP has no real signal system: if no handler
+ * is set for a signal, it "sends" it to itself with kill, which does
+ * nothing. */
 #include "libc.h"
 
 #define NSIG    32
@@ -12,7 +12,7 @@
 int _getpid_r(struct _reent *r);
 int _kill_r(struct _reent *r, int pid, int sig);
 
-/* crea la tabella dei gestori (tutti "predefinito") */
+/* creates the handler table (all "default") */
 int _init_signal_r(struct _reent *ptr)
 {
     int i;
@@ -47,7 +47,7 @@ int _raise_r(struct _reent *ptr, int sig)
         ptr->_errno = EINVAL;
         return 1;
     }
-    ptr->_sig_func[sig] = SIG_DFL; /* il gestore vale una volta sola */
+    ptr->_sig_func[sig] = SIG_DFL; /* the handler is only used once */
     func(sig);
     return 0;
 }

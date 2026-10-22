@@ -1,5 +1,5 @@
 #!/bin/bash
-# Disassembla funzioni originali. Uso (WSL): tools/disasm.sh ADDR [ADDR...]  (indirizzi hex, da functions.tsv)
+# Disassembles original functions. Usage (WSL): tools/disasm.sh ADDR [ADDR...]  (hex addresses, from functions.tsv)
 export PATH=$PATH:/opt/pspdev/bin
 cd "$(dirname "$0")/.."
 for a in "$@"; do

@@ -1,9 +1,9 @@
-/* Menu di gioco: movimento del cursore con i tasti e piccole azioni del menu.
- * Tasti (bit): 0x10 su, 0x20 destra, 0x40 giù, 0x80 sinistra (come usati qui).
- * Stessa classe di menu_box.c. (Nomi ipotetici.) */
+/* In-game menu: cursor movement with the buttons and small menu actions.
+ * Buttons (bits): 0x10 up, 0x20 right, 0x40 down, 0x80 left (as used here).
+ * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62D8C;          /* gestore dei suoni */
+extern void *D_08A62D8C;          /* sound manager */
 
 void func_08883988(void *snd, int a, int id, int b, int c, int d, int e, int f, int g);
 s32 func_08826734(void *self, u8 idx);
@@ -13,7 +13,7 @@ int menu_info_available(void *self);
 s32 func_08826F80(void *self, int a);
 void func_08826FCC(void *self, u32 a, int b);
 
-/* suono di interfaccia (0x11 = pagina, 0x17 = cursore, 9 = selezione) */
+/* interface sound (0x11 = page, 0x17 = cursor, 9 = selection) */
 static inline void play_se(int id)
 {
     func_08883988(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0);
@@ -21,7 +21,7 @@ static inline void play_se(int id)
 
 int menu_cursor_vertical(void *self, u8 *pos, u32 keys, u32 count);
 
-/* cursore a due colonne (count voci, metà per colonna) */
+/* two-column cursor (count entries, half per column) */
 void menu_cursor_two_columns(void *self, u8 *pos, u32 keys, u32 count_arg)
 {
     u8 count = count_arg;
@@ -48,7 +48,7 @@ void menu_cursor_two_columns(void *self, u8 *pos, u32 keys, u32 count_arg)
     }
 }
 
-/* cursore a pagine da 8 voci (sinistra/destra cambia pagina) */
+/* cursor with pages of 8 entries (left/right changes page) */
 void menu_cursor_pages(void *self, u8 *pos, u32 keys, u32 count_arg)
 {
     u8 count = count_arg;
@@ -75,7 +75,7 @@ void menu_cursor_pages(void *self, u8 *pos, u32 keys, u32 count_arg)
 
 void menu_item_toggle_sub(void *self, u32 id, u32 keys);
 
-/* cursore sulla lista degli oggetti: aggiorna la descrizione mostrata */
+/* cursor on the item list: updates the description shown */
 u16 menu_cursor_items(void *self, u8 *pos, u32 keys)
 {
     u16 id;
@@ -87,10 +87,10 @@ u16 menu_cursor_items(void *self, u8 *pos, u32 keys)
     return id;
 }
 
-/* con il tasto 0x8000 alterna la seconda pagina di descrizione degli oggetti che la hanno */
+/* the 0x8000 button toggles the second description page of the items that have one */
 void menu_item_toggle_sub(void *self, u32 arg, u32 keys)
 {
-    u16 id = arg;   /* l'originale usa solo i 16 bit bassi */
+    u16 id = arg;   /* the original uses only the low 16 bits */
 
     if (*(s16 *)(D_0899D198 + id * 0x18 + 0x16) != 0 && id != 0 && (keys & 0x8000)) {
         play_se(9);
@@ -98,7 +98,7 @@ void menu_item_toggle_sub(void *self, u32 arg, u32 keys)
     }
 }
 
-/* cursore su/giù con ritorno all'inizio; 1 se è cambiato */
+/* cursor up/down with wrap to the start; 1 if it changed */
 int menu_cursor_vertical(void *self, u8 *pos, u32 keys, u32 count_arg)
 {
     u8 count = count_arg;
@@ -121,7 +121,7 @@ int menu_cursor_vertical(void *self, u8 *pos, u32 keys, u32 count_arg)
     return 1;
 }
 
-/* cursore sinistra/destra con ritorno all'inizio (suono di pagina) */
+/* cursor left/right with wrap to the start (page sound) */
 int menu_cursor_horizontal_page(void *self, u8 *pos, u32 keys, u32 count_arg)
 {
     u8 count = count_arg;
@@ -149,7 +149,7 @@ int menu_cursor_horizontal_page(void *self, u8 *pos, u32 keys, u32 count_arg)
     return 1;
 }
 
-/* come sopra, con il suono del cursore */
+/* as above, with the cursor sound */
 int menu_cursor_horizontal(void *self, u8 *pos, u32 keys, u32 count_arg)
 {
     u8 count = count_arg;
@@ -177,7 +177,7 @@ int menu_cursor_horizontal(void *self, u8 *pos, u32 keys, u32 count_arg)
     return 1;
 }
 
-/* scelta sì/no (0x537) con i tasti premuti (a & b) */
+/* yes/no choice (0x537) with the pressed buttons (a & b) */
 void menu_cursor_yes_no(void *self, u32 a, u32 b)
 {
     u32 k = (a & 0xFFFF) & (b & 0xFFFF);
@@ -193,7 +193,7 @@ void menu_cursor_yes_no(void *self, u32 a, u32 b)
     }
 }
 
-/* come sopra ma sul valore v: restituisce il nuovo valore */
+/* as above but on the value v: returns the new value */
 u32 menu_toggle_yes_no(u32 v, u32 keys)
 {
     if ((v & 0xFF) == 0) {
@@ -208,8 +208,8 @@ u32 menu_toggle_yes_no(u32 v, u32 keys)
     return v;
 }
 
-/* cursore su una griglia: g[4] = indice, g[6] = colonne, g[7] = colonna, g[8] = riga,
- * g[9] = righe, g[10] = colonne dell'ultima riga */
+/* cursor on a grid: g[4] = index, g[6] = columns, g[7] = column, g[8] = row,
+ * g[9] = rows, g[10] = columns of the last row */
 void menu_cursor_grid(void *self, u8 *g, u32 keys, s32 quiet_arg)
 {
     s8 quiet = quiet_arg;
@@ -269,7 +269,7 @@ void menu_cursor_grid(void *self, u8 *g, u32 keys, s32 quiet_arg)
     *(u16 *)(g + 4) = c + w * row;
 }
 
-/* apre la lista degli oggetti */
+/* opens the item list */
 int menu_open_item_list(void *self)
 {
     u32 f;
@@ -294,7 +294,7 @@ int menu_open_item_list(void *self)
     return 0;
 }
 
-/* apre la lista per l'uso di un oggetto (se possibile); -1 se non si può */
+/* opens the list for using an item (if possible); -1 if not possible */
 int menu_open_use_list(void *self)
 {
     u16 tmp;
@@ -365,7 +365,7 @@ int menu_open_list_tabs(void *self)
     return 0;
 }
 
-/* gestione dei tasti nella schermata a schede (0x57E: 0 = scelta scheda, 1 = dentro) */
+/* handling of the buttons in the tabbed screen (0x57E: 0 = tab choice, 1 = inside) */
 u32 menu_list_tabs_input(void *self, u32 keys)
 {
     u32 k;
@@ -424,7 +424,7 @@ u32 menu_info_input(void *self, u32 keys)
     return keys;
 }
 
-/* scheda del cacciatore: sinistra/destra cambia pagina */
+/* hunter status tab: left/right changes page */
 u32 menu_status_input(void *self, u32 keys)
 {
     s8 n = (s8)func_08826F80(self, 9);
@@ -465,7 +465,7 @@ u32 menu_equipment_input(void *self, u32 keys)
     return keys;
 }
 
-/* la scheda informazioni è disponibile? (imposta il flag 0x40) */
+/* is the info tab available? (sets flag 0x40) */
 int menu_info_available(void *self)
 {
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) && (s8)func_09A7BFA8(D_09B22D70) == 0) {
@@ -476,7 +476,7 @@ int menu_info_available(void *self)
     return 1;
 }
 
-/* copia in out i dati del pezzo di equipaggiamento slot (0 = arma, 1..5 = armatura) */
+/* copies into out the data of the equipment piece in slot (0 = weapon, 1..5 = armor) */
 u8 *menu_get_equip_slot(void *self, u8 *out, u32 slot_arg, u8 *hunter)
 {
     u8 slot = slot_arg;

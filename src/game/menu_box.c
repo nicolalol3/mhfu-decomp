@@ -1,6 +1,6 @@
-/* Menu di gioco (classe C++ di 0x1220 byte, istanza globale in D_089CBBEC):
- * creazione/distruzione e disegno di alcune finestre (oggetti, quantità, prezzi).
- * La struttura non è ancora ricostruita: campi indicati per offset. (Nomi ipotetici.) */
+/* In-game menu (C++ class of 0x1220 bytes, global instance in D_089CBBEC):
+ * creation/destruction and drawing of some windows (items, quantities, prices).
+ * The structure is not yet rebuilt: fields are given by offset. (Names are guesses.) */
 #include "menu.h"
 
 
@@ -20,7 +20,7 @@ void *menu_ctor(void *self)
     return self;
 }
 
-/* distruttori degli elementi (liberano la memoria se richiesto) */
+/* destructors of the elements (free the memory if requested) */
 void *menu_item_dtor(void *self, s32 del_arg)
 {
     s16 del = del_arg;
@@ -37,7 +37,7 @@ void *func_08816B24(void *self, s32 del_arg)
     return self;
 }
 
-/* distruttore del menu */
+/* destructor of the menu */
 void *menu_dtor(void *self, s32 del_arg)
 {
     s16 del = del_arg;
@@ -51,7 +51,7 @@ void *menu_dtor(void *self, s32 del_arg)
     return self;
 }
 
-/* apertura del menu: azzera lo stato e prepara i dati */
+/* opening the menu: resets the state and prepares the data */
 void menu_open(void *self)
 {
     u8 *g;
@@ -142,7 +142,7 @@ void menu_open(void *self)
     U32(self, 0x1194) = 0;
 }
 
-/* scritta "%s" con il testo id alle coordinate del riquadro */
+/* text "%s" with the string id at the coordinates of the box */
 static void draw_title_text(void *self)
 {
     func_08890DE8(D_08A631A8, 14, 14);
@@ -150,7 +150,7 @@ static void draw_title_text(void *self)
                   func_0885151C(D_089CC438, D_089AC588[U8(self, 0x537)]));
 }
 
-/* finestra di conferma/scelta */
+/* confirm/choice window */
 void menu_draw_choice(void *self)
 {
     u8 layout[0x28], layout2[0x24];
@@ -223,7 +223,7 @@ void menu_draw_choice(void *self)
     }
 }
 
-/* nome oggetto (id) con colore: 5 = evidenziato, 10 = non disponibile */
+/* item name (id) with color: 5 = highlighted, 10 = not available */
 void menu_draw_item_name(void *self, int x, int y, s32 avail_arg, u32 id_arg, s32 hilite_arg)
 {
     s8 avail = avail_arg;
@@ -239,10 +239,10 @@ void menu_draw_item_name(void *self, int x, int y, s32 avail_arg, u32 id_arg, s3
         color = 10;
     else
         color = 0;
-    func_088915B0(D_08A631A8, x, y, color, D_08938478, func_08851528(D_089CC438, id_arg));   /* l'originale passa il valore ricevuto */
+    func_088915B0(D_08A631A8, x, y, color, D_08938478, func_08851528(D_089CC438, id_arg));   /* the original passes the received value */
 }
 
-/* cerca nella lista "slots" l'oggetto id e imposta il colore del testo */
+/* searches the list "slots" for item id and sets the text color */
 static void set_color_for_slot(void *self, u16 *slots, s16 id)
 {
     int i;
@@ -262,7 +262,7 @@ static void set_color_for_slot(void *self, u16 *slots, s16 id)
     }
 }
 
-/* finestra di scambio/baratto: due oggetti e dettagli */
+/* trade window: two items and details */
 void menu_draw_trade(void *self)
 {
     s16 xoff[7], pos[7][2], a[7], b[7];
@@ -317,7 +317,7 @@ void menu_draw_trade(void *self)
                     menu_draw_item_name(self, D_0893849C, (s16)(D_0893849E + D_089384A0), U8(self, 0x586),
                                         slots[U8(self, 0x586) * 2], 0);
             } else if (c == 2) {
-                /* l'originale qui non imposta l'ultimo argomento (valore casuale in t1) */
+                /* the original does not set the last argument here (random value in t1) */
                 menu_draw_item_name(self, D_089384EC, (s16)(D_0893849E + D_089384F0), U8(self, 0x5B1), U16(self, 0x5AE), 0);
             } else {
                 menu_draw_item_name(self, D_0893849C, (s16)(D_0893849E + D_089384A0), U8(self, 0x5B1), U16(self, 0x5AE), 0);

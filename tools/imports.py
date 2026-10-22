@@ -1,5 +1,5 @@
-"""Legge la tabella delle importazioni dell'EBOOT e scrive build/imports.tsv:
-indirizzo stub, libreria, NID, nome (dal database tools/nids.tsv)."""
+"""Reads the import table of the EBOOT and writes build/imports.tsv:
+address of the stub, library, NID, name (from the database tools/nids.tsv)."""
 import os, struct, sys
 sys.path.insert(0, os.path.dirname(__file__))
 from config import ORIG_ELF, BUILD, ROOT
@@ -10,7 +10,7 @@ _, off, vaddr, _, filesz, _, _, _ = struct.unpack_from("<8I", d, phoff)
 rd = lambda va, fmt: struct.unpack_from(fmt, d, off + va - vaddr)
 cstr = lambda va: d[off + va - vaddr:d.index(b"\0", off + va - vaddr)].decode()
 nids = {}
-for fn in ("nids.tsv", "nids_extra.tsv"):  # nids_extra: NID noti assenti dal PSPSDK
+for fn in ("nids.tsv", "nids_extra.tsv"):  # nids_extra: known NIDs missing from the PSPSDK
     nids.update(l.rstrip("\n").split("\t") for l in open(os.path.join(ROOT, "tools", fn)))
 
 # .lib.stub: 0x0890E6D4 - 0x0890E97C
@@ -28,4 +28,4 @@ with open(os.path.join(BUILD, "imports.tsv"), "w") as f:
     for r in rows:
         f.write("%08X\t%s\t%s\t%s\n" % r)
 known = sum(1 for r in rows if not r[3].endswith(r[2]))
-print("Import: %d, con nome: %d" % (len(rows), known))
+print("Imports: %d, with name: %d" % (len(rows), known))

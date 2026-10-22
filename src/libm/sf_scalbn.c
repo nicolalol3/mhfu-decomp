@@ -1,4 +1,4 @@
-/* scalbnf: x * 2^n calcolato modificando l'esponente (fdlibm/newlib). */
+/* scalbnf: x * 2^n computed by changing the exponent (fdlibm/newlib). */
 #include "libm.h"
 
 f32 copysignf(f32 x, f32 y);
@@ -19,7 +19,7 @@ f32 scalbnf(f32 x, int n)
     if (hx == 0)
         return x;
     if (hx >= 0x7f800000)
-        return x + x; /* NaN o inf */
+        return x + x; /* NaN or inf */
     if (hx < 0x00800000) { /* subnormale */
         x *= two25;
         ix = f32_bits(x);
@@ -33,7 +33,7 @@ f32 scalbnf(f32 x, int n)
     if (k > 0) /* risultato normale */
         return bits_f32((ix & 0x807fffff) | (k << 23));
     if (k < -22) {
-        if (n > 50000) /* nel caso n+k sia andato in overflow */
+        if (n > 50000) /* in case n+k has overflowed */
             return huge * copysignf(huge, x);
         return tiny * copysignf(tiny, x);
     }

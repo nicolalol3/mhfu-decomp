@@ -1,14 +1,14 @@
-/* Conversione dei testi fra Shift-JIS, UTF-8 e UTF-16 (stringhe a 16 bit).
- * Sono metodi di una classe C++: il primo argomento ("self") non viene usato.
- * (Nomi ipotetici.) */
+/* Conversion of texts between Shift-JIS, UTF-8 and UTF-16 (16-bit strings).
+ * These are methods of a C++ class: the first argument ("self") is not used.
+ * (Guessed names.) */
 #include "libc.h"
 
-extern const s16 D_08910968[];   /* tabella codice JIS -> Unicode */
-extern void *D_089CBBE8;          /* istanza globale del convertitore */
+extern const s16 D_08910968[];   /* table: JIS code -> Unicode */
+extern void *D_089CBBE8;          /* global instance of the converter */
 int memcmp(const void *a, const void *b, size_t n);
 
-/* legge un carattere Shift-JIS da *pp e lo restituisce come codice JIS
- * (bit 15 = piano 2 per i codici 0xF0-0xFC); 0x3F ('?') se non valido */
+/* reads a Shift-JIS character from *pp and returns it as a JIS code
+ * (bit 15 = plane 2 for codes 0xF0-0xFC); 0x3F ('?') if invalid */
 u32 sjis_decode(void *self, const u8 **pp)
 {
     const u8 *p = *pp;
@@ -60,7 +60,7 @@ u32 sjis_decode(void *self, const u8 **pp)
 int func_088167E0(void *self, u32 c);
 int func_088167EC(void *self, u32 c);
 
-/* legge un carattere UTF-8 da *pp; 0x3F se non valido o fuori dai 16 bit */
+/* reads a UTF-8 character from *pp; 0x3F if invalid or outside the 16 bits */
 u32 utf8_decode(void *self, const u8 **pp)
 {
     const u8 *p = *pp;
@@ -88,7 +88,7 @@ u32 utf8_decode(void *self, const u8 **pp)
     return c & 0xFFFF;
 }
 
-/* scrive il carattere c in UTF-8 a *pp e avanza il puntatore */
+/* writes character c in UTF-8 at *pp and advances the pointer */
 void utf8_encode(void *self, u8 **pp, u32 c)
 {
     u8 *p = *pp, *end, *q;
@@ -120,7 +120,7 @@ void utf8_encode(void *self, u8 **pp, u32 c)
     *pp = end;
 }
 
-/* codice JIS -> Unicode (0x3F se non presente nella tabella) */
+/* JIS code -> Unicode (0x3F if not present in the table) */
 u16 jis_to_unicode(void *self, u32 c)
 {
     u16 u;
@@ -133,8 +133,8 @@ u16 jis_to_unicode(void *self, u32 c)
     return u;
 }
 
-/* converte una stringa Shift-JIS in UTF-8 (al massimo size-1 byte + zero finale);
- * restituisce il numero di caratteri convertiti */
+/* converts a Shift-JIS string to UTF-8 (at most size-1 bytes + final zero);
+ * returns the number of characters converted */
 int sjis_to_utf8(void *self, u8 *dst, int size, const u8 *src)
 {
     u8 buf[4], *w, *s;
@@ -170,7 +170,7 @@ int sjis_to_utf8(void *self, u8 *dst, int size, const u8 *src)
     return count;
 }
 
-/* converte una stringa UTF-8 in UTF-16; restituisce il numero di caratteri */
+/* converts a UTF-8 string to UTF-16; returns the number of characters */
 int utf8_to_utf16(void *self, s16 *dst, int size, const u8 *src)
 {
     int count = 0;
@@ -210,7 +210,7 @@ int func_088167EC(void *self, u32 c)
     return func_088167D4(self, c);
 }
 
-/* lunghezza di una stringa a 16 bit */
+/* length of a 16-bit string */
 int wstr_len(void *self, const s16 *s)
 {
     int n = 0;
@@ -222,7 +222,7 @@ int wstr_len(void *self, const s16 *s)
     return n;
 }
 
-/* cerca la stringa a 16 bit "needle" dentro "hay" */
+/* searches for the 16-bit string "needle" inside "hay" */
 const s16 *wstr_find(void *self, const s16 *hay, const s16 *needle)
 {
     int left = wstr_len(D_089CBBE8, hay);
@@ -243,14 +243,14 @@ const s16 *wstr_find(void *self, const s16 *hay, const s16 *needle)
     return NULL;
 }
 
-/* il carattere a 16 bit è una lettera minuscola a-z? */
+/* is the 16-bit character a lowercase letter a-z? */
 int wchar_is_lower(void *self, u32 c_arg)
 {
     u16 c = c_arg;
     return c >= 0x61 && c < 0x7B;
 }
 
-/* lunghezza in byte della sequenza UTF-8 che inizia con il byte c (0 se non valido) */
+/* length in bytes of the UTF-8 sequence starting with byte c (0 if invalid) */
 int utf8_seq_len(void *self, u32 c_arg)
 {
     u8 c = c_arg;
@@ -267,7 +267,7 @@ int utf8_seq_len(void *self, u32 c_arg)
     return 0;
 }
 
-/* numero di byte di una stringa UTF-8 (somma delle sequenze) */
+/* number of bytes of a UTF-8 string (sum of the sequences) */
 int utf8_byte_len(void *self, const u8 *s)
 {
     int n = 0;

@@ -1,6 +1,6 @@
-// Rinomina funzioni in Ghidra da un file TSV: indirizzo<TAB>nome (altre colonne ignorate;
-// se ci sono 4 colonne il nome è nella quarta, formato build/imports.tsv).
-// Uso: -postScript ApplyNames.java <file.tsv>
+// Renames functions in Ghidra from a TSV file: address<TAB>name (other columns ignored;
+// if there are 4 columns the name is in the fourth one (format of build/imports.tsv).
+// Usage: -postScript ApplyNames.java <file.tsv>
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.symbol.SourceType;

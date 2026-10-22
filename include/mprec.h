@@ -1,23 +1,23 @@
-/* Numeri interi grandi ("Bigint") usati per convertire i double in testo (dtoa) con
- * precisione esatta. Da mprec.c di newlib (David M. Gay). */
+/* Big integers ("Bigint") used to convert doubles to text (dtoa) with
+ * exact precision. From mprec.c of newlib (David M. Gay). */
 #ifndef MPREC_H
 #define MPREC_H
 #include "libc.h"
 
 typedef struct _Bigint {
-    struct _Bigint *_next;  /* lista dei liberi / catena delle potenze di 5 */
-    int _k;                 /* può contenere 1 << _k parole */
+    struct _Bigint *_next;  /* free list / chain of the powers of 5 */
+    int _k;                 /* can hold 1 << _k words */
     int _maxwds;
     int _sign;
     int _wds;               /* parole usate */
-    u32 _x[1];              /* cifre in base 2^32, dalla meno significativa */
+    u32 _x[1];              /* digits in base 2^32, from the least significant */
 } _Bigint;
 
-/* nella struct _reent */
+/* in the struct _reent */
 #define REENT_P5S(r)      (*(_Bigint **)((u8 *)(r) + 0x48))  /* potenze 5^(4*2^n) */
-#define REENT_FREELIST(r) (*(_Bigint ***)((u8 *)(r) + 0x4C)) /* liste dei Bigint liberi */
+#define REENT_FREELIST(r) (*(_Bigint ***)((u8 *)(r) + 0x4C)) /* free Bigint lists */
 
-/* parti di un double (little endian: word0 = metà alta con segno ed esponente) */
+/* parts of a double (little endian: word0 = high half, with sign and exponent) */
 typedef union { f64 d; u32 i[2]; } double_union;
 #define word0(x) ((x).i[1])
 #define word1(x) ((x).i[0])

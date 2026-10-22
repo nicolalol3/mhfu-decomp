@@ -1,4 +1,4 @@
-/* sinf e cosf: riducono l'angolo a [-pi/4, pi/4] e usano i nuclei __kernel_sinf/__kernel_cosf
+/* sinf and cosf: reduce the angle to [-pi/4, pi/4] and use the kernels __kernel_sinf/__kernel_cosf
  * (fdlibm, Sun Microsystems). */
 #include "libm.h"
 
@@ -14,7 +14,7 @@ f32 cosf(f32 x)
     ix = f32_bits(x) & 0x7fffffff;
     if (ix <= 0x3f490fd8) /* |x| <= pi/4 */
         return __kernel_cosf(x, z);
-    if (ix >= 0x7f800000) /* cos(inf o NaN) = NaN */
+    if (ix >= 0x7f800000) /* cos(inf or NaN) = NaN */
         return x - x;
     n = __ieee754_rem_pio2f(x, y);
     switch (n & 3) {
@@ -33,7 +33,7 @@ f32 sinf(f32 x)
     ix = f32_bits(x) & 0x7fffffff;
     if (ix <= 0x3f490fd8) /* |x| <= pi/4 */
         return __kernel_sinf(x, z, 0);
-    if (ix >= 0x7f800000) /* sin(inf o NaN) = NaN */
+    if (ix >= 0x7f800000) /* sin(inf or NaN) = NaN */
         return x - x;
     n = __ieee754_rem_pio2f(x, y);
     switch (n & 3) {

@@ -1,7 +1,7 @@
-"""Gira in WSL: dai prototipi degli header PSPSDK ricava quanti registri intero (a0-a3, t0-t3)
-usano i parametri di ogni funzione sce* (convenzione EABI: i valori a 64 bit occupano una coppia
-di registri allineata). I float vanno nei registri FPU e non sono contati.
-Scrive tools/sce_argc.tsv (nome<TAB>indici dei registri, es. "0,2,3,4")."""
+"""Runs in WSL: from the PSPSDK header prototypes, finds how many integer registers (a0-a3, t0-t3)
+the parameters of each sce* function use (EABI convention: 64-bit values occupy an aligned
+register pair). Floats go in the FPU registers and are not counted.
+Writes tools/sce_argc.tsv (name<TAB>register indexes, e.g. "0,2,3,4")."""
 import os, re
 
 INC = "/opt/pspdev/psp/sdk/include"
@@ -24,7 +24,7 @@ def split_params(params):
 
 
 def int_regs(params):
-    """Indici dei registri intero usati (0=a0 ... 7=t3); i registri di allineamento sono esclusi."""
+    """Indexes of the integer registers used (0=a0 ... 7=t3); alignment registers are excluded."""
     regs, n = [], 0
     for p in split_params(params):
         if p in ("", "void", "..."):

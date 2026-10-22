@@ -1,17 +1,17 @@
-/* powf: involucro di __ieee754_powf che segnala gli errori secondo _LIB_VERSION
- * (chiamando matherr e impostando errno), come nella newlib usata dal gioco. */
+/* powf: wrapper around __ieee754_powf that reports errors according to _LIB_VERSION
+ * (calling matherr and setting errno), as in the newlib used by the game. */
 #include "libm.h"
 
 #define EDOM 33
 #define ERANGE 34
 
-/* valori di _LIB_VERSION */
+/* _LIB_VERSION values */
 #define _IEEE_  -1
 #define _SVID_  0
 #define _XOPEN_ 1
 #define _POSIX_ 2
 
-/* tipi di errore per struct exception */
+/* error types for struct exception */
 #define DOMAIN    1
 #define OVERFLOW  3
 #define UNDERFLOW 4
@@ -25,7 +25,7 @@ struct exception {
     int err;
 };
 
-extern int _LIB_VERSION; /* nel gioco vale _XOPEN_ */
+extern int _LIB_VERSION; /* in the game it is _XOPEN_ */
 int *__errno(void);
 int matherr(struct exception *exc);
 int finitef(f32 x);
@@ -80,7 +80,7 @@ f32 powf(f32 x, f32 y)
             return (f32)exc.retval;
         }
         if (finitef(y) && y < 0.0) {
-            /* 0 elevato a un negativo */
+            /* 0 raised to a negative power */
             exc.type = DOMAIN;
             exc.name = "powf";
             exc.err = 0;
@@ -103,7 +103,7 @@ f32 powf(f32 x, f32 y)
     if (!finitef(z)) {
         if (finitef(x) && finitef(y)) {
             if (isnanf(z)) {
-                /* negativo elevato a non intero */
+                /* negative number raised to a non-integer power */
                 exc.type = DOMAIN;
                 exc.name = "powf";
                 exc.err = 0;

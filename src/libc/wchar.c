@@ -1,21 +1,21 @@
-/* Libreria C: conversione di caratteri "larghi" (16 bit) in caratteri multibyte, secondo
- * la codifica scelta con setlocale: "C-UTF-8", "C-SJIS", "C-EUCJP", "C-JIS" o semplice. */
+/* C library: conversion of "wide" (16-bit) characters to multibyte characters, according to
+ * the encoding chosen with setlocale: "C-UTF-8", "C-SJIS", "C-EUCJP", "C-JIS" or plain. */
 #include "libc.h"
 
 typedef u16 wchar_t16;
-typedef struct { int __count; int __value; } mbstate_t; /* __count: stato di JIS */
+typedef struct { int __count; int __value; } mbstate_t; /* __count: JIS state */
 
 #define EILSEQ 138
 
-extern char __lc_ctype[]; /* nome della codifica dei caratteri (LC_CTYPE) */
+extern char __lc_ctype[]; /* name of the character encoding (LC_CTYPE) */
 
 #define _issjis1(c) (((c) >= 0x81 && (c) <= 0x9f) || ((c) >= 0xe0 && (c) <= 0xef))
 #define _issjis2(c) (((c) >= 0x40 && (c) <= 0x7e) || ((c) >= 0x80 && (c) <= 0xfc))
 #define _iseucjp(c) ((c) >= 0xa1 && (c) <= 0xfe)
 #define _isjis(c)   ((c) >= 0x21 && (c) <= 0x7e)
 
-/* Scrive in s il carattere wchar; ritorna i byte scritti o -1 se non è rappresentabile.
- * Con s == NULL dice se la codifica ha uno stato (1) o no (0). */
+/* Writes the wide character wchar into s; returns the bytes written, or -1 if it cannot be represented.
+ * With s == NULL says whether the encoding has a state (1) or not (0). */
 int _wctomb_r(struct _reent *r, char *s, wchar_t16 wchar, mbstate_t *state)
 {
     u8 char1 = wchar >> 8, char2 = (u8)wchar;
@@ -34,7 +34,7 @@ int _wctomb_r(struct _reent *r, char *s, wchar_t16 wchar, mbstate_t *state)
             *s = 0x80 | (wchar & 0x3f);
             return 2;
         }
-        if (wchar >= 0xd800 && wchar <= 0xdfff) /* metà di coppie UTF-16 */
+        if (wchar >= 0xd800 && wchar <= 0xdfff) /* half of a UTF-16 surrogate pair */
             return -1;
         *s++ = 0xe0 | ((wchar & 0xf000) >> 12);
         *s++ = 0x80 | ((wchar & 0xfc0) >> 6);
@@ -70,7 +70,7 @@ int _wctomb_r(struct _reent *r, char *s, wchar_t16 wchar, mbstate_t *state)
         if (char1 != 0) {
             if (_isjis(char1) && _isjis(char2)) {
                 if (state->__count == 0) {
-                    /* passa da ASCII a JIS */
+                    /* switches from ASCII to JIS */
                     state->__count = 1;
                     *s++ = 0x1b;
                     *s++ = '$';
@@ -84,7 +84,7 @@ int _wctomb_r(struct _reent *r, char *s, wchar_t16 wchar, mbstate_t *state)
             return -1;
         }
         if (state->__count != 0) {
-            /* torna da JIS ad ASCII */
+            /* switches back from JIS to ASCII */
             state->__count = 0;
             *s++ = 0x1b;
             *s++ = '(';
@@ -117,8 +117,8 @@ int _wcrtomb_r(struct _reent *ptr, char *s, wchar_t16 wc, mbstate_t *ps)
     return retval;
 }
 
-/* Converte la stringa larga *src; dst == NULL: conta solo i byte necessari.
- * Si ferma prima di un carattere che non entra in len byte. */
+/* Converts the wide string *src; dst == NULL: only counts the bytes needed.
+ * Stops before a character that does not fit in len bytes. */
 size_t _wcsrtombs_r(struct _reent *r, char *dst, const wchar_t16 **src, size_t len, mbstate_t *ps)
 {
     char *ptr = dst;
@@ -142,7 +142,7 @@ size_t _wcsrtombs_r(struct _reent *r, char *dst, const wchar_t16 **src, size_t l
             return (size_t)-1;
         }
         if (len - bytes < n || len <= (size_t)bytes) {
-            /* non c'è posto: rimette lo stato com'era prima */
+            /* no room: restores the state as it was before */
             ps->__value = wch;
             ps->__count = count;
             return n;

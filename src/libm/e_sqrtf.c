@@ -1,4 +1,4 @@
-/* __ieee754_sqrtf: radice quadrata calcolata bit per bit (fdlibm, Sun Microsystems). */
+/* __ieee754_sqrtf: square root computed bit by bit (fdlibm, Sun Microsystems). */
 #include "libm.h"
 
 static const f32 one = 1.0f;
@@ -18,7 +18,7 @@ f32 __ieee754_sqrtf(f32 x)
     if (hx == 0)
         return x; /* sqrt(+-0) = +-0 */
     if (ix < 0)
-        return (x - x) / (x - x); /* sqrt(negativo) = NaN */
+        return (x - x) / (x - x); /* sqrt(negative) = NaN */
 
     /* normalizza x */
     m = ix >> 23;
@@ -29,11 +29,11 @@ f32 __ieee754_sqrtf(f32 x)
     }
     m -= 127;
     ix = (ix & 0x007fffff) | 0x00800000;
-    if (m & 1) /* esponente dispari: raddoppia x */
+    if (m & 1) /* odd exponent: doubles x */
         ix += ix;
     m >>= 1;
 
-    /* genera sqrt(x) un bit alla volta */
+    /* generates sqrt(x) one bit at a time */
     ix += ix;
     q = s = 0;
     r = 0x01000000;
@@ -48,7 +48,7 @@ f32 __ieee754_sqrtf(f32 x)
         r >>= 1;
     }
 
-    /* arrotondamento: le somme con tiny scelgono la direzione */
+    /* rounding: the sums with tiny choose the direction */
     if (ix != 0) {
         z = one - tiny;
         if (z >= one) {

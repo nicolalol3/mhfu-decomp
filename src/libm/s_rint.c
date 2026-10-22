@@ -1,5 +1,5 @@
-/* rint (double): arrotonda all'intero più vicino nella modalità corrente, sfruttando
- * l'addizione e sottrazione di 2^52 (fdlibm, Sun Microsystems). */
+/* rint (double): rounds to the nearest integer in the current mode, using
+ * the addition and subtraction of 2^52 (fdlibm, Sun Microsystems). */
 #include "libm.h"
 
 static const f64 TWO52[2] = {
@@ -29,12 +29,12 @@ f64 rint(f64 x)
             u.w[1] = i0;
             w = TWO52[sx] + u.d;
             u.d = w - TWO52[sx];
-            u.w[1] = (u.w[1] & 0x7fffffff) | (sx << 31); /* conserva il segno di x */
+            u.w[1] = (u.w[1] & 0x7fffffff) | (sx << 31); /* keeps the sign of x */
             return u.d;
         } else {
             i = (0x000fffff) >> j0;
             if (((i0 & i) | i1) == 0)
-                return x; /* già intero */
+                return x; /* already an integer */
             i >>= 1;
             if (((i0 & i) | i1) != 0) {
                 if (j0 == 19)
@@ -45,12 +45,12 @@ f64 rint(f64 x)
         }
     } else if (j0 > 51) {
         if (j0 == 0x400)
-            return x + x; /* inf o NaN */
-        return x;         /* già intero */
+            return x + x; /* inf or NaN */
+        return x;         /* already an integer */
     } else {
         i = ((u32)(0xffffffff)) >> (j0 - 20);
         if ((i1 & i) == 0)
-            return x; /* già intero */
+            return x; /* already an integer */
         i >>= 1;
         if ((i1 & i) != 0)
             i1 = (i1 & (~i)) | ((0x40000000) >> (j0 - 20));

@@ -1,28 +1,28 @@
-"""Input di prova su misura per le funzioni che accettano solo argomenti con vincoli precisi.
-Ogni funzione riceve un generatore casuale e gli input generici (args, fargs, scratch)
-e li adatta; i nomi sono quelli delle funzioni in C.
-Una spec può ritornare anche una funzione setup(m): viene eseguita prima della prova (sia
-per l'originale sia per il C) e prepara lo stato chiamando funzioni ORIGINALI con
-m.call(indirizzo, argomenti...); ritorna gli argomenti definitivi."""
+"""Hand-made test inputs for the functions that accept only arguments with precise constraints.
+Each function receives a random generator and the generic inputs (args, fargs, scratch)
+and adapts them; the names are those of the functions in C.
+A spec can also return a function setup(m): it is run before the test (both
+for the original and for the C) and prepares the state by calling ORIGINAL functions with
+m.call(address, arguments...); it returns the final arguments."""
 import os, random, struct
 
 SCRATCH = 0x09E00000
-TWO_OVER_PI = 0x0890FBB4  # tabella originale delle cifre di 2/pi
-RET_MAGIC = 0x08800010    # indirizzo dove il banco di prova si ferma
+TWO_OVER_PI = 0x0890FBB4  # original table of the digits of 2/pi
+RET_MAGIC = 0x08800010    # address where the test bench stops
 
-# funzioni originali usate nelle preparazioni
+# original functions used in the preparations
 O_MALLOC_R, O_FREE_R, O_REALLOC_R = 0x0880B70C, 0x0880AA40, 0x0880DB74
 O_ATEXIT, O_EXIT_SYS = 0x08808ACC, 0x088041C8
 O_ABS, O_ISATTY, O_LOCALECONV_R = 0x08808AC0, 0x0880455C, 0x0880B42C
 O_SSEEK, O_SWRITE = 0x0880EA8C, 0x0880EA08
 G_SBRK_CUR, G_SBRK_START, G_SBRK_END = 0x089CBA90, 0x089CBA94, 0x089CBA98
-IMPURE = 0x089332C8       # struct _reent del modulo principale
+IMPURE = 0x089332C8       # struct _reent of the main module
 HEAP_LO, HEAP_HI = 0x09F00000, 0x09F80000
-REENT = SCRATCH + 0x7000  # struct _reent finta per i parametri "r"
+REENT = SCRATCH + 0x7000  # dummy struct _reent for the "r" parameters
 
 
 def newcode_sym(name):
-    """Indirizzo di un simbolo del C ricompilato (da build/newcode.nm)."""
+    """Address of a symbol of the recompiled C (from build/newcode.nm)."""
     p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "newcode.nm")
     for line in open(p):
         f = line.split()
@@ -36,16 +36,16 @@ def w32(m, addr, *vals):
 
 
 def stop_at(m, addr):
-    """Sostituisce la funzione all'indirizzo con un salto al punto di arresto.
-    (run() svuota poi la cache del codice tradotto di unicorn, altrimenti potrebbe
-    continuare a eseguire la versione vecchia; fermarsi con emu_stop da un hook invece
-    manda unicorn 2.1.4 in crash alla prova successiva.)"""
+    """Replaces the function at the address with a jump to the stop point.
+    (run() then empties the translated-code cache of unicorn, otherwise it could
+    keep running the old version; stopping with emu_stop from a hook instead
+    makes unicorn 2.1.4 crash on the next test.)"""
     w32(m, addr, 0x08000000 | ((RET_MAGIC >> 2) & 0x03FFFFFF), 0)
     m.code_patched = True
 
 
 def kernel_rem_pio2f(rng, args, fargs, scratch):
-    # x[]: nx float interi in [0, 255] (il primo non nullo), come li prepara __ieee754_rem_pio2f
+    # x[]: nx floats, integers in [0, 255] (the first non-zero), as prepared by __ieee754_rem_pio2f
     tx = [float(rng.randrange(1, 256))] + [float(rng.randrange(256)) for _ in range(2)]
     scratch = bytearray(scratch)
     scratch[0:12] = struct.pack("<3f", *tx)
@@ -72,8 +72,8 @@ def rand_size(r):
 
 
 def heap_ops(m, r, nops):
-    """Prepara un heap realistico: sbrk su una zona libera e una sequenza casuale di
-    malloc/free/realloc originali. Ritorna i puntatori ancora allocati."""
+    """Prepares a realistic heap: sbrk on a free area and a random sequence of
+    original malloc/free/realloc calls. Returns the pointers still allocated."""
     w32(m, G_SBRK_CUR, HEAP_LO, HEAP_LO, HEAP_HI)
     live = []
     for _ in range(nops):
@@ -119,7 +119,7 @@ SPECS_HEAP = {
 }
 
 
-# --- memoria e stringhe -------------------------------------------------------------
+# --- memory and strings -------------------------------------------------------------
 
 def mem_spec(nptr, with_c):
     def spec(rng, args, fargs, scratch):
@@ -129,9 +129,9 @@ def mem_spec(nptr, with_c):
         n = rng.choice([0, 1, 3, 4, 7, 8, 15, 16, 17, 31, 32, 33]) if rng.random() < 0.4 else rng.randrange(0, 1500)
         c = rng.choice([0, 0xFF, rng.getrandbits(8), rng.getrandbits(32)])
         scratch = bytearray(scratch)
-        if rng.random() < 0.5:  # zone uguali, per memcmp
+        if rng.random() < 0.5:  # equal areas, for memcmp
             scratch[b - SCRATCH:b - SCRATCH + n] = scratch[a - SCRATCH:a - SCRATCH + n]
-        if with_c and rng.random() < 0.5 and n:  # il byte cercato da memchr
+        if with_c and rng.random() < 0.5 and n:  # the byte searched by memchr
             scratch[a - SCRATCH + rng.randrange(n)] = c & 0xFF
         if nptr == 2:
             args[:3] = [a, b, n]
@@ -147,7 +147,7 @@ FP = SCRATCH + 0x2000
 
 
 def make_file(rng, scratch, addr, write_fn=O_SWRITE):
-    """FILE plausibile: flag, descrittore e buffer dentro la zona scratch."""
+    """Plausible FILE: flags, descriptor and buffer inside the scratch area."""
     base = SCRATCH + 0x3000 + rng.randrange(0, 0x400)
     flags = rng.choice([0, 4, 8, 9, 10, 0x18, 0x88, 0x808, rng.getrandbits(16)])
     f = struct.pack("<IiihhIiiIIIII", base + rng.randrange(0, 300), 0, 0, flags - (flags >> 15 << 16),
@@ -187,11 +187,11 @@ def fwalk_spec(rng, args, fargs, scratch):
     s = SCRATCH + 0x1000
     scratch = bytearray(scratch)
     o = s - SCRATCH
-    # due blocchi di FILE concatenati
+    # two chained blocks of FILEs
     g2 = SCRATCH + 0x1800
     scratch[o + 0x25C:o + 0x268] = struct.pack("<IiI", g2 if rng.random() < 0.5 else 0, rng.randrange(0, 4), s + 0x268)
     scratch[g2 - SCRATCH:g2 - SCRATCH + 12] = struct.pack("<IiI", 0, rng.randrange(0, 4), SCRATCH + 0x4000)
-    for i in range(8):  # metà dei FILE in uso
+    for i in range(8):  # half of the FILEs in use
         for fbase in (s + 0x268, SCRATCH + 0x4000):
             fo = fbase - SCRATCH + i * 0x5C + 12
             scratch[fo:fo + 2] = struct.pack("<h", rng.choice([0, 0, 1, -1, rng.getrandbits(15)]))
@@ -200,7 +200,7 @@ def fwalk_spec(rng, args, fargs, scratch):
     return args, fargs, bytes(scratch)
 
 
-# --- stdlib e locale -----------------------------------------------------------------
+# --- stdlib and locale -----------------------------------------------------------------
 
 def atexit_spec(rng, args, fargs, scratch):
     seed, n = rng.getrandbits(32), rng.choice([0, 1, 5, 31, 32, 33, 40])
@@ -215,7 +215,7 @@ def atexit_spec(rng, args, fargs, scratch):
 
 
 def exit_spec(rng, args, fargs, scratch):
-    """exit/abort: le funzioni registrate vengono chiamate, poi ci si ferma su _exit."""
+    """exit/abort: the registered functions are called, then it stops on _exit."""
     seed, n = rng.getrandbits(32), rng.choice([0, 1, 3, 31, 32, 34])
     code = args[0]
 
@@ -223,10 +223,10 @@ def exit_spec(rng, args, fargs, scratch):
         r = random.Random(seed)
         heap_ops(m, r, 3)
         for _ in range(n):
-            # (non abs: la sua istruzione max emulata dentro una funzione chiamata da exit
-            # fa sbagliare unicorn)
+            # (not abs: its max instruction emulated inside a function called by exit
+            # makes unicorn fail)
             m.call(O_ATEXIT, r.choice([O_ISATTY, O_LOCALECONV_R]))
-        if n:  # alcune come on_exit (con argomento)
+        if n:  # some like on_exit (with an argument)
             p = struct.unpack("<I", m.uc.mem_read(IMPURE + 0x148, 4))[0]
             w32(m, p + 0x108, r.getrandbits(32))
         stop_at(m, O_EXIT_SYS)
@@ -248,7 +248,7 @@ MODREENT_TABLE = 0x089CBADC
 
 
 def reent_spec(rng, args, fargs, scratch):
-    """k0 -> dati del thread -> (byte 4) thread -> (0x37C) id modulo; tabella modulo->reent."""
+    """k0 -> thread data -> (byte 4) thread -> (0x37C) module id; module->reent table."""
     seed = rng.getrandbits(32)
 
     def setup(m):
@@ -259,7 +259,7 @@ def reent_spec(rng, args, fargs, scratch):
             w32(m, td + 4, thr if r.random() < 0.9 else 0)
         modid = r.choice([r.randrange(0, 200), -r.randrange(1, 200), r.getrandbits(31)])
         w32(m, thr + 0x37C, modid & 0xFFFFFFFF)
-        h = modid - int(modid / 32) * 32  # resto col segno, come il % del C
+        h = modid - int(modid / 32) * 32  # remainder with sign, as the C %
         tables = [MODREENT_TABLE] + ([t2] if r.random() < 0.5 else [])
         w32(m, MODREENT_TABLE, tables[1] if len(tables) > 1 else 0)
         if len(tables) > 1:
@@ -273,8 +273,8 @@ def reent_spec(rng, args, fargs, scratch):
 
 
 def raise_spec(with_reent):
-    """struct _reent con la tabella dei gestori assente (va creata con malloc) o presente,
-    con gestori predefinito/ignora/errore o una funzione innocua."""
+    """struct _reent with the table of handlers absent (to be created with malloc) or present,
+    with default/ignore/error handlers or a harmless function."""
     def spec(rng, args, fargs, scratch):
         seed = rng.getrandbits(32)
         sig = rng.choice([0, 6, 31, 32, -1, rng.randrange(0, 32)])
@@ -318,25 +318,25 @@ SPECS = {
 SPECS.update(SPECS_HEAP)
 
 
-# --- numeri grandi (Bigint, usati da printf per i numeri con la virgola) ----------------
+# --- big numbers (Bigint, used by printf for floating-point numbers) ----------------
 
 O_BALLOC = 0x0880D8C4
 
 
 def reent_zero(m):
-    """struct _reent finta azzerata (liste dei Bigint liberi, risultati di dtoa)."""
+    """Dummy zeroed struct _reent (lists of the free Bigints, dtoa results)."""
     m.uc.mem_write(REENT, b"\0" * 0x300)
 
 
 def make_bigint(m, r, k=None):
-    """Bigint vero creato con il Balloc originale e riempito a caso."""
+    """Real Bigint created with the original Balloc and filled at random."""
     k = r.randrange(0, 4) if k is None else k
     b = m.call(O_BALLOC, REENT, k)
     maxwds = 1 << k
     wds = r.randrange(1, maxwds + 1)
     words = [r.choice([0, 1, 0xFFFFFFFF, r.getrandbits(32)]) for _ in range(wds)]
     if words[-1] == 0:
-        words[-1] = r.getrandbits(32) | 1  # la cifra più alta non è zero
+        words[-1] = r.getrandbits(32) | 1  # the highest digit is not zero
     w32(m, b + 12, r.choice([0, 0, 1]), wds, *words)
     return b
 
@@ -355,7 +355,7 @@ def bigint_spec(make_args):
 
 
 def rand_double_words(r):
-    """double come coppia di parole (bassa, alta): valori comuni, estremi e speciali."""
+    """double as a pair of words (low, high): common, extreme and special values."""
     k = r.random()
     if k < 0.6:
         v = r.choice([r.uniform(-1e6, 1e6), r.uniform(-1, 1), float(r.randrange(-1000, 1000)),
@@ -388,11 +388,11 @@ SPECS.update({
 })
 
 
-# --- printf e simili -------------------------------------------------------------------
+# --- printf and similar -------------------------------------------------------------------
 
 FORMATS = [b"%d", b"%5d|%-5d|%05d", b"%x %X %o", b"%s", b"%10.3s|", b"%c%c", b"%%", b"%u", b"%+d % d",
            b"%ld %hd", b"%f", b"%.2f", b"%e", b"%g", b"%10.4e|%-12g|", b"%#x %#o", b"%p",
-           b"Vita: %d/%d", b"%3d%%", b"testo senza formato", b"%*d", b"%.*f", b"%s e %s", b"%08.3f"]
+           b"Life: %d/%d", b"%3d%%", b"text without format", b"%*d", b"%.*f", b"%s and %s", b"%08.3f"]
 FMT, VA, STR, BUF = SCRATCH + 0x100, SCRATCH + 0x200, SCRATCH + 0x300, SCRATCH + 0x1000
 O_SWRITE_FN = 0x0880EA08
 
@@ -401,10 +401,10 @@ def printf_spec(kind):
     """kind: 'v' = vfprintf(fp, fmt, ap), 'r' = _vfprintf_r(reent, fp, fmt, ap), 'sb' = __sbprintf."""
     def spec(rng, args, fargs, scratch):
         scratch = bytearray(scratch)
-        fmt = rng.choice(FORMATS) + rng.choice([b"", b" fine", b"\n"])
+        fmt = rng.choice(FORMATS) + rng.choice([b"", b" end", b"\n"])
         scratch[0x100:0x100 + len(fmt) + 1] = fmt + b"\0"
         scratch[0x300:0x300 + 9] = b"Rathalos\0"
-        # lista degli argomenti: interi piccoli, la stringa, double allineati a 8
+        # argument list: small integers, the string, doubles aligned to 8
         words = []
         for _ in range(8):
             c = rng.random()
@@ -415,9 +415,9 @@ def printf_spec(kind):
                 words += list(struct.unpack("<II", struct.pack("<d", v)))
         scratch[0x200:0x200 + 4 * len(words)] = struct.pack("<%dI" % len(words), *words)
         unbuf = kind == "sb" or rng.random() < 0.3
-        if unbuf:  # file senza buffer: passa per __sbprintf e __swrite
+        if unbuf:  # file without buffer: goes through __sbprintf and __swrite
             f = struct.pack("<IiihhIiiIIIII", 0, 0, 0, 0x000A, 1, 0, 0, 0, FP, 0x0880E978, O_SWRITE_FN, O_SSEEK, 0x0880EB20)
-        else:      # file su stringa, come sprintf
+        else:      # file on a string, like sprintf
             f = struct.pack("<IiihhIiiIIIII", BUF, 0, 0x7FFFFFFF, 0x0208, -1, BUF, 0x7FFFFFFF, 0, FP, 0, 0, 0, 0)
         scratch[FP - SCRATCH:FP - SCRATCH + len(f)] = f
         seed = rng.getrandbits(32)
@@ -438,17 +438,17 @@ SPECS.update({
 })
 
 
-# --- funzioni del gioco con argomenti da limitare --------------------------------------
+# --- game functions with arguments to constrain --------------------------------------
 
 def stars_spec(rng, args, fargs, scratch):
-    args[1] = rng.randrange(0, 17)   # numero di stelle (il buffer del gioco ne contiene ~20)
+    args[1] = rng.randrange(0, 17)   # number of stars (the game's buffer holds about 20)
     return args, fargs, scratch
 
 
 def resist_spec(rng, args, fargs, scratch):
-    args[3] = rng.randrange(0, 4)     # pagina
-    args[5] = rng.randrange(0, 10)    # righe per pagina
-    args[6] = rng.randrange(7, 0x80)  # nessuna voce evidenziata (l'evidenziazione usa la VFPU)
+    args[3] = rng.randrange(0, 4)     # page
+    args[5] = rng.randrange(0, 10)    # rows per page
+    args[6] = rng.randrange(7, 0x80)  # no entry highlighted (the highlight uses the VFPU)
     return args, fargs, scratch
 
 
@@ -459,7 +459,7 @@ SPECS.update({
 
 
 def _quorem_args(m, r):
-    """quorem(b, S): S con la cifra alta non nulla e b con al massimo le stesse parole di S."""
+    """quorem(b, S): S with a non-zero high digit and b with at most the same words as S."""
     S = make_bigint(m, r)
     sw = struct.unpack("<I", bytes(m.uc.mem_read(S + 16, 4)))[0]
     b = make_bigint(m, r, 0 if sw == 1 else None)

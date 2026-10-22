@@ -1,6 +1,6 @@
-/* Telecamera: impostazioni iniziali, tremolio (scosse) e transizioni.
- * La struttura della telecamera non è ancora ricostruita: i campi sono indicati
- * con il loro offset. (Nomi ipotetici.) */
+/* Camera: initial settings, shakes and transitions.
+ * The camera structure is not yet rebuilt: fields are indicated
+ * with their offset. (Guessed names.) */
 #include "libc.h"
 
 #define F32(p, off) (*(f32 *)((u8 *)(p) + (off)))
@@ -9,11 +9,11 @@
 #define U8(p, off)  (*(u8 *)((u8 *)(p) + (off)))
 
 f32 sinf(f32 x);
-extern f32 *D_08A62C40;               /* (puntatore a un fattore di scala globale) */
-extern const u32 D_08933A70[4];       /* valori iniziali della telecamera */
+extern f32 *D_08A62C40;               /* (pointer to a global scale factor) */
+extern const u32 D_08933A70[4];       /* initial camera values */
 extern const u32 D_08933A80[4];
-extern const s16 D_08933A98[];        /* durata delle scosse per tipo */
-extern const f32 D_08933AA8[];        /* raggio d'effetto delle scosse */
+extern const s16 D_08933A98[];        /* shake durations per type */
+extern const f32 D_08933AA8[];        /* effect radius of the shakes */
 extern const f32 D_08933A90;
 
 void func_08816264(void *cam);
@@ -33,14 +33,14 @@ static inline f32 fsqrt(f32 x)
     return r;
 }
 
-/* distanza fra due vettori 3D */
+/* distance between two 3D vectors */
 static inline f32 dist3(const f32 *a, const f32 *b)
 {
     f32 dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
     return fsqrt(dx * dx + dy * dy + dz * dz);
 }
 
-/* parametri di proiezione predefiniti (vicino 30, lontano 65000, aspetto, fov) */
+/* default projection parameters (near 30, far 65000, aspect, fov) */
 void camera_reset_projection(void *cam)
 {
     U32(cam, 0x0) = 0x41f00000;   /* 30.0 */
@@ -96,8 +96,8 @@ void camera_reset_state(void *cam)
     func_08812BD0(cam);
 }
 
-/* Aggiunge alla telecamera lo scostamento verticale di una scossa: un'onda che si
- * smorza con il tempo e con la distanza dalla sorgente. */
+/* Adds to the camera the vertical offset of a shake: a wave that
+ * decays with time and with distance from the source. */
 void camera_apply_shake(void *cam, u8 *shake)
 {
     u32 type;
@@ -123,7 +123,7 @@ void camera_apply_shake(void *cam, u8 *shake)
     F32(cam, 0xB54) += amp;
 }
 
-/* avvia una scossa di tipo type, partendo dalla posizione dell'oggetto obj */
+/* starts a shake of type "type", from the position of object obj */
 static inline void start_shake(void *cam, int base, int type, u8 *obj, u8 flag)
 {
     if (func_08865BAC(obj)) {
@@ -154,7 +154,7 @@ void camera_start_shake2(void *cam, int type, u8 *obj)
     start_shake(cam, 0xAD0, type, obj, 0);
 }
 
-/* passo di una transizione fra punti della telecamera */
+/* step of a transition between camera points */
 void camera_transition_step(void *cam, int finish)
 {
     u8 *t = (u8 *)cam + 0x7E0;
@@ -188,7 +188,7 @@ void camera_transition_step(void *cam, int finish)
     }
 }
 
-/* --- modalità speciali della telecamera ---------------------------------------------- */
+/* --- special camera modes ---------------------------------------------- */
 
 void camera_set_mode(void *cam, u32 mode_arg, u32 target, u32 arg_arg)
 {
@@ -200,7 +200,7 @@ void camera_set_mode(void *cam, u32 mode_arg, u32 target, u32 arg_arg)
     U8(cam, 0xA7A) = arg;
 }
 
-/* come camera_set_mode, ma solo se non c'è già una modalità */
+/* like camera_set_mode, but only if there is no mode already */
 void camera_request_mode(void *cam, u32 mode_arg, u32 target)
 {
     u8 mode = mode_arg;
@@ -230,7 +230,7 @@ void camera_set_mode1(void *cam)
         camera_set_mode(cam, 1, 0, 0);
 }
 
-/* modalità della telecamera secondo la zona corrente */
+/* camera mode according to the current zone */
 void camera_mode_for_area(void *cam)
 {
     s16 area = *(s16 *)(D_089CC438 + 0x6AF0E);
@@ -345,7 +345,7 @@ void camera_get_target(void *cam, f32 *out)
     U32(out, 12) = 0;
 }
 
-/* --- matrici della telecamera -------------------------------------------------------- */
+/* --- camera matrices -------------------------------------------------------- */
 f32 cosf(f32 x);
 void mat_look_at(f32 *m, const f32 *eye, const f32 *target, const f32 *up);
 void camera_build_frustum(void *cam);
@@ -354,7 +354,7 @@ int func_0884FA5C(void *a, int b);
 extern s32 D_08A62C68, D_08A62C6C;
 extern u16 D_08A62C78, D_08A62C7A;
 
-/* Inversa di una matrice 4x4 di rotazione+scala+traslazione (righe ortogonali). */
+/* Inverse of a 4x4 rotation+scale+translation matrix (orthogonal rows). */
 static void mat_inverse_ortho(const f32 *m, f32 *out)
 {
     f32 len[3], col[3][3], d[3], n[3];
@@ -379,7 +379,7 @@ static void mat_inverse_ortho(const f32 *m, f32 *out)
     out[15] = 1.0f;
 }
 
-/* Posiziona la telecamera: occhio, punto guardato e "alto"; calcola le matrici. */
+/* Places the camera: eye, look-at point and "up"; computes the matrices. */
 void camera_look_at(void *cam, const f32 *eye, const f32 *target, const u32 *up)
 {
     f32 dx, dy, dz, d2, s;
@@ -396,7 +396,7 @@ void camera_look_at(void *cam, const f32 *eye, const f32 *target, const u32 *up)
     dz = target[2] - eye[2];
     d2 = dx * dx + dy * dy + dz * dz;
     F32(cam, 0xDB8) = d2;
-    F32(cam, 0xDB8) = fsqrt(d2); /* distanza occhio-bersaglio */
+    F32(cam, 0xDB8) = fsqrt(d2); /* eye-to-target distance */
     mat_look_at(&F32(cam, 0xB80), eye, target, (const f32 *)up);
     s = *D_08A62C40;
     for (i = 0; i < 4; i++) {
@@ -408,7 +408,7 @@ void camera_look_at(void *cam, const f32 *eye, const f32 *target, const u32 *up)
     mat_inverse_ortho(&F32(cam, 0xBC0), &F32(cam, 0xC40));
 }
 
-/* Matrice di proiezione prospettica (out: 4x4). */
+/* Perspective projection matrix (out: 4x4). */
 void camera_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar, void *unused, f32 *out)
 {
     f32 c, s, f, n;
@@ -438,7 +438,7 @@ void camera_apply_projection(void *cam)
     U32(cam, 0x10) = U32(cam, 0xC);
 }
 
-/* copia i limiti della zona di gioco attuale */
+/* copies the limits of the current game zone */
 void camera_load_area_limits(void *cam)
 {
     u8 *a;
@@ -456,7 +456,7 @@ void camera_load_area_limits(void *cam)
     U32(cam, 0xB30) = U32(a, 0x18);
 }
 
-/* legge la levetta/i tasti che muovono la telecamera */
+/* reads the stick/buttons that move the camera */
 void camera_read_input(void *cam)
 {
     if (func_0884FA5C(D_089CC438, 1) != 1) {
@@ -484,11 +484,11 @@ void camera_set_field_142(void *cam, int v)
     U8(cam, 0x142) = v;
 }
 
-/* --- matrice "guarda verso" e zone della telecamera ---------------------------------- */
+/* --- "look at" matrix and camera zones ---------------------------------- */
 int func_088DA324(u32 player);
 void camera_update(void *cam);
 
-/* normalizza v (resta 0 se v è nullo) */
+/* normalizes v (stays 0 if v is zero) */
 static inline void normalize3(f32 *v)
 {
     f32 d = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
@@ -506,7 +506,7 @@ static inline void cross3(const f32 *a, const f32 *b, f32 *out)
     out[2] = a[0] * b[1] - a[1] * b[0];
 }
 
-/* Matrice di vista: assi x, y, z della telecamera nelle colonne, poi la traslazione. */
+/* View matrix: camera x, y, z axes in the columns, then the translation. */
 void mat_look_at(f32 *m, const f32 *eye, const f32 *target, const f32 *up)
 {
     f32 x[3], y[3], z[3], u[3];
@@ -533,7 +533,7 @@ void mat_look_at(f32 *m, const f32 *eye, const f32 *target, const f32 *up)
     U32(m, 60) = 0x3f800000;
 }
 
-/* zona predefinita (quando la mappa non ne ha) */
+/* default zone (when the map has none) */
 void camera_default_area(void *cam)
 {
     u8 *a = (u8 *)U32(cam, 0xAAC);
@@ -567,7 +567,7 @@ void camera_default_area(void *cam)
     U32(a, 0x44) = 0x3f400000; /* 0.75 */
     U32(a, 0x48) = 0;
     U32(a, 0x4C) = 0;
-    /* parametri copiati dalla tabella dei valori predefiniti (0x08933A90 + offset) */
+    /* parameters copied from the table of default values (0x08933A90 + offset) */
     for (i = 0; i < 20; i++)
         U32(a, off[i]) = *(const u32 *)(0x08933A90 + off[i]);
     U32(a, 0x50) = 0x3f5f66f3;
@@ -578,7 +578,7 @@ void camera_default_area(void *cam)
     U32(cam, 0xAAC) = (u32)a;
 }
 
-/* il punto p è dentro il quadrilatero q (in pianta)? 0 = sì, 2 = no */
+/* is point p inside quadrilateral q (in plan)? 0 = yes, 2 = no */
 int camera_point_in_quad(void *cam, const f32 *q, const f32 *p)
 {
     f32 x0 = q[0], z0 = q[2];
@@ -599,7 +599,7 @@ int camera_point_in_quad(void *cam, const f32 *q, const f32 *p)
     return 0;
 }
 
-/* il giocatore è dentro una delle parti della zona? 0 = sì */
+/* is the player inside one of the parts of the zone? 0 = yes */
 int camera_player_in_zone(void *cam, u8 *zone, u32 mask_arg)
 {
     u8 mask = mask_arg;
@@ -626,7 +626,7 @@ int camera_player_in_zone(void *cam, u8 *zone, u32 mask_arg)
     return 2;
 }
 
-/* cerca la zona della telecamera in cui si trova il giocatore */
+/* finds the camera zone where the player is */
 int camera_find_zone(void *cam)
 {
     u8 *area = (u8 *)U32(cam, 0xAAC);
@@ -679,10 +679,10 @@ void camera_set_view(f32 fov, void *cam, const u32 *eye, const u32 *target)
     camera_update(cam);
 }
 
-/* --- angoli e aggiornamento per fotogramma ------------------------------------------- */
+/* --- angles and per-frame update ------------------------------------------- */
 #define PI_F 3.14159265f
 
-/* atan2 (l'originale usa le istruzioni VFPU vasin/vrcp; qui un polinomio, errore ~1e-6) */
+/* atan2 (the original uses the VFPU instructions vasin/vrcp; here a polynomial, error ~1e-6) */
 static f32 atan2_approx(f32 y, f32 x)
 {
     f32 ax = x < 0 ? -x : x, ay = y < 0 ? -y : y;
@@ -707,7 +707,7 @@ static inline u32 angle16(f32 rad)
     return (int)((rad * 65536.0f) / 6.2831855f + 0.5f) & 0xffff;
 }
 
-/* direzione orizzontale in cui guarda la telecamera */
+/* horizontal direction the camera looks in */
 u32 camera_get_yaw(void *cam)
 {
     f32 x = F32(cam, 0xB50) - F32(cam, 0xB40);
@@ -716,8 +716,8 @@ u32 camera_get_yaw(void *cam)
     return angle16(atan2_approx(y, x));
 }
 
-/* Avvicina occhio, bersaglio e campo visivo ai valori voluti (1/9 a fotogramma), ricalcola
- * le matrici e la matrice "billboard" (rotazione sull'asse Y verso la telecamera). */
+/* Moves eye, target and field of view towards the wanted values (1/9 per frame), recomputes
+ * the matrices and the "billboard" matrix (rotation on the Y axis towards the camera). */
 void camera_update(void *cam)
 {
     f32 x, y, a, c, s;
@@ -732,7 +732,7 @@ void camera_update(void *cam)
     camera_apply_projection(cam);
     camera_look_at(cam, &F32(cam, 0xB40), &F32(cam, 0xB50), &U32(cam, 0xB60));
 
-    /* asse z della telecamera nel mondo */
+    /* camera z axis in the world */
     x = (F32(cam, 0xCA0) + F32(cam, 0xCB0)) - F32(cam, 0xCB0);
     y = -((F32(cam, 0xCA8) + F32(cam, 0xCB8)) - F32(cam, 0xCB8));
     a = atan2_approx(y, x);
@@ -749,7 +749,7 @@ void camera_update(void *cam)
     bb[15] = 1.0f;
 }
 
-/* Proietta il punto p del mondo sullo schermo (out: x, y, z, w). */
+/* Projects the world point p onto the screen (out: x, y, z, w). */
 void camera_world_to_screen(void *cam, f32 *out, const f32 *p)
 {
     const f32 *v = &F32(cam, 0xBC0), *pr = &F32(cam, 0xC00);
@@ -774,7 +774,7 @@ void camera_world_to_screen(void *cam, f32 *out, const f32 *p)
     out[1] -= F32(cam, 0xB74);
 }
 
-/* Collega i dati delle zone della mappa: gli offset nel file diventano puntatori. */
+/* Links the map's zone data: the offsets in the file become pointers. */
 void camera_set_area(void *cam, u8 *area)
 {
     u8 *zone;
@@ -821,7 +821,7 @@ void camera_set_area(void *cam, u8 *area)
     }
 }
 
-/* Sceglie il punto di vista attivo (normale o speciale) e applica le scosse. */
+/* Chooses the active viewpoint (normal or special) and applies the shakes. */
 void camera_select_view(void *cam)
 {
     u8 *slot = (u8 *)cam;

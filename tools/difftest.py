@@ -1,9 +1,9 @@
-"""Test differenziale: esegue la funzione originale e la versione in C sugli stessi input
-in una CPU MIPS emulata (unicorn) e confronta valori di ritorno e memoria scritta.
+"""Differential test: runs the original function and the C version on the same inputs
+in an emulated MIPS CPU (unicorn) and compares return values and written memory.
 
-Uso: tools/.venv/Scripts/python.exe -I tools/difftest.py [func_XXXXXXXX ...] [--runs N]
-Senza nomi testa tutte le funzioni presenti in build/newcode.nm.
-Esito per funzione: OK (n input confrontati), DIFF (differenza trovata), NON TESTABILE.
+Usage: tools/.venv/Scripts/python.exe -I tools/difftest.py [func_XXXXXXXX ...] [--runs N]
+Without names it tests all the functions present in build/newcode.nm.
+Result per function: OK (n inputs compared), DIFF (difference found), NOT TESTABLE.
 """
 import os, random, re, struct, sys
 sys.path.insert(0, os.path.dirname(__file__))
@@ -13,12 +13,12 @@ from unicorn import Uc, UcError, UC_ARCH_MIPS, UC_MODE_MIPS32, UC_MODE_LITTLE_EN
     UC_HOOK_CODE, UC_HOOK_MEM_WRITE, UC_HOOK_INTR, UC_PROT_READ, UC_PROT_WRITE
 from unicorn.mips_const import *
 
-MEM_BASE, MEM_SIZE = 0x08800000, 0x01800000      # memoria utente PSP 0x08800000-0x0A000000
-RET_MAGIC = 0x08800010                            # indirizzo di ritorno finto: lì ci fermiamo
+MEM_BASE, MEM_SIZE = 0x08800000, 0x01800000      # PSP user memory 0x08800000-0x0A000000
+RET_MAGIC = 0x08800010                            # fake return address: we stop there
 STACK_TOP = 0x09FF0000
-SCRATCH = 0x09E00000                              # buffer a cui puntano gli argomenti "puntatore"
+SCRATCH = 0x09E00000                              # buffer pointed to by the "pointer" arguments
 SCRATCH_SIZE = 0x8000
-STUB_LO, STUB_HI = 0x0890DE38, 0x0890DE38 + 0x880  # chiamate al sistema operativo (sceXxx)
+STUB_LO, STUB_HI = 0x0890DE38, 0x0890DE38 + 0x880  # calls to the operating system (sceXxx)
 MAX_INSNS = 2_000_000
 STUB_RET_CELL = 0x20
 STUB_CODE = struct.pack("<II", 0x03E00008, 0x8C020000 | STUB_RET_CELL)  # jr ra; lw v0, 0x20(zero)
@@ -28,26 +28,26 @@ ARG_REGS = [UC_MIPS_REG_A0, UC_MIPS_REG_A1, UC_MIPS_REG_A2, UC_MIPS_REG_A3,
 FARG_REGS = [UC_MIPS_REG_F12 + i for i in range(8)]
 REG_BY_NAME = dict(zip(["a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3"], range(8)))
 
-# --- modalità "funzioni finte" per il codice del gioco ---------------------------------
-# Le funzioni del gioco chiamano centinaia di altre funzioni: nel test queste vengono sostituite
-# da funzioni finte che registrano gli argomenti e restituiscono valori pseudo-casuali
-# (uguali per originale e C). Così si controlla la logica della sola funzione provata:
-# stesse chiamate, con gli stessi argomenti, nello stesso ordine, e stessa memoria scritta.
-GAME_START = 0x08811C84                           # prima di qui: libreria C (eseguita davvero)
+# --- "dummy functions" mode for the game code ---------------------------------------
+# The game functions call hundreds of other functions: in the test these are replaced
+# by dummy functions that record their arguments and return pseudo-random values
+# (the same for the original and the C). This checks the logic of the single function tested:
+# same calls, with the same arguments, in the same order, and the same memory written.
+GAME_START = 0x08811C84                           # before this: C library (really executed)
 FSTUB_CODE_ADDR = 0x08800100
-FN_RET_CELL = 0x08800200                          # v0, v1, f0 restituiti dalle funzioni finte (lontano dalla pagina 0)
+FN_RET_CELL = 0x08800200                          # v0, v1, f0 returned by the dummy functions (far from page 0)
 # lui at,0x0880; lw v0,0x200(at); lw v1,0x204(at); lwc1 f0,0x208(at); jr ra; nop
 FSTUB_CODE = struct.pack("<6I", 0x3C010880, 0x8C220200, 0x8C230204, 0xC4200208, 0x03E00008, 0)
-# funzioni con argomenti variabili: posizione dell'argomento "formato"
+# functions with variable arguments: position of the "format" argument
 VARIADIC = {0x08891474: 3, 0x088915B0: 4, 0x088920A8: 3, 0x0889134C: 1, 0x08892004: 1, 0x0889183C: 4}
-# variabili globali (puntatori) lette dal codice del gioco -> offset grande usato con esse (0 = nessuno)
+# global variables (pointers) read by the game code -> large offset used with them (0 = none)
 GAME_GLOBALS = {0x089CC438: 0x6AF14, 0x08A631A8: 0, 0x08A631A0: 0xF7A574, 0x08A62C50: 0, 0x08A62C54: 0,
                 0x08A62C7C: 0, 0x08A62D8C: 0, 0x09A44C5C: 0, 0x09B22D70: 0, 0x09A4F0C4: 0, 0x089CBBE8: 0,
                 0x08A62C40: 0, 0x089CBBEC: 0}
 
 
 def load_signatures():
-    """build/signatures.tsv (da Ghidra): {indirizzo: [(posizione, byte), ...]}"""
+    """build/signatures.tsv (from Ghidra): {address: [(position, byte), ...]}"""
     sigs = {}
     p = os.path.join(BUILD, "signatures.tsv")
     if os.path.exists(p):
@@ -56,12 +56,12 @@ def load_signatures():
             if len(f) < 3 or f[2] == "?":
                 continue
             sigs[int(f[0], 16)] = [(x.split(":")[0], int(x.split(":")[1])) for x in f[2].split(",") if x]
-    sigs[0x0890BFA4] = [("a0", 4)]  # operator delete (Ghidra non vede l'argomento)
+    sigs[0x0890BFA4] = [("a0", 4)]  # operator delete (Ghidra does not see the argument)
     return sigs
 
 
 def load_return_sizes():
-    """Dimensione (byte) del valore restituito da ogni funzione, secondo Ghidra (4 se non nota)."""
+    """Size (bytes) of the value returned by each function, according to Ghidra (4 if unknown)."""
     out = {}
     p = os.path.join(BUILD, "signatures.tsv")
     if os.path.exists(p):
@@ -76,8 +76,8 @@ RET_SIZES = load_return_sizes()
 
 
 def make_fstubs(name, syms, origs, sigs):
-    """Funzioni finte per provare la funzione del gioco "name": tutte le altre funzioni del gioco
-    (originali e già in C) e quelle degli overlay chiamate dal C."""
+    """Dummy functions to test the game function "name": all the other game functions
+    (original and already in C) and those of the overlays called by the C."""
     from config import load_functions
     orig = origs[name]
     fstubs = {a: (a, sigs.get(a, [])) for a, sz in load_functions().items()
@@ -88,15 +88,15 @@ def make_fstubs(name, syms, origs, sigs):
                 src = open(os.path.join(dp, fn), encoding="utf-8").read()
                 for x in re.findall(r"func_(09[0-9A-F]{6})", src):
                     fstubs[int(x, 16)] = (int(x, 16), sigs.get(int(x, 16), []))
-    for n2, a2 in syms.items():  # le altre funzioni già in C, chiamate direttamente dal C
+    for n2, a2 in syms.items():  # the other functions already in C, called directly by the C
         if n2 != name and origs[n2] >= GAME_START:
             fstubs[a2] = (origs[n2], sigs.get(origs[n2], []))
     return fstubs
 
 
 def narrow_args(args, sig):
-    """Gli argomenti di 1 o 2 byte arrivano dal gioco già estesi a 32 bit: nel test usiamo
-    valori piccoli positivi, validi sia come numeri con segno sia senza."""
+    """Arguments of 1 or 2 bytes arrive from the game already extended to 32 bits: in the test we use
+    small positive values, valid both as signed and unsigned numbers."""
     for loc, size in sig:
         if loc in REG_BY_NAME and size < 4:
             i = REG_BY_NAME[loc]
@@ -105,7 +105,7 @@ def narrow_args(args, sig):
 
 
 def load_stub_argc():
-    """Per ogni stub di sistema: quanti argomenti confrontare (dagli header PSPSDK)."""
+    """For each system stub: how many arguments to compare (from the PSPSDK headers)."""
     argc = {}
     for fn in ("sce_argc.tsv", "sce_argc_extra.tsv"):
         p = os.path.join(os.path.dirname(__file__), fn)
@@ -136,13 +136,13 @@ def sx(v):
 
 class Machine:
     def __init__(self, image, newcode, fstubs=None):
-        # memoria iniziale: EBOOT originale + nuovo codice + stub emulati, il resto a zero
+        # initial memory: original EBOOT + new code + emulated stubs, the rest zeroed
         va, img = image
         pristine = bytearray(MEM_SIZE)
         pristine[va - MEM_BASE:va - MEM_BASE + len(img)] = img
         pristine[NEWCODE_ADDR - MEM_BASE:NEWCODE_ADDR - MEM_BASE + len(newcode)] = newcode
         pristine[STUB_LO - MEM_BASE:STUB_HI - MEM_BASE] = STUB_CODE * ((STUB_HI - STUB_LO) // 8)
-        # funzioni finte: all'inizio di ognuna "j FSTUB_CODE; nop"
+        # dummy functions: at the start of each one "j FSTUB_CODE; nop"
         self.fstubs = fstubs or {}
         if self.fstubs:
             pristine[FSTUB_CODE_ADDR - MEM_BASE:FSTUB_CODE_ADDR - MEM_BASE + len(FSTUB_CODE)] = FSTUB_CODE
@@ -154,20 +154,20 @@ class Machine:
         self._new_uc()
 
     def _new_uc(self):
-        """Crea (o ricrea) la CPU emulata. Dopo un arresto su un'istruzione Allegrex, unicorn 2.1.4
-        a volte va in crash alla prova successiva: in quel caso la si ricrea da zero."""
+        """Creates (or recreates) the emulated CPU. After a stop on an Allegrex instruction, unicorn 2.1.4
+        sometimes crashes on the next test: in that case it is recreated from scratch."""
         self.uc = uc = Uc(UC_ARCH_MIPS, UC_MODE_MIPS32 + UC_MODE_LITTLE_ENDIAN)
         uc.mem_map(MEM_BASE, MEM_SIZE)
-        # pagina per STUB_RET_CELL, non eseguibile: un salto a 0 deve dare errore subito (eseguire
-        # codice qui mentre lo stub ci scrive manda in crash unicorn)
+        # page for STUB_RET_CELL, not executable: a jump to 0 must fail at once (running
+        # code here while the stub writes to it crashes unicorn)
         uc.mem_map(0, 0x1000, UC_PROT_READ | UC_PROT_WRITE)
-        # Niente hook sulle scritture: in unicorn 2.1.4 un hook sulle scritture eseguito nello slot
-        # di ritardo di un salto rompe il salto. La memoria viene invece ripristinata e confrontata
-        # per intero a ogni esecuzione.
+        # No hooks on writes: in unicorn 2.1.4 a write hook run in the delay slot
+        # of a jump breaks the jump. The memory is instead restored and compared
+        # in full at every run.
         uc.hook_add(UC_HOOK_CODE, self._on_code)
         uc.hook_add(UC_HOOK_INTR, self._on_intr)
-        self.clean_ctx = uc.context_save()  # stato CPU pulito, ripristinato a ogni esecuzione
-        self.code_patched = False             # vedi stop_at in difftest_specs.py
+        self.clean_ctx = uc.context_save()  # clean CPU state, restored at every run
+        self.code_patched = False             # see stop_at in difftest_specs.py
         self.had_trap = False
 
     # --- hook -------------------------------------------------------------
@@ -175,25 +175,25 @@ class Machine:
         self.count += 1
         self.last_pc = addr
         if self.count > MAX_INSNS:
-            self.error = "troppe istruzioni (loop infinito?)"
+            self.error = "too many instructions (infinite loop?)"
             uc.emu_stop()
         elif addr == RET_MAGIC:
             uc.emu_stop()
         elif addr in self.fstubs:
             self._fake_call(uc, addr)
         elif STUB_LO <= addr < STUB_HI and (addr - STUB_LO) % 8 == 0:
-            # funzione di sistema: registriamo la chiamata e ritorniamo 0
+            # system function: we record the call and return 0
             name, regs = STUBS.get(addr, ("?", [0, 1, 2, 3]))
             self.calls.append((name, tuple(self._arg_key(uc.reg_read(ARG_REGS[r])) for r in regs)))
-            # valore di ritorno pseudo-casuale ma identico nelle due esecuzioni
+            # pseudo-random return value, but identical in the two runs
             r = random.Random(self.seed * 1000 + len(self.calls))
-            # scrivere registri dentro un hook manda in errore unicorn: lo stub emulato
-            # ("jr ra; lw v0, 0x20(zero)") legge il valore di ritorno da questa cella di memoria
+            # writing registers inside a hook makes unicorn fail: the emulated stub
+            # ("jr ra; lw v0, 0x20(zero)") reads the return value from this memory cell
             uc.mem_write(STUB_RET_CELL, struct.pack("<I", r.choice([0, 0, 1, 2, 0x40, 0x80020001, 0xFFFFFFFF])))
 
     def _fake_call(self, uc, addr):
-        """Funzione finta: registra nome e argomenti (secondo la firma di Ghidra, ridotti alla
-        loro dimensione) e prepara il valore di ritorno."""
+        """Dummy function: records the name and the arguments (per the Ghidra signature, reduced to the
+        their size) and prepares the return value."""
         orig, sig = self.fstubs[addr]
         sp = uc.reg_read(UC_MIPS_REG_SP)
 
@@ -215,7 +215,7 @@ class Machine:
             vals = [arg(r, 4) for r in regs[:k + 1]]
             fmt = uc.reg_read(ARG_REGS[k])
             n = 0
-            if MEM_BASE <= fmt < 0x09000000:  # solo veri formati del gioco (non testo casuale di prova)
+            if MEM_BASE <= fmt < 0x09000000:  # only real game formats (not random test text)
                 t = bytes(uc.mem_read(fmt, 256)).split(b"\0")[0]
                 n = t.replace(b"%%", b"").count(b"%")
             extra = regs[k + 1:] + ["S0", "S4", "S8", "S12"]
@@ -224,43 +224,43 @@ class Machine:
             vals = [arg(loc, size) for loc, size in sig]
         self.calls.append(("%08X" % orig, tuple(vals)))
         r = random.Random(self.seed * 1000 + len(self.calls) + 7)
-        # valori validi qualunque sia il tipo vero (Ghidra spesso indica 4 byte anche per un char):
-        # numeri piccoli positivi o puntatori alla zona di prova
+        # values valid whatever the real type (Ghidra often says 4 bytes even for a char):
+        # small positive numbers or pointers to the test area
         v0 = r.choice([0, 0, 1, 1, 2, 3, 5, 0x7F, r.randrange(0, 0x80),
                        SCRATCH + r.randrange(0, 0x7000, 4), SCRATCH + r.randrange(0, 0x7000, 4)])
         rsize = RET_SIZES.get(orig, 4)
-        if rsize < 4:  # valore di 1 o 2 byte: piccolo e positivo (come lo restituisce il gioco)
+        if rsize < 4:  # 1 or 2 byte value: small and positive (as the game returns it)
             v0 &= 0x7F if rsize == 1 else 0x7FFF
         f0 = struct.unpack("<I", struct.pack("<f", r.uniform(-100, 100)))[0]
         uc.mem_write(FN_RET_CELL, struct.pack("<III", v0, r.getrandbits(32), f0))
 
     def _arg_key(self, v):
-        """Un argomento puntatore vale per il suo contenuto: stringhe e buffer possono stare
-        a indirizzi diversi nel C ricompilato; i puntatori allo stack sono tutti equivalenti."""
+        """A pointer argument stands for its contents: strings and buffers can be
+        at different addresses in the recompiled C; all stack pointers are equivalent."""
         if STACK_TOP - 0x20000 <= v < STACK_TOP:
             return "STACK"
         if NEWCODE_ADDR <= v < NEWCODE_ADDR + 0x100000 or 0x0890F8F8 <= v < 0x089CBA90:
             data = bytes(self.uc.mem_read(v, 32))
             end = data.find(b"\0")
             if end > 0 and all(32 <= c < 127 or c in (9, 10, 13) for c in data[:end]):
-                data = data[:end]  # stringa C: conta solo fino al terminatore
+                data = data[:end]  # C string: counts only up to the terminator
             return ("PTR", data)
         return v
 
     def _on_intr(self, uc, intno, _):
-        # Modificare registri dentro un hook manda in errore unicorn: ci fermiamo e
-        # l'istruzione viene emulata fuori dall'hook (vedi _resolve_trap).
-        # (dentro questo hook il PC letto vale 0: usiamo l'ultima istruzione eseguita)
+        # Changing registers inside a hook makes unicorn fail: we stop and
+        # the instruction is emulated outside the hook (see _resolve_trap).
+        # (inside this hook the PC read is 0: we use the last instruction executed)
         self.trap_pc = self.last_pc
         self.intno = intno
-        self.had_trap = True      # alla prossima esecuzione la CPU emulata viene ricreata
+        self.had_trap = True      # on the next run the emulated CPU is recreated
         uc.emu_stop()
 
     def _insn(self, addr):
         return struct.unpack("<I", self.uc.mem_read(addr, 4))[0]
 
     def _branch_target(self, bpc, insn):
-        """Se insn è un salto, ritorna (preso?, destinazione, registro link, likely); altrimenti None."""
+        """If insn is a jump, returns (taken?, target, link register, likely); otherwise None."""
         uc = self.uc
         R = lambda n: uc.reg_read(UC_MIPS_REG_0 + n)
         op, rs, rt, rd, fn = insn >> 26, (insn >> 21) & 31, (insn >> 16) & 31, (insn >> 11) & 31, insn & 63
@@ -281,14 +281,14 @@ class Machine:
         return None
 
     def _resolve_trap(self, pc):
-        """Emula l'istruzione Allegrex che ha fermato la CPU; ritorna il PC da cui ripartire o None."""
+        """Emulates the Allegrex instruction that stopped the CPU; returns the PC to restart from, or None."""
         if not MEM_BASE + 4 <= pc < MEM_BASE + MEM_SIZE:
-            self.error = "salto a un indirizzo non valido (%08X)" % pc
+            self.error = "jump to an invalid address (%08X)" % pc
             return None
         insn = self._insn(pc)
         bpc = None
         if self._branch_target(pc, insn) is not None:
-            bpc = pc  # fermati sul salto: l'istruzione non supportata è nello slot di ritardo
+            bpc = pc  # stop on the jump: the unsupported instruction is in the delay slot
         elif self._branch_target(pc - 4, self._insn(pc - 4)) is not None:
             bpc = pc - 4
         if bpc is None:
@@ -304,11 +304,11 @@ class Machine:
                 return self._unsupported(slot, bpc + 4)
         return target if taken else bpc + 8
 
-    SINGLE_ADDR = 0x08800300  # zona dove eseguire da sola un'istruzione dello slot di ritardo
+    SINGLE_ADDR = 0x08800300  # area where a delay-slot instruction is run alone
 
     def _exec_single(self, insn):
-        """Esegue con unicorn una sola istruzione normale (non un salto) copiata a parte: serve
-        quando unicorn si ferma su un salto il cui slot di ritardo contiene un'istruzione comune."""
+        """Runs with unicorn a single normal instruction (not a jump) copied separately: needed
+        when unicorn stops on a jump whose delay slot contains a common instruction."""
         if insn == 0 or self._branch_target(self.SINGLE_ADDR, insn) is not None or (insn >> 26) in (
                 0x18, 0x19, 0x1B, 0x34, 0x36, 0x37, 0x3C, 0x3D, 0x3E, 0x3F, 0x32, 0x35, 0x3A, 0x1C, 0x1F):
             return insn == 0
@@ -319,17 +319,17 @@ class Machine:
         try:
             uc.emu_start(self.SINGLE_ADDR, self.SINGLE_ADDR + 4, count=1)
         except UcError as e:
-            self.error = "errore CPU: %s (slot di ritardo)" % e
+            self.error = "CPU error: %s (delay slot)" % e
             return False
         return self.trap_pc is None
 
     def _unsupported(self, insn, pc):
-        self.error = "istruzione non supportata %08X a %08X" % (insn, pc)
+        self.error = "unsupported instruction %08X at %08X" % (insn, pc)
         self.untestable = (insn >> 26) in (0x18, 0x19, 0x1B, 0x34, 0x36, 0x37, 0x3C, 0x3D, 0x3E, 0x3F, 0x32, 0x35, 0x3A)
         return None
 
     def _emulate_allegrex(self, insn):
-        """Istruzioni Allegrex che non esistono nel MIPS standard."""
+        """Allegrex instructions that do not exist in standard MIPS."""
         uc = self.uc
         op, rs, rt, rd, sa, fn = insn >> 26, (insn >> 21) & 31, (insn >> 16) & 31, (insn >> 11) & 31, (insn >> 6) & 31, insn & 63
         R = lambda n: uc.reg_read(UC_MIPS_REG_0 + n)
@@ -360,19 +360,19 @@ class Machine:
 
     # --- esecuzione -------------------------------------------------------
     def run(self, func, args, fargs, scratch, seed=0, setup=None):
-        """setup(m), se c'è, prepara lo stato chiamando funzioni ORIGINALI con m.call e
-        ritorna gli argomenti (eventualmente nuovi) per la funzione da provare."""
+        """setup(m), if present, prepares the state by calling ORIGINAL functions with m.call and
+        returns the arguments (possibly new) for the function to test."""
         if self.had_trap:
             self._new_uc()
         uc = self.uc
         uc.context_restore(self.clean_ctx)
-        uc.mem_write(MEM_BASE, self.pristine)  # memoria iniziale identica per ogni esecuzione
-        uc.mem_write(0, b"\0" * 0x1000)        # anche la pagina 0 (i puntatori nulli ci scrivono)
+        uc.mem_write(MEM_BASE, self.pristine)  # identical initial memory for each run
+        uc.mem_write(0, b"\0" * 0x1000)        # also page 0 (null pointers write there)
         uc.mem_write(SCRATCH, scratch)
         for a, v in self.globals.items():
             uc.mem_write(a, struct.pack("<I", v))
         uc.mem_write(RET_MAGIC, b"\0" * 8)
-        if self.code_patched:  # la prova precedente aveva modificato il codice: via la cache
+        if self.code_patched:  # the previous test had modified the code: out with the cache
             uc.ctl_flush_tb()
             self.code_patched = False
         self.seed = seed
@@ -383,20 +383,20 @@ class Machine:
                 args = setup(self) or args
             except UcError:
                 return dict(error="preparazione fallita: %s" % self.error, untestable=False)
-            self.calls = []  # le chiamate di sistema della preparazione non contano
-            if self.code_patched:  # la preparazione ha modificato il codice (stop_at)
+            self.calls = []  # the system calls of the preparation do not count
+            if self.code_patched:  # the preparation modified the code (stop_at)
                 uc.ctl_flush_tb()
         self._start(func, args, fargs)
         return dict(
             error=self.error, untestable=self.untestable,
             v0=uc.reg_read(UC_MIPS_REG_V0), v1=uc.reg_read(UC_MIPS_REG_V1),
             f0=uc.reg_read(UC_MIPS_REG_F0), calls=self.calls,
-            # memoria finale, esclusa la zona dello stack (le variabili locali possono differire)
+            # final memory, excluding the stack area (local variables may differ)
             mem=(bytes(uc.mem_read(MEM_BASE, STACK_TOP - 0x20000 - MEM_BASE)),
                  bytes(uc.mem_read(STACK_TOP, MEM_BASE + MEM_SIZE - STACK_TOP))))
 
     def call(self, func, *args):
-        """Esegue una funzione (per le preparazioni) e ritorna v0; UcError se va in errore."""
+        """Runs a function (for the preparations) and returns v0; UcError if it fails."""
         self._start(func, list(args), [])
         if self.error:
             raise UcError(0)
@@ -412,7 +412,7 @@ class Machine:
             uc.reg_write(r, v)
         uc.reg_write(UC_MIPS_REG_SP, STACK_TOP - 0x100)
         uc.reg_write(UC_MIPS_REG_RA, RET_MAGIC)
-        uc.reg_write(UC_MIPS_REG_K0, self.k0)  # dati del thread corrente (0 = nessuno)
+        uc.reg_write(UC_MIPS_REG_K0, self.k0)  # data of the current thread (0 = none)
         self.count, self.error, self.untestable = 0, None, False
         pc = func
         while pc is not None:
@@ -420,7 +420,7 @@ class Machine:
             try:
                 uc.emu_start(pc, RET_MAGIC)
             except UcError as e:
-                self.error = "errore CPU: %s a %08X" % (e, uc.reg_read(UC_MIPS_REG_PC))
+                self.error = "CPU error: %s at %08X" % (e, uc.reg_read(UC_MIPS_REG_PC))
             if self.trap_pc is None or self.error:
                 break
             if os.environ.get("DIFFTEST_TRACE"):
@@ -433,9 +433,9 @@ class Machine:
                     [UC_MIPS_REG_F0 + i for i in range(32)] + [UC_MIPS_REG_FCSR])
 
     def _clear_branch_state(self):
-        """Dopo un arresto nello slot di ritardo di un salto, unicorn ricorda il salto "in sospeso" e,
-        alla ripartenza, eseguirebbe due volte la prima istruzione. Si riparte da uno stato CPU
-        pulito con gli stessi registri."""
+        """After a stop in the delay slot of a jump, unicorn remembers the "pending" jump and,
+        on restart, would run the first instruction twice. We restart from a clean CPU state
+        with the same registers."""
         uc = self.uc
         vals = [uc.reg_read(r) for r in self.REGS_TO_KEEP]
         uc.context_restore(self.clean_ctx)
@@ -448,7 +448,7 @@ SPECIAL_FLOATS = [0x00000000, 0x80000000, 0x7F800000, 0xFF800000, 0x7FC00000, 0x
 
 
 def random_float_bits(rng):
-    """Float di prova: valori comuni, valori speciali (0, inf, NaN, subnormali) ed esponenti a caso."""
+    """Test floats: common values, special values (0, inf, NaN, subnormals) and random exponents."""
     k = rng.random()
     if k < 0.5:
         return struct.unpack("<I", struct.pack("<f", rng.uniform(-1000, 1000)))[0]
@@ -473,9 +473,9 @@ def make_inputs(rng):
 
 
 def make_game_inputs(rng):
-    """Input per le funzioni del gioco: il primo argomento ("self") punta quasi sempre a una
-    zona valida; la memoria di prova contiene puntatori validi, piccoli numeri e float;
-    le variabili globali puntatore puntano nella zona di prova."""
+    """Inputs for the game functions: the first argument ("self") almost always points to a
+    valid area; the test memory contains valid pointers, small numbers and floats;
+    the global pointer variables point into the test area."""
     args, fargs, _ = make_inputs(rng)
     if rng.random() < 0.95:
         args[0] = SCRATCH + rng.randrange(0, 0x40, 4)
@@ -496,17 +496,17 @@ def make_game_inputs(rng):
     glob = {}
     for a, big in GAME_GLOBALS.items():
         if big >= 0x100000 or (big and rng.random() < 0.5):
-            glob[a] = SCRATCH + rng.randrange(0x6000, 0x7000, 4) - big  # i campi lontani cadono nella zona di prova
+            glob[a] = SCRATCH + rng.randrange(0x6000, 0x7000, 4) - big  # far fields fall into the test area
         else:
             glob[a] = SCRATCH + rng.randrange(0, 0x6000, 4)
-    # la lingua del gioco (D_08A631A0 + 0xF7A574) vale 0..6
+    # the game's language (D_08A631A0 + 0xF7A574) is 0..6
     lang = glob[0x08A631A0] + 0xF7A574 - SCRATCH
     scratch = scratch[:lang] + struct.pack("<I", rng.randrange(0, 7)) + scratch[lang + 4:]
     return args, fargs, scratch, glob
 
 
 def load_return_kinds():
-    """Dal C ricava cosa confrontare al ritorno: void (niente), float (f0), 64 bit (v0+v1), altro (v0)."""
+    """From the C, finds what to compare on return: void (nothing), float (f0), 64 bit (v0+v1), other (v0)."""
     kinds = {}
     for dp, _, files in os.walk(os.path.join(os.path.dirname(BUILD), "src")):
         for fn in files:
@@ -530,8 +530,8 @@ def compare(a, b, regs=("v0",)):
         if a[k] != b[k]:
             return "%s: originale %08X, C %08X" % (k, a[k], b[k])
     if a["mem"] != b["mem"]:
-        # non si confrontano: la zona del nuovo codice (dati privati del C) e quella del banco di
-        # prova (0x08800000-0x08804000: celle delle funzioni finte, istruzioni eseguite a parte)
+        # not compared: the new code area (private data of the C) and the test bench
+        # (0x08800000-0x08804000: cells of the dummy functions, instructions run apart)
         lo, hi = NEWCODE_ADDR - MEM_BASE, NEWCODE_ADDR - MEM_BASE + 0x100000
         ma, mb = a["mem"][0], b["mem"][0]
         if ma[0x4000:lo] != mb[0x4000:lo] or ma[hi:] != mb[hi:] or a["mem"][1] != b["mem"][1]:
@@ -541,12 +541,12 @@ def compare(a, b, regs=("v0",)):
                 for i in range(0, len(x), 0x1000):
                     if x[i:i + 0x1000] != y[i:i + 0x1000] and not (k == 0 and (lo <= i < hi or i < 0x4000)):
                         j = next(j for j in range(i, i + 0x1000) if x[j] != y[j])
-                        return "memoria scritta diversa (es. %08X)" % (base[k] + j)
+                        return "different memory written (e.g. %08X)" % (base[k] + j)
     if a["calls"] != b["calls"]:
         for x, y in zip(a["calls"] + [None] * 99, b["calls"]):
             if x != y:
-                return "chiamate di sistema diverse: originale %s, C %s" % (x, y)
-        return "chiamate di sistema diverse (numero)"
+                return "different system calls: original %s, C %s" % (x, y)
+        return "different system calls (count)"
     return None
 
 
@@ -565,8 +565,8 @@ def main():
     sigs = load_signatures()
     results = {}
     for name in names:
-        # macchina nuova per ogni funzione: unicorn 2.1.4 a volte va in crash riusando
-        # la stessa dopo esecuzioni interrotte a metà (stop_at)
+        # new machine for each function: unicorn 2.1.4 sometimes crashes reusing
+        # the same one after runs interrupted halfway (stop_at)
         orig, new = origs[name], syms[name]
         game = orig >= GAME_START
         fstubs = make_fstubs(name, syms, origs, sigs) if game else None
@@ -589,7 +589,7 @@ def main():
                 setup = spec[3] if len(spec) > 3 else None
             a = m.run(orig, args, fargs, scratch, run, setup)
             if a["untestable"]:
-                status = "NON TESTABILE (%s)" % a["error"]; break
+                status = "NOT TESTABLE (%s)" % a["error"]; break
             if a["error"]:
                 skipped += 1; continue
             b = m.run(new, args, fargs, scratch, run, setup)
@@ -598,7 +598,7 @@ def main():
                 status = "DIFF: %s  [args %s]" % (d, " ".join("%08X" % x for x in args[:4])); break
             ok += 1
         if status is None:
-            status = "OK (%d input confrontati)" % ok if ok else "NON TESTABILE (tutti gli input vanno in errore)"
+            status = "OK (%d inputs compared)" % ok if ok else "NOT TESTABLE (all inputs fail)"
         results[name] = status
         print("%-14s %s" % (name, status))
     return results

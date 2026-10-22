@@ -1,6 +1,6 @@
-/* Telecamera: piani del "campo visivo" (frustum) e test di visibilità degli oggetti.
- * Stessa struttura (non ancora ricostruita) di camera.c: campi indicati per offset.
- * (Nomi ipotetici.) */
+/* Camera: the planes of the view frustum and the object visibility test.
+ * Same structure (not yet rebuilt) as camera.c: fields given by offset.
+ * (Guessed names.) */
 #include "common.h"
 #include "vfpu.h"
 
@@ -11,7 +11,7 @@
 void func_08897DE0(f32 *out, const f32 *dir);
 void func_08897D7C(f32 *mat, const f32 *in);
 
-/* imposta occhio (0x20) e bersaglio (0x30) della telecamera */
+/* sets the eye (0x20) and target (0x30) of the camera */
 void camera_set_eye_target(u32 val, void *cam, const u32 *eye, const u32 *target)
 {
     int i;
@@ -23,7 +23,7 @@ void camera_set_eye_target(u32 val, void *cam, const u32 *eye, const u32 *target
     U32(cam, 0xA8) = val;
 }
 
-/* direzione "in alto" (colonna Y della matrice costruita dalla direzione from->to) */
+/* "up" direction (column Y of the matrix built from the from->to direction) */
 void camera_up_from_dir(f32 *out, const f32 *from, const f32 *to)
 {
     f32 dir[4], tmp[8], mat[16];
@@ -49,7 +49,7 @@ static f32 clamp1(f32 x)
     return x;
 }
 
-/* normale (normalizzata) del piano che passa per i punti a, b, c */
+/* normal (normalized) of the plane through points a, b, c */
 void camera_plane_normal(void *cam, f32 *out, const f32 *a, const f32 *b, const f32 *c)
 {
     f32 u0 = b[0] - a[0], u1 = b[1] - a[1], u2 = b[2] - a[2];
@@ -66,8 +66,8 @@ void camera_plane_normal(void *cam, f32 *out, const f32 *a, const f32 *b, const 
     out[3] = 0.0f;
 }
 
-/* calcola i quattro piani laterali del campo visivo (0xD50..0xD8F) e i limiti
- * vicino/lontano (0xD90/0xD94) da vicino (0x0), lontano (0x4), aspetto (0x8), fov (0xC) */
+/* computes the four side planes of the field of view (0xD50..0xD8F) and the limits
+ * near/far (0xD90/0xD94) from near (0x0), far (0x4), aspect (0x8), fov (0xC) */
 void camera_build_frustum(f32 *cam)
 {
     f32 zero[4] = { 0, 0, 0, 0 };
@@ -109,13 +109,13 @@ void camera_build_frustum(f32 *cam)
     cam[0xD90 / 4] = -cam[0];
 }
 
-/* profondità di un punto nello spazio della telecamera (riga Z della matrice a 0xB80) */
+/* depth of a point in camera space (row Z of the matrix at 0xB80) */
 static inline f32 view_z(void *cam, const f32 *p)
 {
     return F32(cam, 0xBB8) + (F32(cam, 0xBA8) * p[2] + (F32(cam, 0xB88) * p[0] + F32(cam, 0xB98) * p[1]));
 }
 
-/* la sfera (p, r) è fra il piano vicino e quello lontano? */
+/* is the sphere (p, r) between the near and far planes? */
 int camera_sphere_in_depth(f32 r, void *cam, const f32 *p)
 {
     f32 d;
@@ -128,7 +128,7 @@ int camera_sphere_in_depth(f32 r, void *cam, const f32 *p)
     return !(d + r < F32(cam, 0xD94));
 }
 
-/* la sfera (p, r) è (almeno in parte) dentro il campo visivo? */
+/* is the sphere (p, r) (at least partly) inside the field of view? */
 int camera_sphere_visible(f32 r, void *cam, const f32 *p)
 {
     f32 d, x, y;
@@ -151,7 +151,7 @@ int camera_sphere_visible(f32 r, void *cam, const f32 *p)
     return !(y * F32(cam, 0xD84) + d * F32(cam, 0xD88) > r);
 }
 
-/* parametri del viewport (centro schermo 240,-136, profondità far/2, 2048) */
+/* viewport parameters (screen centre 240,-136, far/2 depth, 2048) */
 void func_08816264(void *cam)
 {
     f32 h = F32(cam, 0x4) * 0.5f;

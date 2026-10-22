@@ -1,4 +1,4 @@
-/* isinf / isnan (double) senza confronti in virgola mobile (newlib/fdlibm). */
+/* isinf / isnan (double) without floating-point comparisons (newlib/fdlibm). */
 #include "libm.h"
 
 struct exception;
@@ -29,7 +29,7 @@ int isnan(f64 x)
     return (int)((u32)hx >> 31);
 }
 
-/* Gestore degli errori matematici dell'utente: nella libreria predefinita non fa nulla. */
+/* User math error handler: the default library does nothing. */
 int matherr(struct exception *exc)
 {
     return 0;

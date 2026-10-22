@@ -1,4 +1,4 @@
-/* floorf: il più grande intero <= x, lavorando sui bit (fdlibm, Sun Microsystems). */
+/* floorf: the largest integer <= x, computed on the bits (fdlibm, Sun Microsystems). */
 #include "libm.h"
 
 static const f32 huge = 1.0e30f;
@@ -22,7 +22,7 @@ f32 floorf(f32 x)
         } else {
             i = (0x007fffff) >> j0;
             if ((i0 & i) == 0)
-                return x; /* già intero */
+                return x; /* already an integer */
             if (huge + x > (f32)0.0) {
                 if (i0 < 0)
                     i0 += (0x00800000) >> j0;
@@ -31,8 +31,8 @@ f32 floorf(f32 x)
         }
     } else {
         if (ix >= 0x7f800000)
-            return x + x; /* inf o NaN */
-        return x;         /* già intero */
+            return x + x; /* inf or NaN */
+        return x;         /* already an integer */
     }
     return bits_f32(i0);
 }

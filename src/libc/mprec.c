@@ -1,9 +1,9 @@
-/* Aritmetica sugli interi grandi (Bigint) per la conversione esatta double <-> testo.
- * Da mprec.c di newlib (algoritmi di David M. Gay); le cifre sono parole da 32 bit
- * elaborate a metà (16 bit) per evitare moltiplicazioni a 64 bit. */
+/* Arithmetic on big integers (Bigint) for the exact conversion double <-> text.
+ * From newlib's mprec.c (algorithms by David M. Gay); the digits are 32-bit words
+ * processed in halves (16 bits) to avoid 64-bit multiplications. */
 #include "mprec.h"
 
-/* Un Bigint con spazio per 1 << k parole, preso dalla lista dei liberi se possibile. */
+/* A Bigint with room for 1 << k words, taken from the free list if possible. */
 _Bigint *Balloc(struct _reent *ptr, int k)
 {
     int x;
@@ -66,13 +66,13 @@ _Bigint *multadd(struct _reent *ptr, _Bigint *b, int m, int a)
     return b;
 }
 
-/* bit a zero in testa (32 se x == 0) */
+/* zero bits at the top (32 if x == 0) */
 int hi0bits(u32 x)
 {
     return x != 0 ? __builtin_clz(x) : 32;
 }
 
-/* bit a zero in coda; toglie quei bit da *y (32 e *y invariato se *y == 0) */
+/* zero bits at the bottom; removes those bits from *y (32, and *y unchanged, if *y == 0) */
 int lo0bits(u32 *y)
 {
     u32 x = *y;
@@ -91,7 +91,7 @@ _Bigint *i2b(struct _reent *ptr, int i)
     return b;
 }
 
-/* scrive due metà da 16 bit in una parola e avanza */
+/* writes two 16-bit halves into a word and advances */
 #define Storeinc(a, b, c) \
     (((u16 *)(a))[1] = (u16)(b), ((u16 *)(a))[0] = (u16)(c), (a)++)
 
@@ -156,7 +156,7 @@ _Bigint *mult(struct _reent *ptr, _Bigint *a, _Bigint *b)
     return c;
 }
 
-/* b = b * 5^k; le potenze 5^4, 5^8, 5^16... restano in ptr per le volte successive */
+/* b = b * 5^k; the powers 5^4, 5^8, 5^16... stay in ptr for later calls */
 _Bigint *pow5mult(struct _reent *ptr, _Bigint *b, int k)
 {
     _Bigint *b1, *p5, *p51;
@@ -248,7 +248,7 @@ int cmp(_Bigint *a, _Bigint *b)
     return 0;
 }
 
-/* |a - b|, con _sign = 1 se a < b */
+/* |a - b|, with _sign = 1 if a < b */
 _Bigint *diff(struct _reent *ptr, _Bigint *a, _Bigint *b)
 {
     _Bigint *c;
@@ -301,7 +301,7 @@ _Bigint *diff(struct _reent *ptr, _Bigint *a, _Bigint *b)
     return c;
 }
 
-/* Bigint -> double con mantissa normalizzata in [1, 2); *e = numero di bit */
+/* Bigint -> double with normalized mantissa in [1, 2); *e = number of bits */
 f64 b2d(_Bigint *a, int *e)
 {
     u32 *xa, *xa0, w, y, z;
@@ -331,7 +331,7 @@ f64 b2d(_Bigint *a, int *e)
     return d.d;
 }
 
-/* double -> Bigint intero b, con valore = b * 2^*e; *bits = bit significativi */
+/* double -> integer Bigint b, with value = b * 2^*e; *bits = significant bits */
 _Bigint *d2b(struct _reent *ptr, f64 _d, int *e, int *bits)
 {
     double_union d;
@@ -344,7 +344,7 @@ _Bigint *d2b(struct _reent *ptr, f64 _d, int *e, int *bits)
     x = b->_x;
 
     z = word0(d) & Frac_mask;
-    word0(d) &= 0x7fffffff; /* il segno non conta */
+    word0(d) &= 0x7fffffff; /* the sign does not matter */
     if ((de = (int)(word0(d) >> Exp_shift)) != 0)
         z |= Exp_msk1;
     if ((y = word1(d)) != 0) {

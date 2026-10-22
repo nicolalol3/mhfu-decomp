@@ -1,23 +1,23 @@
-/* Gestore della memoria video (VRAM): fino a 46 "superfici" (texture, buffer) allocate a
- * blocchi da 128 byte, più 32 posti da 1 KB per le palette (CLUT) dentro la superficie 45.
- * (Nomi e campi dedotti dall'uso, il gioco non ha nomi per queste funzioni.) */
+/* Video memory (VRAM) manager: up to 46 "surfaces" (textures, buffers) allocated in
+ * blocks of 128 bytes, plus 32 slots of 1 KB for palettes (CLUT) inside surface 45.
+ * (Names and fields are inferred from usage: the game has no names for these functions.) */
 #include "common.h"
 #include <pspge.h>
 
 #define VRAM_NSURF   46
-#define VRAM_NBLOCKS 0x4000 /* blocchi da 128 byte (2 MB) */
+#define VRAM_NBLOCKS 0x4000 /* blocks of 128 bytes (2 MB) */
 #define VRAM_CLUTSURF 0x2D
 
 typedef struct {
     u8 id;
-    u8 type;        /* 0 = libero; 3 = immagine; 5 = buffer; bit 1 = con palette */
-    u16 nblocks;    /* blocchi da 128 byte occupati */
-    u16 width;      /* (per i buffer: dimensione in byte) */
+    u8 type;        /* 0 = free; 3 = image; 5 = buffer; bit 1 = with palette */
+    u16 nblocks;    /* 128-byte blocks in use */
+    u16 width;      /* (for buffers: size in bytes) */
     u16 height;
     u32 addr;       /* indirizzo in VRAM */
-    u16 format;     /* formato dei pixel (0-5) */
+    u16 format;     /* pixel format (0-5) */
     u16 _pad0e;
-    u32 clut;       /* indirizzo della palette (formati 4 e 5) */
+    u32 clut;       /* palette address (formats 4 and 5) */
     u16 user;
     u16 _pad16;
 } VramSurface;      /* 0x18 byte */
@@ -27,8 +27,8 @@ typedef struct {
     u8 _pad[0x450 - VRAM_NSURF * 0x18];
     u32 edram_addr;
     u32 edram_size;
-    u32 used[VRAM_NBLOCKS / 32]; /* 0x458: un bit per blocco */
-    u32 clut_used;               /* 0xC58: un bit per posto palette */
+    u32 used[VRAM_NBLOCKS / 32]; /* 0x458: one bit per block */
+    u32 clut_used;               /* 0xC58: one bit per palette slot */
 } VramManager;
 
 int vram_find_free_surface(VramManager *m);
@@ -53,15 +53,15 @@ void vram_init(VramManager *m)
     for (i = 0; i < VRAM_NBLOCKS / 32; i++)
         m->used[i] = 0;
     m->clut_used = 0;
-    /* superfici fisse: due schermi da 512x272, lo z-buffer, e lo spazio palette */
+    /* fixed surfaces: two 512x272 screens, the z-buffer, and the palette space */
     vram_create_surface(m, 0, 0x200, 0x110, 1, 0, 0xffffffff);
     vram_create_surface(m, 1, 0x200, 0x110, 1, 0, 0xffffffff);
     vram_create_surface(m, 2, 0x200, 0x110, 0, 0, 0xffffffff);
     vram_create_surface(m, VRAM_CLUTSURF, 0x100, 0x20, 3, 0, 0x1f8000);
 }
 
-/* Crea una superficie w x h nel formato dato; id 0xff = scegli tu; offset -1 = trova
- * spazio. Ritorna l'id o 0xff. */
+/* Creates a w x h surface in the given format; id 0xff = choose one; offset -1 = find
+ * space. Returns the id or 0xff. */
 int vram_create_surface(VramManager *m, u32 id, u32 w, u32 h, u32 format_arg, u32 user_arg, u32 offset)
 {
     u16 format = format_arg;
@@ -82,26 +82,26 @@ int vram_create_surface(VramManager *m, u32 id, u32 w, u32 h, u32 format_arg, u3
     s->format = format;
     s->user = user;
     switch (s->format) {
-    case 0: case 1: case 2: /* 16 bit per pixel */
+    case 0: case 1: case 2: /* 16 bits per pixel */
         s->width = ((sw + 7) >> 3) << 3;
         s->height = ((sh + 7) >> 3) << 3;
         s->clut = 0;
         nblocks = ((u32)s->width * s->height & 0x7fffffff) >> 6;
         break;
-    case 3: /* 32 bit per pixel */
+    case 3: /* 32 bits per pixel */
         s->width = ((sw + 3) >> 2) << 2;
         s->height = ((sh + 7) >> 3) << 3;
         s->clut = 0;
         nblocks = ((u32)s->width * s->height & 0x3fffffff) >> 5;
         break;
-    case 4: /* 4 bit per pixel, con palette */
+    case 4: /* 4 bits per pixel, with palette */
         s->width = ((sw + 0x1f) >> 5) << 5;
         s->height = ((sh + 7) >> 3) << 3;
         nblocks = ((int)((u32)s->width * s->height) / 2) / 128;
         if ((s->clut = vram_alloc_clut(m)) == (u32)-1)
             return 0xff;
         break;
-    case 5: /* 8 bit per pixel, con palette */
+    case 5: /* 8 bits per pixel, with palette */
         s->width = ((sw + 0xf) >> 4) << 4;
         s->height = ((sh + 7) >> 3) << 3;
         nblocks = (int)((u32)s->width * s->height) / 128;
@@ -126,7 +126,7 @@ int vram_create_surface(VramManager *m, u32 id, u32 w, u32 h, u32 format_arg, u3
     return id;
 }
 
-/* Crea un buffer di size byte; come vram_create_surface. */
+/* Creates a buffer of size bytes; like vram_create_surface. */
 int vram_create_buffer(VramManager *m, u32 id, int size, u32 offset)
 {
     VramSurface *s;
@@ -181,7 +181,7 @@ int vram_find_free_surface(VramManager *m)
     return 0xff;
 }
 
-/* primo gruppo di count blocchi liberi consecutivi, -1 se non c'è */
+/* first group of count consecutive free blocks, -1 if there is none */
 int vram_find_blocks(VramManager *m, u32 count)
 {
     u32 run = 0;
@@ -200,7 +200,7 @@ int vram_find_blocks(VramManager *m, u32 count)
     return -1;
 }
 
-/* un posto palette da 1 KB nella superficie 45 */
+/* one 1 KB palette slot in surface 45 */
 int vram_alloc_clut(VramManager *m)
 {
     int base = vram_surface_addr(m, VRAM_CLUTSURF);
@@ -253,7 +253,7 @@ void vram_unmark_blocks(VramManager *m, u32 first, int count)
     }
 }
 
-/* copia i dati della superficie in out; 0 se la superficie è libera */
+/* copies the surface data into out; 0 if the surface is free */
 int vram_get_surface(VramManager *m, u32 id, VramSurface *out)
 {
     VramSurface *s = &m->surf[id & 0xff];

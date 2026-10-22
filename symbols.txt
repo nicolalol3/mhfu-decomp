@@ -1,8 +1,8 @@
-# Nomi leggibili per funzioni e variabili del gioco originale.
-# Formato: indirizzo nome      (le righe che iniziano con # sono commenti)
-# Le funzioni qui elencate e scritte in C in src/ sostituiscono l'originale nel gioco.
+# Readable names for functions and variables of the original game.
+# Format: address name      (lines starting with # are comments)
+# The functions listed here and written in C in src/ replace the original in the game.
 
-# --- libc: chiamate di sistema (src/libc/syscalls.c) ---
+# --- libc: system calls (src/libc/syscalls.c) ---
 0x08804098 lseek
 0x088041C8 _exit
 0x08804290 sbrk
@@ -12,8 +12,8 @@
 0x0880454C fstat
 0x0880455C isatty
 0x08804564 rename
-0x088045A0 kill            # chiamata da _kill_r; ritorna sempre -1
-0x088045A8 getpid          # chiamata da _getpid_r; ritorna sempre -1
+0x088045A0 kill            # called by _kill_r; always returns -1
+0x088045A8 getpid          # called by _getpid_r; always returns -1
 0x088045C8 sbrk_release
 0x08804620 time
 0x0880463C gettimeofday
@@ -24,7 +24,7 @@
 0x089CBA98 g_sbrk_end
 0x089CBA9C g_sbrk_block
 
-# --- libm: matematica float (src/libm/) ---
+# --- libm: float math (src/libm/) ---
 0x08804E40 __ieee754_powf
 0x08805978 __ieee754_sqrtf
 0x0880824C fabsf
@@ -34,7 +34,7 @@
 0x08806EBC __kernel_cosf
 0x0880700C __kernel_rem_pio2f
 
-# --- routine software per i double (libgcc fp-bit) ---
+# --- software routines for doubles (libgcc fp-bit) ---
 0x08905A2C __subdf3
 0x08905AA4 __adddf3
 0x08905B10 __muldf3
@@ -43,7 +43,7 @@
 0x0880795C floor
 0x08807BC8 isinf
 0x08807C00 isnan
-0x08807C28 matherr         # nome ipotetico: restituisce sempre 0
+0x08807C28 matherr         # guessed name: always returns 0
 0x08808278 floorf
 0x08906330 __gtdf2
 0x08807C30 rint
@@ -55,7 +55,7 @@
 0x088085A4 powf
 0x08910130 _LIB_VERSION
 
-# --- libc: struct _reent e chiamate di sistema rientranti (src/libc/reent.c) ---
+# --- libc: struct _reent and reentrant system calls (src/libc/reent.c) ---
 0x0880A498 __errno
 0x0880B368 __getreent
 0x0880C5A0 _getmodreent
@@ -87,7 +87,7 @@
 0x089CBAD4 g_malloc_lock_intr
 0x089CBAD8 g_malloc_lock_count
 
-# --- libc: memoria e stringhe (src/libc/string.c) ---
+# --- libc: memory and strings (src/libc/string.c) ---
 0x0880BF00 memchr
 0x0880BFF0 memcmp
 0x0880C084 memcpy
@@ -103,7 +103,7 @@
 0x0880B244 _fwalk
 0x0880B50C __smakebuf
 
-# --- libc: stdlib e locale (src/libc/stdlib.c) ---
+# --- libc: stdlib and locale (src/libc/stdlib.c) ---
 0x08808AA8 abort
 0x08808AC0 abs
 0x08808ACC atexit
@@ -113,14 +113,14 @@
 0x0880B438 setlocale
 0x0880B474 localeconv
 
-# --- libc: segnali (src/libc/signal.c) ---
+# --- libc: signals (src/libc/signal.c) ---
 0x0880E4A0 _init_signal_r
 0x0880E5B0 _raise_r
 0x0880E750 raise
 0x0880E804 _kill_r
 0x0880E878 _getpid_r
 
-# --- altre routine software per i double (libgcc fp-bit) ---
+# --- other software routines for doubles (libgcc fp-bit) ---
 0x08905294 __extendsfdf2
 0x08905E9C __divdf3
 0x089062A8 __nedf2
@@ -130,7 +130,7 @@
 0x08906470 __ltdf2
 0x089064F8 __floatsidf
 
-# --- libc: interi grandi e conversione double -> testo (src/libc/mprec.c, dtoa.c) ---
+# --- libc: big integers and double-to-text conversion (src/libc/mprec.c, dtoa.c) ---
 0x0880D8C4 Balloc
 0x0880D97C Bfree
 0x0880CA00 multadd
@@ -152,7 +152,7 @@
 0x08904394 __udivdi3
 0x089049A4 __umoddi3
 
-# --- libc: stringhe (src/libc/string.c) ---
+# --- libc: strings (src/libc/string.c) ---
 0x0880EB4C strcat
 0x0880EBF0 strchr
 0x0880ED70 strcpy
@@ -162,7 +162,7 @@
 0x0880F178 strncpy
 0x0880F394 strstr
 
-# --- libc: scrittura su FILE e printf (src/libc/stdio_write.c, vfprintf.c, wchar.c) ---
+# --- libc: writing to FILEs and printf (src/libc/stdio_write.c, vfprintf.c, wchar.c) ---
 0x0880E978 __sread
 0x0880EA08 __swrite
 0x0880EB20 __sclose
@@ -181,16 +181,16 @@
 0x088117C4 _wctomb_r
 0x08933648 __lc_ctype
 
-# --- libc: struct _reent per modulo, rand (src/libc/reent.c, stdlib.c) ---
-0x0880C690 _setmodreent    # nome ipotetico
-0x0880C7E0 _delmodreent    # nome ipotetico
-0x0880C874 _reent_init     # nome ipotetico
+# --- libc: struct _reent for each module, rand (src/libc/reent.c, stdlib.c) ---
+0x0880C690 _setmodreent    # guessed name
+0x0880C7E0 _delmodreent    # guessed name
+0x0880C874 _reent_init     # guessed name
 0x0880E154 cleanup_glue
 0x0880E19C _reclaim_reent
 0x0880DA44 srand
 0x0880DA7C rand
 
-# --- grafica: memoria video (src/gfx/vram.c, nomi ipotetici) ---
+# --- graphics: video memory (src/gfx/vram.c, guessed names) ---
 0x08811C84 vram_init
 0x08811E18 vram_create_surface
 0x08812144 vram_create_buffer
@@ -204,7 +204,7 @@
 0x088125A4 vram_get_surface
 0x08812610 vram_surface_addr
 
-# --- gioco: telecamera (src/game/camera.c, nomi ipotetici) ---
+# --- game: camera (src/game/camera.c, guessed names) ---
 0x08812A08 camera_init
 0x08812B1C camera_reset_state
 0x08812B9C camera_reset_projection
@@ -249,7 +249,7 @@
 0x08814A14 camera_set_area
 0x08814E18 camera_select_view
 
-# --- telecamera: campo visivo (src/game/camera_frustum.c) ---
+# --- camera: view field (src/game/camera_frustum.c) ---
 0x08815D64 camera_set_eye_target
 0x08815D84 camera_up_from_dir
 0x08815E28 camera_plane_normal
@@ -257,7 +257,7 @@
 0x08816060 camera_sphere_in_depth
 0x088160E8 camera_sphere_visible
 
-# --- conversione testi (src/game/textconv.c) ---
+# --- text conversion (src/game/textconv.c) ---
 0x0881629C sjis_decode
 0x08816460 utf8_decode
 0x08816508 utf8_encode
@@ -305,7 +305,7 @@
 0x0881B7F0 menu_draw_unique_list
 0x0881B9A0 menu_draw_resist_table
 
-# --- menu: cursore (src/game/menu_cursor.c) ---
+# --- menu: cursor (src/game/menu_cursor.c) ---
 0x0881BF80 menu_cursor_two_columns
 0x0881C098 menu_cursor_pages
 0x0881C1C8 menu_cursor_items
@@ -329,7 +329,7 @@
 0x0881ECDC menu_info_available
 0x0881ED64 menu_get_equip_slot
 
-# --- equipaggiamento (src/game/equip_skills.c) ---
+# --- equipment (src/game/equip_skills.c) ---
 0x08820FB4 equip_draw_icon
 0x088213E4 equip_adjust_level
 0x08821774 equip_list_skill_points

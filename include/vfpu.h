@@ -1,10 +1,10 @@
-/* Piccole funzioni che usano l'unità vettoriale della PSP (VFPU), per ottenere
- * esattamente gli stessi risultati del gioco originale (seno, coseno, radice inversa). */
+/* Small functions that use the PSP's vector unit (VFPU), to get
+ * exactly the same results as the original game (sine, cosine, reciprocal square root). */
 #ifndef VFPU_H
 #define VFPU_H
 #include "common.h"
 
-/* seno di x (in radianti), calcolato come fa il gioco: vsin(x * 2/pi) */
+/* sine of x (in radians), computed as the game does: vsin(x * 2/pi) */
 static inline f32 vfpu_sinf(f32 x)
 {
     f32 r;
@@ -16,7 +16,7 @@ static inline f32 vfpu_sinf(f32 x)
     return r;
 }
 
-/* coseno di x (in radianti) */
+/* cosine of x (in radians) */
 static inline f32 vfpu_cosf(f32 x)
 {
     f32 r;
@@ -28,7 +28,7 @@ static inline f32 vfpu_cosf(f32 x)
     return r;
 }
 
-/* 1/radice(x), approssimata come dalla VFPU */
+/* 1/sqrt(x), approximated as the VFPU does */
 static inline f32 vfpu_rsqf(f32 x)
 {
     f32 r;
@@ -38,7 +38,7 @@ static inline f32 vfpu_rsqf(f32 x)
     return r;
 }
 
-/* radice quadrata con l'istruzione della FPU */
+/* square root with the FPU instruction */
 static inline f32 fpu_sqrtf(f32 x)
 {
     f32 r;

@@ -1,4 +1,4 @@
-/* Il nuovo codice C viene caricato subito dopo la memoria del modulo originale. */
+/* The new C code is loaded right after the memory of the original module. */
 SECTIONS
 {
   . = 0x09D65500;

@@ -1,11 +1,11 @@
-/* Libreria C: funzioni di base su blocchi di memoria (memchr, memcmp, memcpy, memmove,
- * memset). Lavorano a parole di 4 byte quando gli indirizzi lo permettono. */
+/* C library: basic functions on memory blocks (memchr, memcmp, memcpy, memmove,
+ * memset). They work on 4-byte words when the addresses allow it. */
 #include "libc.h"
 
-/* parola di 4 byte letta/scritta a un indirizzo qualsiasi (lwl/lwr, swl/swr) */
+/* 4-byte word read/written at any address (lwl/lwr, swl/swr) */
 typedef struct { u32 v; } __attribute__((packed)) unaligned_u32;
 
-/* vero se la parola x contiene un byte a zero */
+/* true if the word x contains a zero byte */
 #define DETECTNULL(x) (((x) - 0x01010101) & ~(x) & 0x80808080)
 
 void *memchr(const void *src, int c, size_t n)
@@ -22,7 +22,7 @@ void *memchr(const void *src, int c, size_t n)
         while (n >= 4) {
             u32 w = *(const u32 *)s ^ mask;
             if (DETECTNULL(w))
-                break; /* il byte cercato è in questa parola */
+                break; /* the searched byte is in this word */
             n -= 4;
             s += 4;
         }
@@ -55,9 +55,9 @@ int memcmp(const void *m1, const void *m2, size_t n)
     return 0;
 }
 
-/* Copia in avanti: a blocchi di 16 byte se entrambi gli indirizzi sono allineati,
- * altrimenti a parole non allineate. Con zone sovrapposte il risultato dipende da
- * quest'ordine di copia, che è quello dell'originale. */
+/* Forward copy: in 16-byte blocks if both addresses are aligned,
+ * otherwise in unaligned words. With overlapping areas the result depends on
+ * this copy order, which is the original's. */
 void *memcpy(void *dst0, const void *src0, size_t len)
 {
     u8 *dst = dst0;
@@ -107,8 +107,8 @@ void *memmove(void *dst0, const void *src0, size_t len)
     const u8 *src = src0;
 
     if (src < dst && dst < src + len) {
-        /* zone sovrapposte con la destinazione dopo: copia all'indietro.
-         * Stranezza dell'originale: in questo caso ritorna dst0 + len. */
+        /* overlapping areas with the destination after: copy backwards.
+         * Quirk of the original: in this case it returns dst0 + len. */
         u8 *ret = dst + len;
         src += len;
         dst += len;
@@ -157,7 +157,7 @@ void *memset(void *m, int c, size_t n)
     return m;
 }
 
-/* --- stringhe C (terminate da 0) ------------------------------------------------- */
+/* --- C strings (zero-terminated) ------------------------------------------------- */
 
 size_t strlen(const char *str)
 {
@@ -183,7 +183,7 @@ char *strcat(char *s1, const char *s2)
     return s1;
 }
 
-/* aggiunge al più n caratteri di s2 in fondo a s1, poi lo 0 finale */
+/* appends at most n characters of s2 to the end of s1, then the final zero */
 char *strncat(char *s1, const char *s2, size_t n)
 {
     char *s = s1 + strlen(s1);
@@ -217,7 +217,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
     return *(const u8 *)s1 - *(const u8 *)s2;
 }
 
-/* copia al più n caratteri e riempie di zeri fino a n */
+/* copies at most n characters and fills with zeros up to n */
 char *strncpy(char *dst0, const char *src, size_t count)
 {
     char *dst = dst0;
@@ -232,7 +232,7 @@ char *strncpy(char *dst0, const char *src, size_t count)
     return dst0;
 }
 
-/* primo c in s (anche lo 0 finale se c == 0), NULL se non c'è */
+/* first c in s (also the final zero if c == 0), NULL if not present */
 char *strchr(const char *s, int i)
 {
     u8 c = i;

@@ -1,16 +1,16 @@
-/* Libreria C: parti di base di stdio (preparazione di stdin/stdout/stderr, buffer,
- * svuotamento dei buffer in scrittura). */
+/* C library: basic parts of stdio (setup of stdin/stdout/stderr, buffers,
+ * flushing of the write buffers). */
 #include "libc.h"
 
-/* Funzioni dei FILE all'indirizzo originale: nei FILE si salvano questi indirizzi, come
- * nel gioco (l'originale poi salta alla versione in C, dove c'è). */
+/* FILE functions at their original addresses: the FILEs store these addresses, as
+ * in the game (the original then jumps to the C version, where there is one). */
 extern int func_0880E978(void *cookie, char *buf, int n);        /* __sread */
 extern int func_0880EA08(void *cookie, const char *buf, int n);  /* __swrite */
-extern int func_0880EA8C(void *cookie, int off, int whence);     /* __sseek (non ancora in C) */
+extern int func_0880EA8C(void *cookie, int off, int whence);     /* __sseek (not yet in C) */
 extern int func_0880EB20(void *cookie);                          /* __sclose */
 extern void func_0880A8C8(struct _reent *r);                     /* _cleanup_r */
 
-/* Scrive su disco il contenuto del buffer di fp; fp == NULL: tutti i file aperti. */
+/* Writes the buffer content of fp to disk; fp == NULL: all open files. */
 int fflush(FILE *fp)
 {
     u8 *p;
@@ -40,7 +40,7 @@ int fflush(FILE *fp)
     return 0;
 }
 
-/* prepara uno dei tre FILE standard */
+/* prepares one of the three standard FILEs */
 void std(FILE *ptr, int flags, int file, struct _reent *data)
 {
     ptr->_p = NULL;
@@ -58,7 +58,7 @@ void std(FILE *ptr, int flags, int file, struct _reent *data)
     ptr->_close = func_0880EB20;
 }
 
-/* alloca un nuovo blocco di n FILE (azzerati) */
+/* allocates a new block of n FILEs (zeroed) */
 struct _glue *__sfmoreglue(struct _reent *d, int n)
 {
     struct _glue *g = _malloc_r(d, sizeof(*g) + n * sizeof(FILE));
@@ -74,7 +74,7 @@ struct _glue *__sfmoreglue(struct _reent *d, int n)
     return g;
 }
 
-/* prima inizializzazione di stdio per una struct _reent */
+/* first initialization of stdio for a struct _reent */
 void __sinit(struct _reent *s)
 {
     s->__cleanup = func_0880A8C8;
@@ -87,8 +87,8 @@ void __sinit(struct _reent *s)
     std(s->_stderr, __SWR | __SNBF, 2, s);
 }
 
-/* Chiama function su ogni FILE in uso di ptr e poi su quelli del modulo principale;
- * ritorna l'OR dei risultati. */
+/* Calls function on every FILE in use of ptr and then on those of the main module;
+ * returns the OR of the results. */
 static inline int fwalk_glue(struct _reent *ptr, int (*function)(FILE *))
 {
     struct _glue *g;
@@ -111,7 +111,7 @@ int _fwalk(struct _reent *ptr, int (*function)(FILE *))
     return ret | fwalk_glue(_impure_ptr, function);
 }
 
-/* Assegna un buffer a fp: 1 KB allocato, oppure il buffer interno da un byte. */
+/* Assigns a buffer to fp: 1 KB allocated, or the one-byte internal buffer. */
 void __smakebuf(FILE *fp)
 {
     u32 st[16];

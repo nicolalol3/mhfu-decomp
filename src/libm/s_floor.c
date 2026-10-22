@@ -1,5 +1,5 @@
-/* floor (double): il più grande intero <= x, lavorando sui bit (fdlibm, Sun Microsystems).
- * Le operazioni double diventano chiamate alle routine software del gioco. */
+/* floor (double): the largest integer <= x, computed on the bits (fdlibm, Sun Microsystems).
+ * The double operations become calls to the game's software routines. */
 #include "libm.h"
 
 static const f64 huge = 1.0e300;
@@ -27,7 +27,7 @@ f64 floor(f64 x)
         } else {
             i = (0x000fffff) >> j0;
             if (((i0 & i) | i1) == 0)
-                return x; /* x è già intero */
+                return x; /* x is already an integer */
             if (huge + x > 0.0) {
                 if (i0 < 0)
                     i0 += (0x00100000) >> j0;
@@ -37,8 +37,8 @@ f64 floor(f64 x)
         }
     } else if (j0 > 51) {
         if (j0 == 0x400)
-            return x + x; /* inf o NaN */
-        return x;         /* x è già intero */
+            return x + x; /* inf or NaN */
+        return x;         /* x is already an integer */
     } else {
         i = ((u32)(0xffffffff)) >> (j0 - 20);
         if ((i1 & i) == 0)

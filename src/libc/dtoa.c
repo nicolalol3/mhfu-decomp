@@ -1,6 +1,6 @@
-/* Conversione double -> cifre decimali (usata da printf per %f, %e, %g).
- * Da dtoa.c di newlib (David M. Gay, "Correctly Rounded Binary-Decimal Conversions"):
- * prima prova con l'aritmetica dei double, se non basta usa gli interi grandi (mprec.c). */
+/* Conversion of a double -> decimal digits (used by printf for %f, %e, %g).
+ * From dtoa.c of newlib (David M. Gay, "Correctly Rounded Binary-Decimal Conversions"):
+ * first try with double arithmetic; if that is not enough, use big integers (mprec.c). */
 #include "mprec.h"
 
 #define Ten_pmax  22
@@ -13,18 +13,18 @@
 #define Frac_mask1 0xfffff
 #define Exp_11    0x3ff00000
 
-int __gedf2(f64 a, f64 b); /* confronto della libreria dei double: >= 0 se a >= b */
+int __gedf2(f64 a, f64 b); /* double library comparison: >= 0 if a >= b */
 
-/* nella struct _reent: buffer del risultato precedente */
+/* in struct _reent: buffer of the previous result */
 #define REENT_RESULT(r)   (*(_Bigint **)((u8 *)(r) + 0x40))
 #define REENT_RESULT_K(r) (*(int *)((u8 *)(r) + 0x44))
 
-/* stringhe originali (il chiamante riceve proprio questi indirizzi) */
+/* original strings (the caller receives exactly these addresses) */
 extern char D_08910428[]; /* "Infinity" */
 extern char D_08910434[]; /* "NaN" */
 extern char D_08910438[]; /* "0" */
 
-/* Divide b per S (quoziente < 10) lasciando il resto in b. */
+/* Divides b by S (quotient < 10), leaving the remainder in b. */
 int quorem(_Bigint *b, _Bigint *S)
 {
     int n;
@@ -39,7 +39,7 @@ int quorem(_Bigint *b, _Bigint *S)
     sxe = sx + --n;
     bx = b->_x;
     bxe = bx + n;
-    q = *bxe / (*sxe + 1); /* q <= quoziente vero */
+    q = *bxe / (*sxe + 1); /* q <= true quotient */
     if (q) {
         borrow = 0;
         carry = 0;
@@ -93,11 +93,11 @@ int quorem(_Bigint *b, _Bigint *S)
     return q;
 }
 
-/* Modi (come ecvt/fcvt):
- *  0: cifre minime che riletta danno esattamente d;  1: come 0 (senza arrotondamenti ROUND_BIASED)
- *  2: max(1, ndigits) cifre significative;  3: ndigits cifre dopo la virgola
- *  4, 5: come 2 e 3 ma con il metodo "leftright";  6-9: come 2-5 senza la via veloce.
- * Ritorna le cifre (senza zeri finali), *decpt = posizione della virgola, *sign = segno. */
+/* Modes (like ecvt/fcvt):
+ *  0: minimal digits that read back give exactly d;  1: like 0 (without ROUND_BIASED rounding)
+ *  2: max(1, ndigits) significant digits;  3: ndigits digits after the decimal point
+ *  4, 5: like 2 and 3 but with the "leftright" method;  6-9: like 2-5 without the fast path.
+ * Returns the digits (without trailing zeros), *decpt = decimal point position, *sign = sign. */
 char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
     int bbits, b2, b5, be, dig, i, ieps, ilim, ilim0, ilim1, j, j1, k, k0, k_check, leftright,
@@ -127,7 +127,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
         *sign = 0;
     }
 
-    if ((word0(d) & Exp_mask) == Exp_mask) { /* infinito o NaN */
+    if ((word0(d) & Exp_mask) == Exp_mask) { /* infinity or NaN */
         *decpt = 9999;
         s = !word1(d) && !(word0(d) & 0xfffff) ? D_08910428 : D_08910434;
         if (rve)
@@ -153,14 +153,14 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
         /* denormalizzato */
         i = bbits + be + (Bias + (P - 1) - 1);
         x = i > 32 ? (word0(d) << (64 - i)) | (word1(d) >> (i - 32)) : (word1(d) << (32 - i));
-        d2.d = (s32)x; /* (u32 -> double come nell'originale) */
+        d2.d = (s32)x; /* (u32 -> double as in the original) */
         if ((s32)x < 0)
             d2.d += 4294967296.0;
         word0(d2) -= 31 * Exp_msk1;
         i -= (Bias + (P - 1) - 1) + 1;
         denorm = 1;
     }
-    /* stima di k = floor(log10(d)) */
+    /* estimate of k = floor(log10(d)) */
     ds = (d2.d - 1.5) * 0.289529654602168 + 0.1760912590558 + i * 0.301029995663981;
     k = (int)ds;
     if (ds < 0. && ds != k)
@@ -228,7 +228,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
     s = s0 = (char *)REENT_RESULT(ptr);
 
     if (ilim >= 0 && ilim <= Quick_max && try_quick) {
-        /* prova con l'aritmetica dei double */
+        /* try with double arithmetic */
         i = 0;
         d2.d = d.d;
         k0 = k;
@@ -237,7 +237,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
         if (k > 0) {
             ds = __mprec_tens[k & 0xf];
             j = k >> 4;
-            if (j & Bletch) { /* evita l'overflow */
+            if (j & Bletch) { /* avoid overflow */
                 j &= Bletch - 1;
                 d.d /= __mprec_bigtens[n_bigtens - 1];
                 ieps++;
@@ -278,7 +278,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
             goto fast_failed;
         }
         if (leftright) {
-            /* metodo di Steele & White: solo le cifre necessarie */
+            /* Steele & White's method: only the necessary digits */
             eps.d = 0.5 / __mprec_tens[ilim - 1] - eps.d;
             for (i = 0;;) {
                 L = d.d;
@@ -294,7 +294,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
                 d.d *= 10.;
             }
         } else {
-            /* ilim cifre, poi le sistema */
+            /* ilim digits, then rounds them */
             eps.d *= __mprec_tens[ilim - 1];
             for (i = 1;; i++, d.d *= 10.) {
                 L = d.d;
@@ -320,12 +320,12 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
         ilim = ilim0;
     }
 
-    /* un intero "piccolo"? */
+    /* a "small" integer? */
     if (be >= 0 && k <= Int_max) {
         ds = __mprec_tens[k];
         if (ndigits < 0 && ilim <= 0) {
             S = mhi = NULL;
-            /* (d <= 5 * ds: il gioco non ha __ledf2, si confronta con __gedf2 come l'originale) */
+            /* (d <= 5 * ds: the game has no __ledf2, so it compares with __gedf2 as the original) */
             if (ilim < 0 || __gedf2(5 * ds, d.d) >= 0)
                 goto no_digits;
             goto one_digit;
@@ -404,7 +404,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
     if (s5 > 0)
         S = pow5mult(ptr, S, s5);
 
-    /* caso speciale: d è una potenza di 2 normalizzata */
+    /* special case: d is a normalized power of 2 */
     spec_case = 0;
     if (mode < 2) {
         if (!word1(d) && !(word0(d) & Bndry_mask) && (word0(d) & Exp_mask)) {
@@ -414,7 +414,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
         }
     }
 
-    /* il divisore deve avere 4 bit a zero in testa (per quorem) */
+    /* the divisor must have 4 zero bits at the top (for quorem) */
     if ((i = ((s5 ? 32 - hi0bits(S->_x[S->_wds - 1]) : 1) + s2) & 0x1f) != 0)
         i = 32 - i;
     if (i > 4) {
@@ -435,7 +435,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
     if (k_check) {
         if (cmp(b, S) < 0) {
             k--;
-            b = multadd(ptr, b, 10, 0); /* la stima di k era sbagliata */
+            b = multadd(ptr, b, 10, 0); /* the estimate of k was wrong */
             if (leftright)
                 mhi = multadd(ptr, mhi, 10, 0);
             ilim = ilim1;
@@ -465,7 +465,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
 
         for (i = 1;; i++) {
             dig = quorem(b, S) + '0';
-            /* abbiamo già la stringa più corta che riletta dà d? */
+            /* do we already have the shorter string that reads back as d? */
             j = cmp(b, mlo);
             delta = diff(ptr, S, mhi);
             j1 = delta->_sign ? 1 : cmp(b, delta);
@@ -517,7 +517,7 @@ char *_dtoa_r(struct _reent *ptr, f64 _d, int mode, int ndigits, int *decpt, int
         }
     }
 
-    /* arrotonda l'ultima cifra */
+    /* round the last digit */
     b = lshift(ptr, b, 1);
     j = cmp(b, S);
     if (j > 0 || (j == 0 && dig & 1)) {

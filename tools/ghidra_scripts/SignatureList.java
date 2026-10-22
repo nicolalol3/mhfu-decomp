@@ -1,7 +1,7 @@
-// Scrive, per ogni funzione indicata, dove stanno i suoi parametri secondo il decompilatore
-// (registro o stack e dimensione in byte) e se ritorna un float.
-// Uso: -postScript SignatureList.java <file_output> <file_con_indirizzi (uno per riga)>
-// Riga di output: indirizzo<TAB>ritorno<TAB>reg:dim,reg:dim,...
+// Writes, for each listed function, where its parameters are according to the decompiler
+// (register or stack, and size in bytes) and whether it returns a float.
+// Usage: -postScript SignatureList.java <output_file> <file_with_addresses (one per line)>
+// Output line: address<TAB>return<TAB>reg:size,reg:size,...
 import ghidra.app.script.GhidraScript;
 import ghidra.app.decompiler.*;
 import ghidra.program.model.listing.*;

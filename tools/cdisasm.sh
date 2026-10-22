@@ -1,5 +1,5 @@
 #!/bin/bash
-# Disassembla una funzione del C ricompilato. Uso (WSL): tools/cdisasm.sh NOME
+# Disassembles a function of the recompiled C. Usage (WSL): tools/cdisasm.sh NAME
 export PATH=/usr/bin:/bin:/opt/pspdev/bin
 cd "$(dirname "$0")/.."
 a=$(awk -v n="$1" '$3==n {print $1}' build/newcode.nm)

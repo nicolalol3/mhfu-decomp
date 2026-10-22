@@ -1,5 +1,5 @@
-"""Genera build/syms.ld: indirizzi originali per func_XXXXXXXX e D_XXXXXXXX usati dal C,
-per i nomi di symbols.txt e per le funzioni di sistema importate (sceXxx)."""
+"""Generates build/syms.ld: original addresses for func_XXXXXXXX and D_XXXXXXXX used by the C,
+for the names in symbols.txt and for the imported system functions (sceXxx)."""
 import os, re, sys
 sys.path.insert(0, os.path.dirname(__file__))
 from config import BUILD, SRC, ROOT, load_functions, load_symbols
@@ -13,7 +13,7 @@ for d in (SRC, os.path.join(ROOT, "include")):
                 names |= set(re.findall(r"\b((?:func|D)_[0-9A-F]{8})\b", open(os.path.join(dp, fn)).read()))
 names |= {"func_%08X" % a for a in load_functions()}
 
-# PROVIDE: il simbolo viene usato solo se non è definito dal nostro C
+# PROVIDE: the symbol is used only if it is not defined by our C
 with open(os.path.join(BUILD, "syms.ld"), "w") as f:
     for line in open(os.path.join(BUILD, "imports.tsv")):
         addr, _, _, name = line.rstrip("\n").split("\t")

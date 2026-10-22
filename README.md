@@ -1,46 +1,46 @@
-# Decompilazione di Monster Hunter Freedom Unite (PSP, EU, ULES01213)
+# Decompilation of Monster Hunter Freedom Unite (PSP, EU, ULES01213)
 
-Obiettivo: riscrivere in C il codice del gioco, funzione per funzione, in modo che sia
-facile da modificare. Non serve che il codice compilato sia identico byte per byte
-all'originale: deve solo **comportarsi** allo stesso modo.
+Goal: rewrite the game's code in C, function by function, so that it is easy to modify.
+The compiled code does not need to be byte-for-byte identical to the original: it only has
+to **behave** the same way.
 
-## Come funziona
+## How it works
 
-1. Il gioco originale (EBOOT decifrato) resta la base.
-2. Ogni funzione riscritta in C (`src/`) viene compilata e caricata in memoria subito dopo
-   il gioco; all'inizio della funzione originale viene messo un salto verso la versione in C.
-3. Così il gioco gira con un misto di codice originale e codice C, e la parte in C cresce
-   un po' alla volta.
+1. The original game (decrypted EBOOT) remains the base.
+2. Each function rewritten in C (`src/`) is compiled and loaded into memory right after the
+   game; at the start of the original function, a jump to the C version is placed.
+3. So the game runs with a mix of original code and C code, and the C part grows little by
+   little.
 
-## Cartelle
+## Folders
 
-| Percorso | Contenuto |
+| Path | Contents |
 |---|---|
-| `src/` | il codice C decompilato (`libc/` = libreria C, `libm/` = matematica) |
-| `include/` | header comuni |
-| `symbols.txt` | nomi leggibili di funzioni e variabili del gioco (indirizzo → nome) |
-| `tools/` | strumenti: compilazione, iniezione, test |
-| `build/` | file generati (EBOOT modificato, screenshot dei test, ...) |
-| `../work/` | analisi Ghidra, EBOOT originale decifrato, disco estratto per i test |
+| `src/` | the decompiled C code (`libc/` = C library, `libm/` = math) |
+| `include/` | shared headers |
+| `symbols.txt` | readable names of game functions and variables (address → name) |
+| `tools/` | tools: build, injection, tests |
+| `build/` | generated files (modified EBOOT, test screenshots, ...) |
+| `../work/` | Ghidra analysis, decrypted original EBOOT, extracted disc for the tests |
 
-## Verifica di ogni funzione
+## Checking each function
 
-- **Banco di prova** (`tools/difftest.py`): esegue la funzione originale e quella in C su
-  una CPU MIPS emulata con centinaia di input casuali (compresi valori estremi) e confronta
-  risultato, memoria scritta e chiamate al sistema operativo.
-- **Test di avvio** (`tools/boottest.sh`): avvia il gioco in PPSSPP con l'EBOOT modificato
-  e salva uno screenshot in `build/screenshot.png`.
+- **Test bench** (`tools/difftest.py`): runs the original function and the C version on an
+  emulated MIPS CPU with hundreds of random inputs (including extreme values), and compares
+  the result, the memory written and the calls to the operating system.
+- **Boot test** (`tools/boottest.sh`): starts the game in PPSSPP with the modified EBOOT and
+  saves a screenshot to `build/screenshot.png`.
 
-## Comandi (li esegue Claude)
+## Commands (run by Claude)
 
 ```
-wsl.exe -d Ubuntu -- bash tools/build.sh                 # compila e crea build/EBOOT.BIN
-tools/.venv/Scripts/python.exe -I tools/difftest.py      # banco di prova
-tools/boottest.sh 25                                     # test di avvio in PPSSPP
-python tools/progress.py                                 # percentuale completata
+wsl.exe -d Ubuntu -- bash tools/build.sh                 # compiles and creates build/EBOOT.BIN
+tools/.venv/Scripts/python.exe -I tools/difftest.py      # test bench
+tools/boottest.sh 25                                     # boot test in PPSSPP
+python tools/progress.py                                 # percentage completed
 ```
 
-## Stato
+## Status
 
-Vedi `python tools/progress.py`. La percentuale si riferisce al solo EBOOT (1.089.080 byte
-di codice); il gioco carica altro codice (overlay) da `DATA.BIN`, non ancora contato.
+See `python tools/progress.py`. The percentage refers only to the EBOOT (1,089,080 bytes of
+code); the game loads other code (overlays) from `DATA.BIN`, which is not counted yet.

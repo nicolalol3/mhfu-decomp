@@ -1,7 +1,7 @@
-"""Esegue difftest.py su tutte le funzioni (o quelle indicate), una per processo, così un crash
-dell'emulatore su una funzione non ferma il giro. Scrive il riepilogo in build/difftest_all.txt.
+"""Runs difftest.py on all functions (or the listed ones), one per process, so that a crash
+of the emulator on one function does not stop the whole run. Writes the summary to build/difftest_all.txt.
 
-Uso: tools/.venv/Scripts/python.exe -I tools/difftest_all.py [nomi...] [--runs N] [--jobs J]
+Usage: tools/.venv/Scripts/python.exe -I tools/difftest_all.py [names...] [--runs N] [--jobs J]
 """
 import os, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
@@ -42,7 +42,7 @@ def main():
     for _, s in results:
         k = s.split()[0]
         cnt[k] = cnt.get(k, 0) + 1
-    print("Riepilogo:", ", ".join("%s %d" % kv for kv in sorted(cnt.items())))
+    print("Summary:", ", ".join("%s %d" % kv for kv in sorted(cnt.items())))
 
 
 if __name__ == "__main__":

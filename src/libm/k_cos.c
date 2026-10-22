@@ -1,6 +1,6 @@
 /* __kernel_cos: coseno double su [-pi/4, pi/4] (fdlibm, Sun Microsystems).
- * La PSP non ha FPU double: le operazioni diventano chiamate a __muldf3/__adddf3/__subdf3,
- * che vengono collegate alle routine software del gioco. Il gioco non chiama mai questa funzione. */
+ * The PSP has no double-precision FPU: the operations become calls to __muldf3/__adddf3/__subdf3,
+ * which are linked to the game's software routines. The game never calls this function. */
 #include "libm.h"
 
 static const f64 one = 1.0;
@@ -18,7 +18,7 @@ f64 __kernel_cos(f64 x, f64 y)
     union { f64 d; u32 w[2]; } u;
 
     u.d = x;
-    ix = u.w[1] & 0x7fffffff; /* parola alta di |x| */
+    ix = u.w[1] & 0x7fffffff; /* high word of |x| */
     if (ix < 0x3e400000) { /* |x| < 2**-27 */
         if ((int)x == 0)
             return one;

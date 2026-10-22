@@ -1,4 +1,4 @@
-/* __kernel_sinf: seno su [-pi/4, pi/4]; y è la coda di x, iy indica se y è valida
+/* __kernel_sinf: sine on [-pi/4, pi/4]; y is the tail of x, iy says whether y is valid
  * (fdlibm, Sun Microsystems). */
 #include "libm.h"
 

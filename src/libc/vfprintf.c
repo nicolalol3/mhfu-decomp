@@ -1,6 +1,6 @@
-/* Il motore di printf: interpreta il formato (%d, %s, %f, ...) e scrive il risultato
- * nel FILE a pezzi (lista di __siov svuotata con __sprint ogni 8 pezzi).
- * Da vfprintf.c di newlib (origine BSD). */
+/* The printf engine: interprets the format (%d, %s, %f, ...) and writes the result
+ * into the FILE in pieces (list of __siov flushed with __sprint every 8 pieces).
+ * From vfprintf.c of newlib (BSD origin). */
 #include "libc.h"
 
 typedef u16 wchar_t16;
@@ -8,21 +8,21 @@ typedef struct { int __count; int __value; } mbstate_t;
 int _wcrtomb_r(struct _reent *ptr, char *s, wchar_t16 wc, mbstate_t *ps);
 size_t _wcsrtombs_r(struct _reent *r, char *dst, const wchar_t16 **src, size_t len, mbstate_t *ps);
 
-#define BUF     348  /* spazio per le cifre di un numero */
-#define DEFPREC 6    /* precisione predefinita di %e %f %g */
-#define NIOV    8    /* pezzi accumulati prima di scrivere */
+#define BUF     348  /* room for the digits of a number */
+#define DEFPREC 6    /* default precision of %e %f %g */
+#define NIOV    8    /* pieces accumulated before writing */
 #define PADSIZE 16
 
-/* opzioni del formato */
+/* format options */
 #define ALT       0x001 /* '#' */
 #define HEXPREFIX 0x002 /* aggiunge 0x / 0X */
 #define LADJUST   0x004 /* '-': allinea a sinistra */
 #define LONGDBL   0x008 /* 'L' */
 #define LONGINT   0x010 /* 'l' */
-#define QUADINT   0x020 /* 'll' o 'q' */
+#define QUADINT   0x020 /* 'll' or 'q' */
 #define SHORTINT  0x040 /* 'h' */
 #define ZEROPAD   0x080 /* '0' */
-#define FPT       0x100 /* numero con la virgola */
+#define FPT       0x100 /* floating-point number */
 
 enum { OCT, DEC, HEX };
 
@@ -35,7 +35,7 @@ static const char blanks[PADSIZE] = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
 static const char zeroes[PADSIZE] = { '0', '0', '0', '0', '0', '0', '0', '0',
                                       '0', '0', '0', '0', '0', '0', '0', '0' };
 
-/* Cifre di value per %e/%f/%g (tramite _dtoa_r); per %e/%f e con '#' completa con zeri. */
+/* Digits of value for %e/%f/%g (via _dtoa_r); for %e/%f with '#' pads with zeros. */
 static inline char *cvt(struct _reent *data, f64 value, int ndigits, int flags, char *sign,
                         int *decpt, int ch, int *length)
 {
@@ -44,15 +44,15 @@ static inline char *cvt(struct _reent *data, f64 value, int ndigits, int flags, 
     union { f64 d; u32 i[2]; } tmp;
 
     if (ch == 'f') {
-        mode = 3; /* ndigits cifre dopo la virgola */
+        mode = 3; /* ndigits digits after the decimal point */
     } else {
-        /* %e ha una cifra in più (prima della virgola) */
+        /* %e has one extra digit (before the decimal point) */
         if (ch == 'e' || ch == 'E')
             ndigits++;
-        mode = 2; /* ndigits cifre significative */
+        mode = 2; /* ndigits significant digits */
     }
     tmp.d = value;
-    if (tmp.i[1] & 0x80000000) { /* anche -0.0 */
+    if (tmp.i[1] & 0x80000000) { /* also -0.0 */
         tmp.i[1] ^= 0x80000000;
         value = tmp.d;
         *sign = '-';
@@ -68,7 +68,7 @@ static inline char *cvt(struct _reent *data, f64 value, int ndigits, int flags, 
                 *decpt = -ndigits + 1;
             bp += *decpt;
         }
-        if (value == 0) /* dtoa per lo 0 dà una sola cifra */
+        if (value == 0) /* dtoa for 0 gives only one digit */
             rve = bp;
         while (rve < bp)
             *rve++ = '0';
@@ -77,7 +77,7 @@ static inline char *cvt(struct _reent *data, f64 value, int ndigits, int flags, 
     return digits;
 }
 
-/* esponente di %e: "e+05", "e-123", ... */
+/* exponent of %e: "e+05", "e-123", ... */
 static inline int exponent(char *p0, int exp, int fmtch)
 {
     char *p, *t;
@@ -108,36 +108,36 @@ static inline int exponent(char *p0, int exp, int fmtch)
 
 int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
 {
-    char *fmt;           /* posizione nel formato */
-    int ch;              /* carattere del formato */
+    char *fmt;           /* position in the format */
+    int ch;              /* format character */
     int n, m;
-    char *cp;            /* testo da stampare */
+    char *cp;            /* text to print */
     struct __siov *iovp;
     int flags;
     int ret;             /* caratteri scritti finora */
     int width;           /* larghezza minima */
-    int prec;            /* precisione ('.'), -1 se assente */
-    char sign;           /* segno ('-', '+', ' ' o 0) */
+    int prec;            /* precision ('.'), -1 if absent */
+    char sign;           /* sign ('-', '+', ' ' or 0) */
     char *decimal_point = *(char **)localeconv();
-    char softsign;       /* segno di un numero con la virgola */
+    char softsign;       /* sign of a floating-point number */
     f64 _fpvalue = 0;
-    int expt;            /* esponente decimale da cvt */
-    int expsize = 0;     /* lunghezza dell'esponente */
-    int ndig = 0;        /* cifre da cvt */
+    int expt;            /* decimal exponent from cvt */
+    int expsize = 0;     /* length of the exponent */
+    int ndig = 0;        /* digits from cvt */
     char expstr[7];
-    u64 _uquad;          /* intero da stampare */
+    u64 _uquad;          /* integer to print */
     int base;
-    int dprec;           /* precisione dei numeri interi */
-    int realsz;          /* lunghezza del campo senza la larghezza */
-    int size;            /* lunghezza di cp */
-    char *xdigs = NULL;  /* cifre esadecimali */
+    int dprec;           /* precision of integers */
+    int realsz;          /* length of the field without the width */
+    int size;            /* length of cp */
+    char *xdigs = NULL;  /* hexadecimal digits */
     struct __suio uio;
     struct __siov iov[NIOV];
     char buf[BUF];
-    char ox[2];          /* "0x" o cifra + '.' */
-    char *malloc_buf = NULL; /* stringa convertita da %S */
+    char ox[2];          /* "0x" or digit + '.' */
+    char *malloc_buf = NULL; /* string converted from %S */
 
-/* aggiunge un pezzo; ogni NIOV pezzi li scrive */
+/* adds a piece; every NIOV pieces they are written */
 #define PRINT(ptr, len)                              \
     {                                                \
         iovp->iov_base = (ptr);                      \
@@ -168,7 +168,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
         iovp = iov;                                  \
     }
 
-/* argomenti interi con segno / senza segno, secondo 'h', 'l', 'll' */
+/* signed / unsigned integer arguments, depending on 'h', 'l', 'll' */
 #define SARG()                                                   \
     (flags & QUADINT ? va_arg(ap, s64)                           \
      : flags & LONGINT ? (s64)va_arg(ap, s32)                    \
@@ -184,7 +184,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
     if (((fp->_flags & __SWR) == 0 || fp->_bf._base == NULL) && __swsetup(fp))
         return -1;
 
-    /* file senza buffer: meglio un buffer temporaneo */
+    /* unbuffered file: better to use a temporary buffer */
     if ((fp->_flags & (__SNBF | __SWR | __SRW)) == (__SNBF | __SWR) && fp->_file >= 0)
         return __sbprintf(fp, fmt0, ap);
 
@@ -195,7 +195,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
     ret = 0;
 
     for (;;) {
-        /* testo normale fino al prossimo % */
+        /* plain text up to the next % */
         for (cp = fmt; (ch = *fmt) != '\0' && ch != '%'; fmt++)
             ;
         if ((m = fmt - cp) != 0) {
@@ -204,7 +204,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
         }
         if (ch == '\0')
             goto done;
-        fmt++; /* salta il % */
+        fmt++; /* skip the % */
 
         flags = 0;
         dprec = 0;
@@ -217,7 +217,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
     reswitch:
         switch (ch) {
         case ' ':
-            /* "se ci sono sia ' ' sia '+', ' ' viene ignorato" (ANSI) */
+            /* "if there are both ' ' and '+', ' ' is ignored" (ANSI) */
             if (!sign)
                 sign = ' ';
             goto rflag;
@@ -225,7 +225,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
             flags |= ALT;
             goto rflag;
         case '*':
-            /* larghezza negativa = '-' più larghezza positiva */
+            /* negative width = '-' plus positive width */
             if ((width = va_arg(ap, int)) >= 0)
                 goto rflag;
             width = -width;
@@ -250,7 +250,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
             prec = n < 0 ? -1 : n;
             goto reswitch;
         case '0':
-            /* "0 prima della larghezza = riempi di zeri" (ANSI) */
+            /* "0 before the width = fill with zeros" (ANSI) */
             flags |= ZEROPAD;
             goto rflag;
         case '1': case '2': case '3': case '4':
@@ -317,7 +317,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                 prec = 1;
             _fpvalue = va_arg(ap, f64); /* (long double == double) */
 
-            /* infinito e NaN prima dei calcoli sulla precisione */
+            /* infinity and NaN before the precision calculations */
             if (isinf(_fpvalue)) {
                 if (_fpvalue < 0)
                     sign = '-';
@@ -339,7 +339,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                 else
                     ch = 'g';
             }
-            if (ch <= 'e') { /* %e o %E */
+            if (ch <= 'e') { /* %e or %E */
                 --expt;
                 expsize = exponent(expstr, expt, ch);
                 size = expsize + ndig;
@@ -353,7 +353,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                 } else { /* "0.X" */
                     size = (prec || (flags & ALT)) ? prec + 2 : 1;
                 }
-            } else if (expt >= ndig) { /* %g senza virgola */
+            } else if (expt >= ndig) { /* %g without decimal point */
                 size = expt;
                 if (flags & ALT)
                     ++size;
@@ -372,7 +372,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                 *va_arg(ap, short *) = ret;
             else
                 *va_arg(ap, int *) = ret;
-            continue; /* non stampa niente */
+            continue; /* prints nothing */
         case 'O':
             flags |= LONGINT;
             /* continua */
@@ -381,7 +381,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
             base = OCT;
             goto nosign;
         case 'p':
-            /* il puntatore come numero esadecimale con 0x */
+            /* the pointer as a hexadecimal number with 0x */
             _uquad = (u32)va_arg(ap, void *);
             base = HEX;
             xdigs = "0123456789abcdef";
@@ -395,14 +395,14 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                 cp = "(null)";
                 size = 6;
             } else if (ch == 'S' || (flags & LONGINT)) {
-                /* stringa di caratteri larghi: la converte in multibyte */
+                /* wide-character string: converts it to multibyte */
                 mbstate_t ps;
                 const wchar_t16 *wcp = (const wchar_t16 *)cp;
 
                 size = m = 0;
                 memset(&ps, 0, sizeof(ps));
                 if (prec >= 0) {
-                    /* solo i caratteri che stanno in prec byte */
+                    /* only the characters that fit in prec bytes */
                     for (;;) {
                         if (wcp[m] == 0)
                             break;
@@ -430,7 +430,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                 cp = malloc_buf;
                 cp[size] = '\0';
             } else if (prec >= 0) {
-                /* niente strlen: lo 0 si cerca solo nei primi prec caratteri */
+                /* no strlen: the zero is only searched in the first prec characters */
                 char *p = memchr(cp, 0, prec);
 
                 if (p != NULL) {
@@ -459,16 +459,16 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
         hex:
             _uquad = UARG();
             base = HEX;
-            /* 0x davanti solo se il numero non è 0 */
+            /* 0x in front only if the number is not 0 */
             if ((flags & ALT) && _uquad != 0)
                 flags |= HEXPREFIX;
         nosign:
             sign = '\0';
         number:
-            /* "con una precisione il flag 0 si ignora" (ANSI) */
+            /* "with a precision the 0 flag is ignored" (ANSI) */
             if ((dprec = prec) >= 0)
                 flags &= ~ZEROPAD;
-            /* "lo 0 con precisione 0 non dà caratteri" (ANSI) */
+            /* "a zero with precision 0 gives no characters" (ANSI) */
             cp = buf + BUF;
             if (_uquad != 0 || prec != 0) {
                 switch (base) {
@@ -477,12 +477,12 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                         *--cp = to_char(_uquad & 7);
                         _uquad >>= 3;
                     } while (_uquad);
-                    /* '#' per l'ottale: uno 0 davanti */
+                    /* '#' for octal: a leading zero */
                     if ((flags & ALT) && *cp != '0')
                         *--cp = '0';
                     break;
                 case DEC:
-                    /* molti numeri hanno una cifra sola */
+                    /* many numbers have only one digit */
                     while (_uquad >= 10) {
                         *--cp = to_char(_uquad % 10);
                         _uquad /= 10;
@@ -501,13 +501,13 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                     goto skipsize;
                 }
             } else if (base == OCT && (flags & ALT)) {
-                /* printf("%#.0o", 0) stampa "0" */
+                /* printf("%#.0o", 0) prints "0" */
                 *--cp = '0';
             }
             size = buf + BUF - cp;
         skipsize:
             break;
-        default: /* "%?" stampa ?, se non è lo 0 finale */
+        default: /* "%?" prints ?, unless it is the final zero */
             if (ch == '\0')
                 goto done;
             cp = buf;
@@ -517,8 +517,8 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
             break;
         }
 
-        /* Qui cp punta al testo da stampare (size caratteri). Prima eventuali spazi a
-         * sinistra, poi segno/prefisso, zeri di riempimento, il testo, e spazi a destra. */
+        /* Here cp points to the text to print (size characters). First any spaces to
+         * left, then sign/prefix, fill zeros, the text, and spaces to the right. */
         realsz = dprec > size ? dprec : size;
         if (sign)
             realsz++;
@@ -542,16 +542,16 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
         if ((flags & (LADJUST | ZEROPAD)) == ZEROPAD)
             PAD(width - realsz, zeroes);
 
-        /* zeri della precisione degli interi */
+        /* zeros of the integer precision */
         PAD(dprec - size, zeroes);
 
-        /* il testo */
+        /* the text */
         if ((flags & FPT) == 0) {
             PRINT(cp, size);
-        } else { /* numero con la virgola: si mettono insieme i pezzi */
-            if (ch >= 'f') { /* %f o %g */
+        } else { /* floating-point number: the pieces are put together */
+            if (ch >= 'f') { /* %f or %g */
                 if (_fpvalue == 0) {
-                    /* dtoa dà "0" */
+                    /* dtoa gives "0" */
                     PRINT("0", 1);
                     if (expt < ndig || (flags & ALT) != 0) {
                         PRINT(decimal_point, 1);
@@ -575,7 +575,7 @@ int _vfprintf_r(struct _reent *data, FILE *fp, const char *fmt0, va_list ap)
                     PRINT(".", 1);
                     PRINT(cp, ndig - expt);
                 }
-            } else { /* %e o %E */
+            } else { /* %e or %E */
                 if (ndig > 1 || (flags & ALT)) {
                     ox[0] = *cp++;
                     ox[1] = '.';

@@ -1,4 +1,4 @@
-/* Dichiarazioni comuni del codice dei menu (src/game/menu_*.c). */
+/* Shared declarations of the menu code (src/game/menu_*.c). */
 #ifndef MENU_H
 #define MENU_H
 #include "libc.h"
@@ -10,27 +10,27 @@
 #define U8(p, off)  (*(u8 *)((u8 *)(p) + (off)))
 #define S8(p, off)  (*(s8 *)((u8 *)(p) + (off)))
 
-/* dati globali del gioco */
-extern u8 *D_089CC438;            /* stato generale della partita */
+/* global game data */
+extern u8 *D_089CC438;            /* general game state */
 extern void *D_09A4F0C4;
-extern void *D_089CBBEC;          /* istanza del menu */
+extern void *D_089CBBEC;          /* menu instance */
 extern void *D_08A62C7C;
-extern void *D_08A631A8;          /* scrittura del testo a schermo */
+extern void *D_08A631A8;          /* on-screen text writer */
 extern u8 *D_08A631A0;
 extern void *D_08A62C50;
 extern const u32 D_08938A7C[];
 extern const f32 D_0893887C[][2];
-extern const u16 D_089AC834[];    /* identificativi dei testi del menu */
+extern const u16 D_089AC834[];    /* IDs of the menu texts */
 extern const u16 D_089AC588[];
 extern const char D_08938478[];   /* "%s" */
 extern const char D_08938540[];   /* formato "%d/%d" */
 extern const char D_08938548[];
 extern const s8 D_0893AF2C[];
-extern const u8 D_0899D19B[];     /* tabella oggetti (0x18 byte per oggetto) */
+extern const u8 D_0899D19B[];     /* item table (0x18 bytes per item) */
 extern u8 D_0893AFDC[], D_0893AFF0[], D_0893B004[], D_0893B0E0[];
 extern u8 D_089AC5D8[];
 
-/* posizioni dei testi: x, y, interlinea */
+/* text positions: x, y, line spacing */
 extern s16 D_08938488, D_0893848A; extern s32 D_0893848C;
 extern s16 D_0893849C, D_0893849E; extern s32 D_089384A0;
 extern s16 D_089384D8, D_089384DA;
@@ -80,11 +80,11 @@ u32 func_088568AC(void *game, s16 id);
 
 #define LANG (*(s32 *)(D_08A631A0 + 0xF7A574))   /* lingua corrente (0..6) */
 
-/* altre funzioni e dati dei menu (src/game/menu_draw.c) */
-typedef struct Layout {     /* riquadro di testo (0x28 byte) */
+/* other menu functions and data (src/game/menu_draw.c) */
+typedef struct Layout {     /* text box (0x28 bytes) */
     s16 x, y, w, h;         /* 0x00 */
     u8 cw, b9, ba, bb;      /* 0x08 larghezza carattere */
-    s16 tx, ty, lh, e;      /* 0x0C posizione del testo, interlinea */
+    s16 tx, ty, lh, e;      /* 0x0C text position, line spacing */
     void *ptr;              /* 0x14 */
     u32 color;              /* 0x18 */
     s16 f[6];               /* 0x1C */
@@ -103,7 +103,7 @@ extern const u16 D_089AC7C4[], D_089ACC04[], D_089ACC44[], D_089ACC70[], D_089B5
 extern const u16 *const D_0893AF34[];
 extern const s16 D_0893AF54[4][2];
 extern const u8 D_089779D4[], D_089779DC[];
-extern const u8 D_0899D198[];        /* tabella oggetti (0x18 byte per oggetto) */
+extern const u8 D_0899D198[];        /* item table (0x18 bytes per item) */
 extern const u16 D_0899D1AE[];
 
 int func_08857C38(void *game);

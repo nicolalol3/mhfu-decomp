@@ -1,10 +1,10 @@
-/* __kernel_rem_pio2f: riduzione di argomenti molto grandi modulo pi/2, usando le cifre di 2/pi
- * passate in ipio2 (fdlibm, Sun Microsystems). Restituisce n & 7 e il resto in y[]. */
+/* __kernel_rem_pio2f: reduction of very large arguments modulo pi/2, using the digits of 2/pi
+ * passed in ipio2 (fdlibm, Sun Microsystems). Returns n & 7 and the remainder in y[]. */
 #include "libm.h"
 
 f32 floorf(f32 x);
 
-static const s32 init_jk[] = { 4, 7, 9 }; /* valore iniziale di jk per ogni precisione */
+static const s32 init_jk[] = { 4, 7, 9 }; /* initial value of jk for each precision */
 
 static const f32 PIo2[] = {
     1.5703125f,                /* 0x3fc90000 */
@@ -55,7 +55,7 @@ s32 __kernel_rem_pio2f(f32 *x, f32 *y, int e0, int nx, int prec, const s32 *ipio
 
     jz = jk;
 recompute:
-    /* distilla q[] in iq[] all'inverso */
+    /* distill q[] into iq[] in reverse */
     for (i = 0, j = jz, z = q[jz]; j > 0; i++, j--) {
         fw = (f32)((s32)(twon8 * z));
         iq[i] = (s32)(z - two8 * fw);
@@ -64,17 +64,17 @@ recompute:
 
     /* calcola n */
     z = scalbnf(z, (int)q0);
-    z -= (f32)8.0 * floorf(z * (f32)0.125); /* toglie la parte intera >= 8 */
+    z -= (f32)8.0 * floorf(z * (f32)0.125); /* removes the integer part >= 8 */
     n = (s32)z;
     z -= (f32)n;
     ih = 0;
-    if (q0 > 0) { /* serve iq[jz-1] per determinare n */
+    if (q0 > 0) { /* iq[jz-1] is needed to determine n */
         i = (iq[jz - 1] >> (8 - q0));
         n += i;
         iq[jz - 1] -= i << (8 - q0);
         ih = iq[jz - 1] >> (7 - q0);
     } else if (q0 == 0) {
-        ih = iq[jz - 1] >> 8; /* come nel gioco (fdlibm/newlib storica); la versione corretta usa >> 7 */
+        ih = iq[jz - 1] >> 8; /* as in the game (old fdlibm/newlib); the correct version uses >> 7 */
     } else if (z >= (f32)0.5) {
         ih = 2;
     }
@@ -110,14 +110,14 @@ recompute:
         }
     }
 
-    /* serve ricalcolare? */
+    /* need to recompute? */
     if (z == zero) {
         j = 0;
         for (i = jz - 1; i >= jk; i--)
             j |= iq[i];
         if (j == 0) {
             for (k = 1; iq[jk - k] == 0; k++)
-                ; /* k = numero di termini necessari */
+                ; /* k = number of terms needed */
 
             for (i = jz + 1; i <= jz + k; i++) { /* aggiunge q[jz+1] .. q[jz+k] */
                 f[jx + i] = (f32)ipio2[jv + i];
@@ -138,7 +138,7 @@ recompute:
             jz--;
             q0 -= 8;
         }
-    } else { /* spezza z in blocchi da 8 bit se serve */
+    } else { /* split z into 8-bit blocks if needed */
         z = scalbnf(z, -(int)q0);
         if (z >= two8) {
             fw = (f32)((s32)(twon8 * z));
@@ -151,7 +151,7 @@ recompute:
         }
     }
 
-    /* converte i blocchi interi in virgola mobile */
+    /* converts the integer blocks to floating point */
     fw = scalbnf(one, (int)q0);
     for (i = jz; i >= 0; i--) {
         q[i] = fw * (f32)iq[i];

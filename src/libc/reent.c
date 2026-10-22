@@ -1,16 +1,16 @@
-/* Libreria C: ricerca della struct _reent del thread/modulo corrente e versioni
- * "rientranti" delle chiamate di sistema, che copiano errno nella struct _reent. */
+/* C library: lookup of the struct _reent of the current thread/module, and
+ * "reentrant" versions of the system calls, which copy errno into struct _reent. */
 #include "mprec.h"
 #include <pspintrman.h>
 #include "sce_extra.h"
 
-#define REENT_RESULT(r)   (*(_Bigint **)((u8 *)(r) + 0x40)) /* ultimo risultato di dtoa */
+#define REENT_RESULT(r)   (*(_Bigint **)((u8 *)(r) + 0x40)) /* last dtoa result */
 #define REENT_RESULT_K(r) (*(int *)((u8 *)(r) + 0x44))
 #define REENT_CVTBUF(r)   (*(void **)((u8 *)(r) + 0x54))
 
 extern char D_08910548[]; /* "C" */
 
-/* Tabella modulo -> struct _reent, a blocchi concatenati (indice = id modulo % 32). */
+/* Module -> struct _reent table, as chained blocks (index = module id % 32). */
 struct modreent_table {
     struct modreent_table *next;
     struct _reent *reent[32];
@@ -18,7 +18,7 @@ struct modreent_table {
 };
 extern struct modreent_table g_modreent_table;
 
-/* Il registro k0 punta ai dati del thread corrente; al byte 4 c'è la sua struct _reent. */
+/* The k0 register points to the current thread's data; at byte 4 is its struct _reent. */
 static inline u8 *thread_data(void)
 {
     u8 *k0;
@@ -36,7 +36,7 @@ struct _reent *__getreent(void)
     return _impure_ptr;
 }
 
-/* struct _reent del modulo a cui appartiene il thread corrente */
+/* struct _reent of the module the current thread belongs to */
 struct _reent *_getmodreent(void)
 {
     u8 *td = thread_data();
@@ -63,7 +63,7 @@ struct _reent *_getmodreent(void)
     return _impure_ptr;
 }
 
-/* errno è il primo campo della struct _reent */
+/* errno is the first field of struct _reent */
 int *__errno(void)
 {
     return &_REENT->_errno;
@@ -119,11 +119,11 @@ void *_sbrk_r(struct _reent *r, int incr)
     return ret;
 }
 
-/* --- struct _reent per modulo ------------------------------------------------------- */
-/* (nomi ipotetici: le funzioni non hanno nome nel gioco) */
-#define REENT_MODID(r) (*(int *)((u8 *)(r) + 0x37C)) /* id del modulo proprietario */
+/* --- struct _reent for each module ------------------------------------------------------- */
+/* (guessed names: the functions have no name in the game) */
+#define REENT_MODID(r) (*(int *)((u8 *)(r) + 0x37C)) /* id of the owning module */
 
-/* Associa la struct _reent r al modulo modid; -1 se il modulo ne ha già una. */
+/* Associates the struct _reent r with module modid; -1 if the module already has one. */
 int _setmodreent(int modid, struct _reent *r)
 {
     struct modreent_table *t, *last, *nt;
@@ -149,7 +149,7 @@ int _setmodreent(int modid, struct _reent *r)
     }
     sceKernelCpuResumeIntr(intr);
 
-    /* tutte le tabelle hanno quel posto occupato: se ne aggiunge una */
+    /* all the tables have that slot occupied: one is added */
     nt = _malloc_r(_impure_ptr, sizeof(*nt));
     memset(nt, 0, sizeof(*nt));
     nt->reent[h] = r;
@@ -160,7 +160,7 @@ int _setmodreent(int modid, struct _reent *r)
     return 0;
 }
 
-/* Toglie la struct _reent r dalla tabella; ritorna l'id del modulo o -1. */
+/* Removes the struct _reent r from the table; returns the module id or -1. */
 int _delmodreent(struct _reent *r)
 {
     int modid = REENT_MODID(r);
@@ -179,7 +179,7 @@ int _delmodreent(struct _reent *r)
     return -1;
 }
 
-/* Prepara una struct _reent nuova (come _REENT_INIT di newlib). */
+/* Prepares a new struct _reent (like _REENT_INIT of newlib). */
 void _reent_init(struct _reent *r)
 {
     u8 *p = (u8 *)r;
@@ -196,14 +196,14 @@ void _reent_init(struct _reent *r)
         p[0x14 + i] = 0;
     W(0x030) = 0;                        /* _current_category */
     W(0x034) = (u32)D_08910548;          /* _current_locale = "C" */
-    for (i = 0x38; i <= 0x5C; i += 4)    /* __sdidinit, __cleanup, dati di dtoa, ... */
+    for (i = 0x38; i <= 0x5C; i += 4)    /* __sdidinit, __cleanup, dtoa data, ... */
         W(i) = 0;
     p[0x60] = 0;
     for (i = 0; i < 36; i++)
         p[0x7C + i] = 0;
-    W(0x0A8) = 1;                        /* seme di rand (64 bit) */
+    W(0x0A8) = 1;                        /* rand seed (64 bit) */
     W(0x0AC) = 0;
-    H(0x0B0) = 0x330e;                   /* stato di rand48 */
+    H(0x0B0) = 0x330e;                   /* rand48 state */
     H(0x0B2) = 0xabcd;
     H(0x0B4) = 0x1234;
     H(0x0B6) = 0xe66d;
@@ -225,12 +225,12 @@ void _reent_init(struct _reent *r)
     for (i = 0x258; i <= 0x264; i += 4)  /* _sig_func, __sglue */
         W(i) = 0;
     memset(&r->__sf[0], 0, sizeof(r->__sf));
-    W(0x37C) = 0;                        /* id del modulo */
+    W(0x37C) = 0;                        /* module id */
 #undef W
 #undef H
 }
 
-/* libera la catena di blocchi di FILE, dall'ultimo */
+/* frees the chain of FILE blocks, starting from the last */
 void cleanup_glue(struct _reent *ptr, struct _glue *glue)
 {
     if (glue->_next)
@@ -238,13 +238,13 @@ void cleanup_glue(struct _reent *ptr, struct _glue *glue)
     _free_r(ptr, glue);
 }
 
-/* Libera la memoria di una struct _reent che non serve più (non quella principale). */
+/* Frees the memory of a struct _reent that is no longer needed (not the main one). */
 void _reclaim_reent(struct _reent *ptr)
 {
     if (ptr == _impure_ptr)
         return;
 
-    /* dati di dtoa */
+    /* dtoa data */
     if (REENT_RESULT(ptr)) {
         REENT_RESULT(ptr)->_k = REENT_RESULT_K(ptr);
         REENT_RESULT(ptr)->_maxwds = 1 << REENT_RESULT_K(ptr);
@@ -274,7 +274,7 @@ void _reclaim_reent(struct _reent *ptr)
         _free_r(ptr, REENT_FREELIST(ptr));
     }
 
-    /* blocchi di atexit */
+    /* atexit blocks */
     if (ptr->_atexit && ptr->_atexit != &ptr->_atexit0) {
         struct _atexit *p, *q;
 
@@ -292,7 +292,7 @@ void _reclaim_reent(struct _reent *ptr)
         struct _glue *g;
 
         ptr->__cleanup(ptr);
-        /* buffer dei FILE allocati con malloc */
+        /* FILE buffers allocated with malloc */
         for (g = &ptr->__sglue; g != NULL; g = g->_next) {
             FILE *fp = g->_iobs;
             int n;

@@ -1,6 +1,6 @@
-// Parla con il debugger WebSocket di PPSSPP.
-// Uso: node tools/ppsspp_debug.js <porta> '<json evento>' ['<json evento>' ...]
-// Stampa le risposte; per gli screenshot salva il PNG in build/screenshot.png.
+// Talks to the PPSSPP WebSocket debugger.
+// Usage: node tools/ppsspp_debug.js <port> '<json event>' ['<json event>' ...]
+// Prints the responses; for screenshots it saves the PNG to build/screenshot.png.
 const fs = require("fs");
 const path = require("path");
 
@@ -10,7 +10,7 @@ const ws = new WebSocket(`ws://127.0.0.1:${port}/debugger`);
 let pending = 0;
 
 ws.onopen = () => {
-  // cpu.stepping / cpu.resume non rispondono con il ticket: non le aspettiamo
+  // cpu.stepping / cpu.resume do not reply with the ticket: we do not wait for them
   const noReply = ["cpu.stepping", "cpu.resume"];
   events.forEach((ev, i) => {
     ev.ticket = String(i);
@@ -35,7 +35,7 @@ ws.onmessage = (msg) => {
 
 ws.onclose = () => process.exit(0);
 ws.onerror = (e) => {
-  console.error("Errore WebSocket:", e.message || e);
+  console.error("WebSocket error:", e.message || e);
   process.exit(1);
 };
 setTimeout(() => {

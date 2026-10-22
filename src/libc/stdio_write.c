@@ -1,5 +1,5 @@
-/* Libreria C: scrittura sui FILE (lettura/scrittura/chiusura di base, buffer) e le
- * funzioni printf/sprintf che si appoggiano a _vfprintf_r (vfprintf.c). */
+/* C library: writing to FILEs (basic read/write/close, buffers) and the
+ * printf/sprintf functions that rely on _vfprintf_r (vfprintf.c). */
 #include "libc.h"
 
 #define __SOFF 0x1000 /* _offset valido */
@@ -43,7 +43,7 @@ int _write_r(struct _reent *r, int fd, const void *buf, int n)
     return ret;
 }
 
-/* Prepara fp per la scrittura (buffer compreso); -1 se il file non si può scrivere. */
+/* Prepares fp for writing (buffer included); -1 if the file cannot be written. */
 int __swsetup(FILE *fp)
 {
     if (!_REENT->__sdidinit)
@@ -53,7 +53,7 @@ int __swsetup(FILE *fp)
         if ((fp->_flags & __SRW) == 0)
             return -1;
         if (fp->_flags & __SRD) {
-            /* butta i caratteri rimessi con ungetc */
+            /* discards the characters pushed back with ungetc */
             if (fp->_ub._base != NULL) {
                 if (fp->_ub._base != fp->_ubuf)
                     _free_r(_REENT, fp->_ub._base);
@@ -79,7 +79,7 @@ int __swsetup(FILE *fp)
 #define cantwrite(fp) \
     ((((fp)->_flags & __SWR) == 0 || (fp)->_bf._base == NULL) && __swsetup(fp))
 
-/* Scrive in fp una lista di pezzi di testo (uio), rispettando il tipo di buffer. */
+/* Writes into fp a list of text pieces (uio), respecting the buffer type. */
 int __sfvwrite(FILE *fp, struct __suio *uio)
 {
     size_t len;
@@ -106,7 +106,7 @@ int __sfvwrite(FILE *fp, struct __suio *uio)
 #define COPY(n) memmove(fp->_p, p, n)
 
     if (fp->_flags & __SNBF) {
-        /* senza buffer: al più 1024 byte alla volta */
+        /* unbuffered: at most 1024 bytes at a time */
         do {
             GETIOV(;);
             w = fp->_write(fp->_cookie, p, len < 1024 ? len : 1024);
@@ -121,7 +121,7 @@ int __sfvwrite(FILE *fp, struct __suio *uio)
             GETIOV(;);
             w = fp->_w;
             if (fp->_flags & __SSTR) {
-                /* stringa in memoria (sprintf); se allocata con malloc si allarga */
+                /* string in memory (sprintf); if allocated with malloc it grows */
                 if (len > (size_t)w && (fp->_flags & __SMBF)) {
                     int curpos = fp->_p - fp->_bf._base;
                     u8 *str = _realloc_r(_REENT, fp->_bf._base, curpos + len);
@@ -139,20 +139,20 @@ int __sfvwrite(FILE *fp, struct __suio *uio)
                 COPY(w);
                 fp->_w -= w;
                 fp->_p += w;
-                w = len; /* finge di aver copiato tutto */
+                w = len; /* pretends everything was copied */
             } else if (fp->_p > fp->_bf._base && len > (size_t)w) {
-                /* riempie e svuota */
+                /* fills and flushes */
                 COPY(w);
                 fp->_p += w;
                 if (fflush(fp))
                     goto err;
             } else if (len >= (size_t)(w = fp->_bf._size)) {
-                /* scrive direttamente */
+                /* write directly */
                 w = fp->_write(fp->_cookie, p, w);
                 if (w <= 0)
                     goto err;
             } else {
-                /* riempie e basta */
+                /* fill and done */
                 w = len;
                 COPY(w);
                 fp->_w -= w;
@@ -162,7 +162,7 @@ int __sfvwrite(FILE *fp, struct __suio *uio)
             len -= w;
         } while ((uio->uio_resid -= w) != 0);
     } else {
-        /* buffer a righe: come sopra, ma si svuota dopo ogni '\n' */
+        /* line buffer: as above, but flushed after each '\n' */
         nlknown = 0;
         nldist = 0;
         do {
@@ -190,7 +190,7 @@ int __sfvwrite(FILE *fp, struct __suio *uio)
                 fp->_p += w;
             }
             if ((nldist -= w) == 0) {
-                /* scritto il '\n': svuota */
+                /* wrote the '\n': flush */
                 if (fflush(fp))
                     goto err;
                 nlknown = 0;
@@ -206,7 +206,7 @@ err:
     return -1;
 }
 
-/* svuota la lista di pezzi accumulata da vfprintf */
+/* empties the list of pieces accumulated by vfprintf */
 int __sprint(FILE *fp, struct __suio *uio)
 {
     int err;
@@ -221,9 +221,9 @@ int __sprint(FILE *fp, struct __suio *uio)
     return err;
 }
 
-/* --- printf e simili --------------------------------------------------------------- */
+/* --- printf and similar --------------------------------------------------------------- */
 
-/* Per i file senza buffer: stampa in un buffer temporaneo da 1 KB e poi lo scrive. */
+/* For unbuffered files: prints into a temporary 1 KB buffer and then writes it. */
 int __sbprintf(FILE *fp, const char *fmt, va_list ap)
 {
     int ret;

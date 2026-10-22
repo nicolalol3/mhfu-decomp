@@ -1,9 +1,9 @@
-"""Crea un EBOOT modificato: aggiunge il nuovo codice C e devia le funzioni originali.
+"""Creates a modified EBOOT: adds the new C code and redirects the original functions.
 
-Uso: python inject.py <newcode.bin> <newcode.nm> <EBOOT_out>
-- Il nuovo codice viene caricato a NEWCODE_ADDR in un segmento ELF in più
-  (riutilizziamo l'header di programma vuoto del segmento "debug.elf").
-- All'inizio di ogni funzione originale riscritta in C mettiamo "j nuova; nop".
+Usage: python inject.py <newcode.bin> <newcode.nm> <EBOOT_out>
+- The new code is loaded at NEWCODE_ADDR in an extra ELF segment
+  (we reuse the empty program header of the "debug.elf" segment).
+- At the start of each original function rewritten in C we put "j new; nop".
 """
 import os, re, struct, sys
 sys.path.insert(0, os.path.dirname(__file__))
@@ -26,7 +26,7 @@ main = struct.unpack_from("<8I", elf, phoff)
 main_end = main[2] + main[5]
 assert NEWCODE_ADDR >= main_end, hex(main_end)
 
-# header di programma da riutilizzare: l'ultimo (debug.elf, tipo PT_NULL)
+# program header to reuse: the last one (debug.elf, type PT_NULL)
 slot = phoff + (phnum - 1) * 32
 assert struct.unpack_from("<I", elf, slot)[0] == 0
 while len(elf) % 16:
@@ -54,7 +54,7 @@ for name, addr in sorted(syms.items()):
     elif named.get(name) in funcs:
         orig = named[name]
     else:
-        continue  # funzione nuova o di supporto, non sostituisce nulla
+        continue  # new or support function: it does not replace anything
     assert funcs[orig] >= 8, name
     o = va2off(orig)
     struct.pack_into("<II", elf, o, 0x08000000 | ((addr >> 2) & 0x03FFFFFF), 0)
@@ -64,4 +64,4 @@ open(out, "wb").write(elf)
 with open(os.path.join(BUILD, "replaced.tsv"), "w") as f:
     for orig, name, addr in sorted(replaced):
         f.write("%08X\t%s\t%08X\n" % (orig, name, addr))
-print("Funzioni deviate al codice C: %d, nuovo codice: %d byte" % (len(replaced), memsz))
+print("Functions redirected to the C code: %d, new code: %d bytes" % (len(replaced), memsz))

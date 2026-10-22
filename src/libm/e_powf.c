@@ -1,5 +1,5 @@
-/* powf: x elevato alla y, versione float della libreria matematica fdlibm (Sun Microsystems).
- * Le costanti sono quelle presenti nel gioco (cp e cp_h differiscono dalla fdlibm classica). */
+/* powf: x raised to the power y, the float version of the fdlibm math library (Sun Microsystems).
+ * The constants are the ones used by the game (cp and cp_h differ from classic fdlibm). */
 #include "libm.h"
 
 static const f32 bp[] = { 1.0f, 1.5f };
@@ -10,7 +10,7 @@ static const f32 two = 2.0f;
 static const f32 two24 = 16777216.0f;
 static const f32 huge = 1.0e30f;
 static const f32 tiny = 1.0e-30f;
-/* coefficienti del polinomio per (3/2)*(log(x)-2s-2/3*s**3) */
+/* polynomial coefficients for (3/2)*(log(x)-2s-2/3*s**3) */
 static const f32 L1 = 0.6000000238418579f;     /* 0x3f19999a */
 static const f32 L2 = 0.4285714328289032f;     /* 0x3edb6db7 */
 static const f32 L3 = 0.3333333432674408f;     /* 0x3eaaaaab */
@@ -49,11 +49,11 @@ f32 __ieee754_powf(f32 x, f32 y)
     if (iy == 0)
         return one;
 
-    /* x o y NaN */
+    /* x or y NaN */
     if (ix > 0x7f800000 || iy > 0x7f800000)
         return y + x;
 
-    /* yisint = 0: y non intero, 1: dispari, 2: pari (calcolato solo per x < 0) */
+    /* yisint = 0: y not an integer, 1: odd, 2: even (computed only for x < 0) */
     yisint = 0;
     if (hx < 0) {
         if (iy >= 0x4b800000) {
@@ -66,7 +66,7 @@ f32 __ieee754_powf(f32 x, f32 y)
         }
     }
 
-    /* valori speciali di y */
+    /* special values of y */
     if (iy == 0x7f800000) { /* y = +-inf */
         if (ix == 0x3f800000)
             return y - y; /* inf**+-1 = NaN */
@@ -88,21 +88,21 @@ f32 __ieee754_powf(f32 x, f32 y)
     }
 
     ax = fabsf(x);
-    /* valori speciali di x: +-0, +-inf, +-1 */
+    /* special values of x: +-0, +-inf, +-1 */
     if (ix == 0x7f800000 || ix == 0 || ix == 0x3f800000) {
         z = ax;
         if (hy < 0)
             z = one / z;
         if (hx < 0) {
             if (((ix - 0x3f800000) | yisint) == 0)
-                z = (z - z) / (z - z); /* (-1)**non-intero = NaN */
+                z = (z - z) / (z - z); /* (-1)**non-integer = NaN */
             else if (yisint == 1)
                 z = -z;
         }
         return z;
     }
 
-    /* (x<0)**(non intero) = NaN */
+    /* (x<0)**(non-integer) = NaN */
     if (((((u32)hx >> 31) - 1) | yisint) == 0)
         return (x - x) / (x - x);
 
@@ -142,7 +142,7 @@ f32 __ieee754_powf(f32 x, f32 y)
         }
         ax = bits_f32(ix);
 
-        /* s = s_h + s_l = (x-1)/(x+1) oppure (x-1.5)/(x+1.5) */
+        /* s = s_h + s_l = (x-1)/(x+1) or (x-1.5)/(x+1.5) */
         u = ax - bp[k];
         v = one / (ax + bp[k]);
         s = u * v;
@@ -172,9 +172,9 @@ f32 __ieee754_powf(f32 x, f32 y)
         t2 = z_l - (((t1 - t) - dp_h[k]) - z_h);
     }
 
-    s = one; /* segno del risultato */
+    s = one; /* sign of the result */
     if (((((u32)hx >> 31) - 1) | (yisint - 1)) == 0)
-        s = -one; /* (negativo)**(dispari) */
+        s = -one; /* (negative)**(odd) */
 
     /* (y1+y2)*(t1+t2) */
     y1 = bits_f32(f32_bits(y) & 0xfffff000);
