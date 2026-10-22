@@ -18,10 +18,11 @@ extern u32 g_sbrk_start;
 extern u32 g_sbrk_end;
 extern SceUID g_sbrk_block;
 
-extern int func_0880C5A0(void) __attribute__((weak)); /* id thread corrente (pthread) */
-extern int func_0880B368(void);                         /* id thread principale */
-extern void func_0880E19C(int thid);
-extern SceUID func_0880C7E0(int thid);
+struct _reent;
+extern struct _reent *_getmodreent(void) __attribute__((weak)); /* libc del modulo (reent.c) */
+extern struct _reent *__getreent(void);                         /* libc del thread corrente */
+extern void func_0880E19C(struct _reent *r);
+extern SceUID func_0880C7E0(struct _reent *r);
 
 /* I descrittori 0, 1, 2 della libc corrispondono a stdin/stdout/stderr del sistema. */
 static inline int libc_fd_to_sce(int fd)
@@ -45,11 +46,11 @@ int lseek(int fd, int offset, int whence)
 
 void _exit(int status)
 {
-    if (&func_0880C5A0 != NULL) {
-        int thid = func_0880C5A0();
+    if (&_getmodreent != NULL) {
+        struct _reent *thid = _getmodreent();
         SceUID modid;
 
-        if (thid != func_0880B368()) {
+        if (thid != __getreent()) {
             sceKernelPrintf("libc:%s: should be called from main thread\n", "_exit");
             sceKernelExitThread(status);
         }

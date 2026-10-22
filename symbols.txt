@@ -12,8 +12,8 @@
 0x0880454C fstat
 0x0880455C isatty
 0x08804564 rename
-0x088045A0 getpid          # nome ipotetico: ritorna sempre -1
-0x088045A8 kill            # nome ipotetico: ritorna sempre -1
+0x088045A0 kill            # chiamata da _kill_r; ritorna sempre -1
+0x088045A8 getpid          # chiamata da _getpid_r; ritorna sempre -1
 0x088045C8 sbrk_release
 0x08804620 time
 0x0880463C gettimeofday
@@ -55,11 +55,282 @@
 0x088085A4 powf
 0x08910130 _LIB_VERSION
 
-# --- libc varie ---
+# --- libc: struct _reent e chiamate di sistema rientranti (src/libc/reent.c) ---
 0x0880A498 __errno
+0x0880B368 __getreent
+0x0880C5A0 _getmodreent
+0x08808C80 _close_r
+0x0880AD50 _fstat_r
+0x0880B494 _lseek_r
+0x0880DAFC _read_r
+0x0880E430 _sbrk_r
+0x089332C0 _impure_ptr
+0x09A5F1A0 g_errno
+0x089CBADC g_modreent_table
+
+# --- libc: malloc (src/libc/malloc.c) ---
+0x0880B70C _malloc_r
+0x0880AA40 _free_r
+0x0880DB74 _realloc_r
+0x08808BBC _calloc_r
+0x0880A91C _malloc_trim_r
+0x0880B6E0 free
+0x0880C53C __malloc_lock
+0x0880C578 __malloc_unlock
+0x0893365C __malloc_sbrk_base
+0x08933660 __malloc_trim_threshold
+0x08933664 __malloc_av_
+0x089CBAA0 __malloc_current_mallinfo
+0x089CBAC8 __malloc_max_total_mem
+0x089CBACC __malloc_max_sbrked_mem
+0x089CBAD0 __malloc_top_pad
+0x089CBAD4 g_malloc_lock_intr
+0x089CBAD8 g_malloc_lock_count
+
+# --- libc: memoria e stringhe (src/libc/string.c) ---
+0x0880BF00 memchr
+0x0880BFF0 memcmp
+0x0880C084 memcpy
+0x0880C1A8 memmove
+0x0880C464 memset
+0x0880ED04 strcmp
+
+# --- libc: stdio (src/libc/stdio.c) ---
+0x0880A580 fflush
+0x0880A684 std
+0x0880A6DC __sfmoreglue
+0x0880A754 __sinit
+0x0880B244 _fwalk
+0x0880B50C __smakebuf
+
+# --- libc: stdlib e locale (src/libc/stdlib.c) ---
+0x08808AA8 abort
+0x08808AC0 abs
+0x08808ACC atexit
+0x0880A4B4 exit
+0x0880B38C _setlocale_r
+0x0880B42C _localeconv_r
+0x0880B438 setlocale
+0x0880B474 localeconv
+
+# --- libc: segnali (src/libc/signal.c) ---
+0x0880E4A0 _init_signal_r
+0x0880E5B0 _raise_r
+0x0880E750 raise
+0x0880E804 _kill_r
+0x0880E878 _getpid_r
 
 # --- altre routine software per i double (libgcc fp-bit) ---
 0x08905294 __extendsfdf2
 0x08905E9C __divdf3
 0x089062A8 __nedf2
 0x089066E0 __truncdfsf2
+0x08906220 __eqdf2
+0x089063D0 __gedf2
+0x08906470 __ltdf2
+0x089064F8 __floatsidf
+
+# --- libc: interi grandi e conversione double -> testo (src/libc/mprec.c, dtoa.c) ---
+0x0880D8C4 Balloc
+0x0880D97C Bfree
+0x0880CA00 multadd
+0x0880CC64 hi0bits
+0x0880CC6C lo0bits
+0x0880CC84 i2b
+0x0880CCB8 mult
+0x0880CED8 pow5mult
+0x0880D018 lshift
+0x0880D170 cmp
+0x0880D1D4 diff
+0x0880D400 b2d
+0x0880D5A4 d2b
+0x0880D808 _mprec_log10
+0x08808CF0 quorem
+0x08808F34 _dtoa_r
+0x089105A0 __mprec_tens
+0x08910578 __mprec_bigtens
+0x08904394 __udivdi3
+0x089049A4 __umoddi3
+
+# --- libc: stringhe (src/libc/string.c) ---
+0x0880EB4C strcat
+0x0880EBF0 strchr
+0x0880ED70 strcpy
+0x0880EDF8 strlen
+0x0880EF34 strncat
+0x0880EFF8 strncmp
+0x0880F178 strncpy
+0x0880F394 strstr
+
+# --- libc: scrittura su FILE e printf (src/libc/stdio_write.c, vfprintf.c, wchar.c) ---
+0x0880E978 __sread
+0x0880EA08 __swrite
+0x0880EB20 __sclose
+0x08811AC4 _write_r
+0x08811B3C __swsetup
+0x0880ADC4 __sfvwrite
+0x0880F630 __sprint
+0x08811478 __sbprintf
+0x08811408 vfprintf
+0x0880F68C _vfprintf_r
+0x0880E8F0 sprintf
+0x0880D9EC printf
+0x0880D9A8 _printf_r
+0x08811520 _wcrtomb_r
+0x088115E0 _wcsrtombs_r
+0x088117C4 _wctomb_r
+0x08933648 __lc_ctype
+
+# --- libc: struct _reent per modulo, rand (src/libc/reent.c, stdlib.c) ---
+0x0880C690 _setmodreent    # nome ipotetico
+0x0880C7E0 _delmodreent    # nome ipotetico
+0x0880C874 _reent_init     # nome ipotetico
+0x0880E154 cleanup_glue
+0x0880E19C _reclaim_reent
+0x0880DA44 srand
+0x0880DA7C rand
+
+# --- grafica: memoria video (src/gfx/vram.c, nomi ipotetici) ---
+0x08811C84 vram_init
+0x08811E18 vram_create_surface
+0x08812144 vram_create_buffer
+0x08812264 vram_free_surface
+0x08812308 vram_find_free_surface
+0x08812338 vram_find_blocks
+0x088123C8 vram_alloc_clut
+0x0881246C vram_free_clut
+0x088124D8 vram_mark_blocks
+0x0881253C vram_unmark_blocks
+0x088125A4 vram_get_surface
+0x08812610 vram_surface_addr
+
+# --- gioco: telecamera (src/game/camera.c, nomi ipotetici) ---
+0x08812A08 camera_init
+0x08812B1C camera_reset_state
+0x08812B9C camera_reset_projection
+0x08812DB8 camera_apply_shake
+0x08812F90 camera_start_shake
+0x08813024 camera_start_shake_ex
+0x088130C4 camera_start_shake2
+0x08813388 camera_transition_step
+0x08813560 camera_set_mode
+0x08813574 camera_request_mode
+0x08813C8C camera_is_cutscene_active
+0x08813CC8 camera_set_mode2
+0x08813CF8 camera_set_mode1
+0x08813D40 camera_mode_for_area
+0x08813DAC camera_clear_cutscene
+0x08813DD8 camera_cutscene_state
+0x08813E10 camera_cutscene_id
+0x08813E18 camera_cutscene_flag
+0x08813E20 camera_is_special_cutscene
+0x08813E70 camera_cutscene_timer
+0x08813E90 camera_blocks_input
+0x08814048 camera_is_free
+0x08814080 camera_get_zoom
+0x088140C4 camera_get_eye
+0x088140E4 camera_get_target
+0x08814268 camera_look_at
+0x088144B4 camera_perspective
+0x088145C4 camera_update_projection
+0x08815348 camera_apply_projection
+0x08814984 camera_load_area_limits
+0x08814D84 camera_read_input
+0x08815004 camera_set_field_142
+0x08815700 mat_look_at
+0x08814BE0 camera_default_area
+0x08815260 camera_point_in_quad
+0x08815108 camera_player_in_zone
+0x08815024 camera_find_zone
+0x088158D8 camera_set_view
+0x088147C8 camera_get_yaw
+0x08815964 camera_update
+0x08814674 camera_world_to_screen
+0x08814A14 camera_set_area
+0x08814E18 camera_select_view
+
+# --- telecamera: campo visivo (src/game/camera_frustum.c) ---
+0x08815D64 camera_set_eye_target
+0x08815D84 camera_up_from_dir
+0x08815E28 camera_plane_normal
+0x08815E9C camera_build_frustum
+0x08816060 camera_sphere_in_depth
+0x088160E8 camera_sphere_visible
+
+# --- conversione testi (src/game/textconv.c) ---
+0x0881629C sjis_decode
+0x08816460 utf8_decode
+0x08816508 utf8_encode
+0x088165FC jis_to_unicode
+0x08816638 sjis_to_utf8
+0x08816730 utf8_to_utf16
+0x088167F4 wstr_len
+0x08816818 wstr_find
+0x08816900 wchar_is_lower
+0x08816930 utf8_seq_len
+0x088169FC utf8_byte_len
+
+# --- menu (src/game/menu_box.c) ---
+0x08816A60 menu_ctor
+0x08816AE4 menu_item_dtor
+0x08816B6C menu_dtor
+0x08816BE4 menu_open
+0x08816F24 menu_draw_choice
+0x088172D8 menu_draw_trade
+0x08818028 menu_draw_item_name
+0x088180CC menu_draw_main
+0x08818264 menu_draw_info
+0x088188A8 menu_draw_item_box
+0x088188B4 menu_draw_equip_box
+0x08818950 menu_draw_confirm
+0x08818C94 menu_draw_page_list
+0x08818F74 menu_draw_help_keys
+0x0881908C menu_draw_entry_desc
+0x08819128 menu_draw_desc
+0x08819450 menu_draw_item_stats
+0x088197A0 menu_draw_item_list
+0x088198E4 menu_draw_items_page
+0x08819CF8 menu_draw_list_hint
+0x08819E10 menu_draw_info_card
+0x0881A30C menu_draw_trade_info
+0x0881A7A4 menu_draw_rating_icon
+0x0881A8E0 menu_draw_number
+0x0881A8F8 menu_draw_time
+0x0881A9D8 menu_draw_stars
+0x0881AAA4 menu_draw_status
+0x0881B384 menu_draw_weapon_type
+0x0881B408 menu_draw_equipment
+0x0881B5C4 menu_draw_skills
+0x0881B5F8 menu_draw_skills_ex
+0x0881B7F0 menu_draw_unique_list
+0x0881B9A0 menu_draw_resist_table
+
+# --- menu: cursore (src/game/menu_cursor.c) ---
+0x0881BF80 menu_cursor_two_columns
+0x0881C098 menu_cursor_pages
+0x0881C1C8 menu_cursor_items
+0x0881C240 menu_item_toggle_sub
+0x0881C2E4 menu_cursor_vertical
+0x0881C398 menu_cursor_horizontal_page
+0x0881C45C menu_cursor_horizontal
+0x0881C520 menu_cursor_yes_no
+0x0881C5D8 menu_toggle_yes_no
+0x0881C68C menu_cursor_grid
+0x0881C884 menu_open_item_list
+0x0881C944 menu_open_use_list
+0x0881CA34 menu_open_info
+0x0881CAC8 menu_open_status
+0x0881CB0C menu_open_equipment
+0x0881E8F8 menu_open_list_tabs
+0x0881E92C menu_list_tabs_input
+0x0881EAF8 menu_info_input
+0x0881EB60 menu_status_input
+0x0881EC2C menu_equipment_input
+0x0881ECDC menu_info_available
+0x0881ED64 menu_get_equip_slot
+
+# --- equipaggiamento (src/game/equip_skills.c) ---
+0x08820FB4 equip_draw_icon
+0x088213E4 equip_adjust_level
+0x08821774 equip_list_skill_points
+0x08821828 equip_compare_skill

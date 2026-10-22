@@ -6,7 +6,8 @@ export PATH=$PATH:/opt/pspdev/bin
 cd "$(dirname "$0")/.."
 mkdir -p build/obj
 python3 tools/symbols.py
-CFLAGS="-I/opt/pspdev/psp/sdk/include -O2 -G0 -march=allegrex -mno-abicalls -fno-pic -mno-branch-likely -fno-builtin -fno-strict-aliasing -ffreestanding -Wall -Wno-unused -Iinclude"
+# niente inlining/fusione fra funzioni: ogni funzione del gioco resta una funzione a sé (serve ai test e alle mod)
+CFLAGS="-I/opt/pspdev/psp/sdk/include -O2 -G0 -march=allegrex -mno-abicalls -fno-pic -mno-branch-likely -fno-builtin -fno-strict-aliasing -fno-tree-loop-distribute-patterns -fno-inline-small-functions -fno-inline-functions-called-once -fno-inline-functions -fno-ipa-icf -fno-ipa-cp -fno-ipa-sra -fno-ipa-vrp -fno-ipa-bit-cp -fno-ipa-pure-const -fno-ipa-reference -fno-ipa-ra -fno-ipa-modref -ffreestanding -Wall -Wno-unused -Iinclude"
 OBJS=()
 for c in $(find src -name '*.c' | sort); do
   o=build/obj/$(echo "${c#src/}" | tr / _ | sed 's/\.c$/.o/')
