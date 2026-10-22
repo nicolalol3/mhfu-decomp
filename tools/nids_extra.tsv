@@ -1,0 +1,6 @@
+F0A26395	sceKernelGetModuleId
+8F2DF740	sceKernelStopUnloadSelfModuleWithStatus
+91DE343C	sceKernelSetCompiledSdkVersion500_505
+F77D77CB	sceKernelSetCompilerVersion
+B011922F	sceAudioGetChannelRestLength
+8CA3A97E	sceNetInetGetPspError

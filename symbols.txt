@@ -1,0 +1,65 @@
+# Nomi leggibili per funzioni e variabili del gioco originale.
+# Formato: indirizzo nome      (le righe che iniziano con # sono commenti)
+# Le funzioni qui elencate e scritte in C in src/ sostituiscono l'originale nel gioco.
+
+# --- libc: chiamate di sistema (src/libc/syscalls.c) ---
+0x08804098 lseek
+0x088041C8 _exit
+0x08804290 sbrk
+0x08804380 read
+0x08804424 write
+0x088044C8 close
+0x0880454C fstat
+0x0880455C isatty
+0x08804564 rename
+0x088045A0 getpid          # nome ipotetico: ritorna sempre -1
+0x088045A8 kill            # nome ipotetico: ritorna sempre -1
+0x088045C8 sbrk_release
+0x08804620 time
+0x0880463C gettimeofday
+0x08804678 SetVblankSubIntrHandler
+0x089B5380 sce_newlib_heap_kb_size
+0x089CBA90 g_sbrk_cur
+0x089CBA94 g_sbrk_start
+0x089CBA98 g_sbrk_end
+0x089CBA9C g_sbrk_block
+
+# --- libm: matematica float (src/libm/) ---
+0x08804E40 __ieee754_powf
+0x08805978 __ieee754_sqrtf
+0x0880824C fabsf
+0x08808378 scalbnf
+0x088055E8 __ieee754_rem_pio2f
+0x08805AB0 __kernel_cos
+0x08806EBC __kernel_cosf
+0x0880700C __kernel_rem_pio2f
+
+# --- routine software per i double (libgcc fp-bit) ---
+0x08905A2C __subdf3
+0x08905AA4 __adddf3
+0x08905B10 __muldf3
+0x089065E0 __fixdfsi
+0x08807850 __kernel_sinf
+0x0880795C floor
+0x08807BC8 isinf
+0x08807C00 isnan
+0x08807C28 matherr         # nome ipotetico: restituisce sempre 0
+0x08808278 floorf
+0x08906330 __gtdf2
+0x08807C30 rint
+0x08808150 copysignf
+0x0880816C cosf
+0x0880825C finitef
+0x08808364 isnanf
+0x088084C4 sinf
+0x088085A4 powf
+0x08910130 _LIB_VERSION
+
+# --- libc varie ---
+0x0880A498 __errno
+
+# --- altre routine software per i double (libgcc fp-bit) ---
+0x08905294 __extendsfdf2
+0x08905E9C __divdf3
+0x089062A8 __nedf2
+0x089066E0 __truncdfsf2

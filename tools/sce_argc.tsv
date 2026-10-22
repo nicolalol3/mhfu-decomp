@@ -1,0 +1,1104 @@
+sceAmctrl_driver_9227EA79	0,1,2
+sceAmctrl_driver_E04ADD4C	0,1,2
+sceAtracAddStreamData	0,1
+sceAtracDecodeData	0,1,2,3,4
+sceAtracGetAtracID	0
+sceAtracGetBitrate	0,1
+sceAtracGetBufferInfoForReseting	0,1,2
+sceAtracGetChannel	0,1
+sceAtracGetInternalErrorInfo	0,1
+sceAtracGetLoopStatus	0,1,2
+sceAtracGetMaxSample	0,1
+sceAtracGetNextDecodePosition	0,1
+sceAtracGetNextSample	0,1
+sceAtracGetRemainFrame	0,1
+sceAtracGetSecondBufferInfo	0,1,2
+sceAtracGetSoundSample	0,1,2,3
+sceAtracGetStreamDataInfo	0,1,2,3
+sceAtracReleaseAtracID	0
+sceAtracResetPlayPosition	0,1,2,3
+sceAtracSetData	0,1,2
+sceAtracSetDataAndGetID	0,1
+sceAtracSetHalfwayBuffer	0,1,2,3
+sceAtracSetHalfwayBufferAndGetID	0,1,2
+sceAtracSetLoopNum	0,1
+sceAtracSetSecondBuffer	0,1,2
+sceAudioChRelease	0
+sceAudioChReserve	0,1,2
+sceAudioChangeChannelConfig	0,1
+sceAudioChangeChannelVolume	0,1,2
+sceAudioGetChannelRestLen	0
+sceAudioGetChannelRestLength	0
+sceAudioGetInputLength	
+sceAudioInput	0,1,2
+sceAudioInputBlocking	0,1,2
+sceAudioInputInit	0,1,2
+sceAudioInputInitEx	0
+sceAudioOutput	0,1,2
+sceAudioOutput2ChangeLength	0
+sceAudioOutput2GetRestSample	
+sceAudioOutput2OutputBlocking	0,1
+sceAudioOutput2Release	
+sceAudioOutput2Reserve	0
+sceAudioOutputBlocking	0,1,2
+sceAudioOutputPanned	0,1,2,3
+sceAudioOutputPannedBlocking	0,1,2,3
+sceAudioPollInputEnd	
+sceAudioRoutingGetMode	
+sceAudioRoutingGetVolumeMode	
+sceAudioRoutingSetMode	0
+sceAudioRoutingSetVolumeMode	0
+sceAudioSRCChRelease	
+sceAudioSRCChReserve	0,1,2
+sceAudioSRCOutputBlocking	0,1
+sceAudioSetChannelDataLen	0,1
+sceAudioSetFrequency	0
+sceAudioWaitInputEnd	
+sceAudiocodecCheckNeedMem	0,1
+sceAudiocodecDecode	0,1
+sceAudiocodecGetEDRAM	0,1
+sceAudiocodecInit	0,1
+sceAudiocodecReleaseEDRAM	0
+sceCtrlGetButtonIntercept	0
+sceCtrlGetIdleCancelThreshold	0,1
+sceCtrlGetSamplingCycle	0
+sceCtrlGetSamplingMode	0
+sceCtrlPeekBufferNegative	0,1
+sceCtrlPeekBufferPositive	0,1
+sceCtrlPeekLatch	0
+sceCtrlReadBufferNegative	0,1
+sceCtrlReadBufferPositive	0,1
+sceCtrlReadLatch	0
+sceCtrlSetButtonIntercept	0,1
+sceCtrlSetIdleCancelThreshold	0,1
+sceCtrlSetSamplingCycle	0
+sceCtrlSetSamplingMode	0
+sceCtrlSetSpecialButtonCallback	0,1,2,3
+sceDisplayGetAccumulatedHcount	
+sceDisplayGetBrightness	0,1
+sceDisplayGetCurrentHcount	
+sceDisplayGetFrameBuf	0,1,2,3
+sceDisplayGetFramePerSec	
+sceDisplayGetMode	0,1,2
+sceDisplayGetVcount	
+sceDisplayIsForeground	
+sceDisplayIsVblank	
+sceDisplaySetBrightness	0,1
+sceDisplaySetFrameBuf	0,1,2,3
+sceDisplaySetMode	0,1,2
+sceDisplayWaitVblank	
+sceDisplayWaitVblankCB	
+sceDisplayWaitVblankStart	
+sceDisplayWaitVblankStartCB	
+sceDisplay_driver_5B5AEFAD	0,1,2,3,4
+sceDisplay_driver_63E22A26	0,1,2,3,4
+sceDmacMemcpy	0,1,2
+sceDmacTryMemcpy	0,1,2
+sceDrmBBCipherFinal	0
+sceDrmBBCipherInit	0,1,2,3,4,5
+sceDrmBBCipherUpdate	0,1,2
+sceDrmBBMacFinal	0,1,2
+sceDrmBBMacFinal2	0,1,2
+sceDrmBBMacInit	0,1
+sceDrmBBMacUpdate	0,1,2
+sceFontCalcMemorySize	0,1,2
+sceFontClose	0
+sceFontDoneLib	0
+sceFontFindFont	0,1,2
+sceFontFindOptimumFont	0,1,2
+sceFontFlush	0
+sceFontGetCharGlyphImage	0,1,2
+sceFontGetCharGlyphImage_Clip	0,1,2,3,4,5,6
+sceFontGetCharImageRect	0,1,2
+sceFontGetCharInfo	0,1,2
+sceFontGetFontInfo	0,1
+sceFontGetFontInfoByIndexNumber	0,1,2
+sceFontGetFontList	0,1,2
+sceFontGetNumFontList	0,1
+sceFontGetShadowGlyphImage	0,1,2
+sceFontGetShadowGlyphImage_Clip	0,1,2,3,4,5,6
+sceFontGetShadowImageRect	0,1,2
+sceFontGetShadowInfo	0,1,2
+sceFontIsElement	
+sceFontNewLib	0,1
+sceFontOpen	0,1,2,3
+sceFontOpenUserFile	0,1,2,3
+sceFontOpenUserMemory	0,1,2,3
+sceFontPixelToPointH	0,1
+sceFontPixelToPointV	0,1
+sceFontPointToPixelH	0,1
+sceFontPointToPixelV	0,1
+sceFontSetAltCharacterCode	0,1
+sceFontSetResolution	0
+sceGeBreak	0,1
+sceGeContinue	
+sceGeDrawSync	0
+sceGeEdramGetAddr	
+sceGeEdramGetSize	
+sceGeEdramSetAddrTranslation	0
+sceGeEdramSetSize	0
+sceGeGetCmd	0
+sceGeGetMtx	0,1
+sceGeGetStack	0,1
+sceGeListDeQueue	0
+sceGeListEnQueue	0,1,2,3
+sceGeListEnQueueHead	0,1,2,3
+sceGeListSync	0,1
+sceGeListUpdateStallAddr	0,1
+sceGeRestoreContext	0
+sceGeSaveContext	0
+sceGeSetCallback	0
+sceGeUnsetCallback	0
+sceGuAlphaFunc	0,1,2
+sceGuAmbient	0
+sceGuAmbientColor	0
+sceGuBeginObject	0,1,2,3
+sceGuBlendFunc	0,1,2,3,4
+sceGuBoneMatrix	0,1
+sceGuBreak	0
+sceGuCallList	0
+sceGuCallMode	0
+sceGuCheckList	
+sceGuClear	0
+sceGuClearColor	0
+sceGuClearDepth	0
+sceGuClearStencil	0
+sceGuClutLoad	0,1
+sceGuClutMode	0,1,2,3
+sceGuColor	0
+sceGuColorFunc	0,1,2
+sceGuColorMaterial	0
+sceGuContinue	
+sceGuCopyImage	0,1,2,3,4,5,6,7
+sceGuDepthBuffer	0,1
+sceGuDepthFunc	0
+sceGuDepthMask	0
+sceGuDepthOffset	0
+sceGuDepthRange	0,1
+sceGuDisable	0
+sceGuDispBuffer	0,1,2,3
+sceGuDisplay	0
+sceGuDrawArray	0,1,2,3,4
+sceGuDrawArrayN	0,1,2,3,4,5
+sceGuDrawBezier	0,1,2,3,4
+sceGuDrawBuffer	0,1,2
+sceGuDrawBufferList	0,1,2
+sceGuDrawSpline	0,1,2,3,4,5,6
+sceGuEnable	0
+sceGuEndObject	
+sceGuFinish	
+sceGuFinishId	0
+sceGuFog	0
+sceGuFrontFace	0
+sceGuGetAllStatus	
+sceGuGetMemory	0
+sceGuGetStatus	0
+sceGuInit	
+sceGuLight	0,1,2,3
+sceGuLightAtt	0
+sceGuLightColor	0,1,2
+sceGuLightMode	0
+sceGuLightSpot	0,1
+sceGuLogicalOp	0
+sceGuMaterial	0,1
+sceGuModelColor	0,1,2,3
+sceGuMorphWeight	0
+sceGuOffset	0,1
+sceGuPatchDivide	0,1
+sceGuPatchFrontFace	0
+sceGuPatchPrim	0
+sceGuPixelMask	0
+sceGuScissor	0,1,2,3
+sceGuSendCommandf	0
+sceGuSendCommandi	0,1
+sceGuSendList	0,1,2
+sceGuSetAllStatus	0
+sceGuSetCallback	0,1
+sceGuSetDither	0
+sceGuSetMatrix	0,1
+sceGuSetStatus	0,1
+sceGuShadeModel	0
+sceGuSignal	0,1
+sceGuSpecular	
+sceGuStart	0,1
+sceGuStencilFunc	0,1,2
+sceGuStencilOp	0,1,2
+sceGuSwapBuffers	
+sceGuSync	0,1
+sceGuTerm	
+sceGuTexEnvColor	0
+sceGuTexFilter	0,1
+sceGuTexFlush	
+sceGuTexFunc	0,1
+sceGuTexImage	0,1,2,3,4
+sceGuTexLevelMode	0
+sceGuTexMapMode	0,1,2
+sceGuTexMode	0,1,2,3
+sceGuTexOffset	
+sceGuTexProjMapMode	0
+sceGuTexScale	
+sceGuTexSlope	
+sceGuTexSync	
+sceGuTexWrap	0,1
+sceGuViewport	0,1,2,3
+sceGumBeginObject	0,1,2,3
+sceGumDrawArray	0,1,2,3,4
+sceGumDrawArrayN	0,1,2,3,4,5
+sceGumDrawBezier	0,1,2,3,4
+sceGumDrawSpline	0,1,2,3,4,5,6
+sceGumEndObject	
+sceGumFastInverse	
+sceGumFullInverse	
+sceGumLoadIdentity	
+sceGumLoadMatrix	0
+sceGumLookAt	0,1,2
+sceGumMatrixMode	0
+sceGumMultMatrix	0
+sceGumOrtho	
+sceGumPerspective	
+sceGumPopMatrix	
+sceGumPushMatrix	
+sceGumRotate	0
+sceGumRotateX	
+sceGumRotateXYZ	0
+sceGumRotateY	
+sceGumRotateZ	
+sceGumRotateZYX	0
+sceGumScale	0
+sceGumStoreMatrix	0
+sceGumTranslate	0
+sceGumUpdateMatrix	
+sceHprmIsHeadphoneExist	
+sceHprmIsMicrophoneExist	
+sceHprmIsRemoteExist	
+sceHprmPeekCurrentKey	0
+sceHprmPeekLatch	0
+sceHprmReadLatch	0
+sceHttpAbortRequest	0
+sceHttpAddExtraHeader	0,1,2,3
+sceHttpCreateConnection	0,1,2,3,4
+sceHttpCreateConnectionWithURL	0,1,2
+sceHttpCreateRequest	0,1,2,4,5
+sceHttpCreateRequestWithURL	0,1,2,4,5
+sceHttpCreateTemplate	0,1,2
+sceHttpDeleteConnection	0
+sceHttpDeleteHeader	0,1
+sceHttpDeleteRequest	0
+sceHttpDeleteTemplate	0
+sceHttpDisableAuth	0
+sceHttpDisableCache	0
+sceHttpDisableCookie	0
+sceHttpDisableKeepAlive	0
+sceHttpDisableRedirect	0
+sceHttpEnableAuth	0
+sceHttpEnableCache	0
+sceHttpEnableCookie	0
+sceHttpEnableKeepAlive	0
+sceHttpEnableRedirect	0
+sceHttpEnd	
+sceHttpEndCache	
+sceHttpGetAllHeader	0,1,2
+sceHttpGetContentLength	0,1
+sceHttpGetNetworkErrno	0,1
+sceHttpGetProxy	0,1,2,3,4,5
+sceHttpGetStatusCode	0,1
+sceHttpInit	0
+sceHttpInitCache	0
+sceHttpLoadSystemCookie	
+sceHttpReadData	0,1,2
+sceHttpSaveSystemCookie	
+sceHttpSendRequest	0,1,2
+sceHttpSetAuthInfoCB	0,1
+sceHttpSetConnectTimeOut	0,1
+sceHttpSetMallocFunction	0,1,2
+sceHttpSetProxy	0,1,2,3,4
+sceHttpSetRecvTimeOut	0,1
+sceHttpSetResHeaderMaxSize	0,1
+sceHttpSetResolveRetry	0,1
+sceHttpSetResolveTimeOut	0,1
+sceHttpSetSendTimeOut	0,1
+sceHttpsEnd	
+sceHttpsInit	0,1,2,3
+sceHttpsLoadDefaultCert	0,1
+sceIdStorageCreateAtomicLeaves	0,1
+sceIdStorageCreateLeaf	0
+sceIdStorageFlush	
+sceIdStorageFormat	
+sceIdStorageIsReadOnly	
+sceIdStorageLookup	0,1,2,3
+sceIdStorageReadLeaf	0,1
+sceIdStorageUnformat	
+sceIdStorageWriteLeaf	0,1
+sceImposeCheckVideoOut	0
+sceImposeGetBacklightOffTime	
+sceImposeGetHomePopup	
+sceImposeGetLanguageMode	0,1
+sceImposeGetParam	0
+sceImposeGetUMDPopup	
+sceImposeSetBacklightOffTime	0
+sceImposeSetHomePopup	0
+sceImposeSetLanguageMode	0,1
+sceImposeSetParam	0,1
+sceImposeSetUMDPopup	0
+sceIoAddDrv	0
+sceIoAssign	0,1,2,3,4,5
+sceIoCancel	0
+sceIoChangeAsyncPriority	0,1
+sceIoChangeThreadCwd	0,1
+sceIoChdir	0
+sceIoChstat	0,1,2
+sceIoClose	0
+sceIoCloseAsync	0
+sceIoDclose	0
+sceIoDelDrv	0
+sceIoDevctl	0,1,2,3,4,5
+sceIoDopen	0
+sceIoDread	0,1
+sceIoGetAsyncStat	0,1,2
+sceIoGetDevType	0
+sceIoGetThreadCwd	0,1,2
+sceIoGetstat	0,1
+sceIoIoctl	0,1,2,3,4,5
+sceIoIoctlAsync	0,1,2,3,4,5
+sceIoLseek	0,2,3,4
+sceIoLseek32	0,1,2
+sceIoLseek32Async	0,1,2
+sceIoLseekAsync	0,2,3,4
+sceIoMkdir	0,1
+sceIoOpen	0,1,2
+sceIoOpenAsync	0,1,2
+sceIoPollAsync	0,1
+sceIoRead	0,1,2
+sceIoReadAsync	0,1,2
+sceIoRemove	0
+sceIoRename	0,1
+sceIoReopen	0,1,2,3
+sceIoRmdir	0
+sceIoSetAsyncCallback	0,1,2
+sceIoSync	0,1
+sceIoUnassign	0
+sceIoWaitAsync	0,1
+sceIoWaitAsyncCB	0,1
+sceIoWrite	0,1,2
+sceIoWriteAsync	0,1,2
+sceJpegCreateMJpeg	0,1
+sceJpegCsc	0,1,2,3,4
+sceJpegDecodeMJpeg	0,1,2,3
+sceJpegDecodeMJpegYCbCr	0,1,2,3,4
+sceJpegDeleteMJpeg	
+sceJpegFinishMJpeg	
+sceJpegGetOutputInfo	0,1,2,3
+sceJpegInitMJpeg	
+sceKermitMemorySetArgument	0,1,2,3,4
+sceKermitMemory_driver_80E1240A	0,1
+sceKermitMemory_driver_90B662D0	0,1
+sceKermitRegisterVirtualIntrHandler	0,1
+sceKermitSendRequest	0,1,2,3,4,5
+sceKermit_driver_4F75AA05	0,1,2,3,4,5
+sceKernelAllocHeapMemory	0,1
+sceKernelAllocPartitionMemory	0,1,2,3,4
+sceKernelAllocateFpl	0,1,2
+sceKernelAllocateFplCB	0,1,2
+sceKernelAllocateKTLS	0,1,2
+sceKernelAllocateVpl	0,1,2,3
+sceKernelAllocateVplCB	0,1,2,3
+sceKernelApplicationType	
+sceKernelBootFrom	
+sceKernelCancelAlarm	0
+sceKernelCancelCallback	0
+sceKernelCancelFpl	0,1
+sceKernelCancelMsgPipe	0,1,2
+sceKernelCancelReceiveMbx	0,1
+sceKernelCancelVTimerHandler	0
+sceKernelCancelVpl	0,1
+sceKernelCancelWakeupThread	0
+sceKernelChangeCurrentThreadAttr	0,1
+sceKernelChangeThreadPriority	0,1
+sceKernelCheckCallback	
+sceKernelCheckExecFile	0,1
+sceKernelCheckPspConfig	0,1,2
+sceKernelCheckThreadKernelStack	
+sceKernelCheckThreadStack	
+sceKernelClearEventFlag	0,1
+sceKernelCpuResumeIntr	0
+sceKernelCpuResumeIntrWithSync	0
+sceKernelCpuSuspendIntr	
+sceKernelCreateCallback	0,1,2
+sceKernelCreateEventFlag	0,1,2,3
+sceKernelCreateFpl	0,1,2,3,4,5
+sceKernelCreateHeap	0,1,2,3
+sceKernelCreateLwMutex	0,1,2,3,4
+sceKernelCreateMbx	0,1,2
+sceKernelCreateMsgPipe	0,1,2,3,4
+sceKernelCreateSema	0,1,2,3,4
+sceKernelCreateThread	0,1,2,3,4,5
+sceKernelCreateVTimer	0,1
+sceKernelCreateVpl	0,1,2,3,4
+sceKernelDcacheInvalidateAll	
+sceKernelDcacheInvalidateRange	0,1
+sceKernelDcacheProbe	0
+sceKernelDcacheWritebackAll	
+sceKernelDcacheWritebackInvalidateAll	
+sceKernelDcacheWritebackInvalidateRange	0,1
+sceKernelDcacheWritebackRange	0,1
+sceKernelDeflateDecompress	0,1,2,3
+sceKernelDelaySysClockThread	0
+sceKernelDelaySysClockThreadCB	0
+sceKernelDelayThread	0
+sceKernelDelayThreadCB	0
+sceKernelDeleteCallback	0
+sceKernelDeleteEventFlag	0
+sceKernelDeleteFpl	0
+sceKernelDeleteHeap	0
+sceKernelDeleteLwMutex	0
+sceKernelDeleteMbx	0
+sceKernelDeleteMsgPipe	0
+sceKernelDeleteSema	0
+sceKernelDeleteThread	0
+sceKernelDeleteUID	0
+sceKernelDeleteVTimer	0
+sceKernelDeleteVpl	0
+sceKernelDevkitVersion	
+sceKernelDisableIntr	0
+sceKernelDisableSubIntr	0,1
+sceKernelEnableIntr	0
+sceKernelEnableSubIntr	0,1
+sceKernelExitDeleteThread	0
+sceKernelExitGame	
+sceKernelExitThread	0
+sceKernelExitVSHKernel	0
+sceKernelExitVSHVSH	0
+sceKernelExtendKernelStack	0,1,2
+sceKernelFindModuleByAddress	0
+sceKernelFindModuleByName	0
+sceKernelFindModuleByUID	0
+sceKernelFreeFpl	0,1
+sceKernelFreeHeapMemory	0,1
+sceKernelFreeKTLS	0
+sceKernelFreePartitionMemory	0
+sceKernelFreeVpl	0,1
+sceKernelGetBlockHeadAddr	0
+sceKernelGetCallbackCount	0
+sceKernelGetCompiledSdkVersion	
+sceKernelGetDebugPutchar	
+sceKernelGetGameInfo	
+sceKernelGetKTLS	0
+sceKernelGetModel	
+sceKernelGetModuleIdByAddress	0
+sceKernelGetModuleIdList	0,1,2
+sceKernelGetModuleIdListForKernel	0,1,2,3
+sceKernelGetModuleList	0,1
+sceKernelGetSceUidControlBlock	0,1
+sceKernelGetSceUidControlBlockWithType	0,1,2
+sceKernelGetSyscallRA	
+sceKernelGetSystemStatus	
+sceKernelGetSystemStatusFlag	
+sceKernelGetSystemTime	0
+sceKernelGetSystemTimeLow	
+sceKernelGetSystemTimeWide	
+sceKernelGetThreadCurrentPriority	
+sceKernelGetThreadExitStatus	0
+sceKernelGetThreadId	
+sceKernelGetThreadKTLS	0,1,2
+sceKernelGetThreadKernelStackFreeSize	0
+sceKernelGetThreadStackFreeSize	0
+sceKernelGetThreadmanIdList	0,1,2,3
+sceKernelGetThreadmanIdType	0
+sceKernelGetUIDcontrolBlock	0,1
+sceKernelGetUidmanCB	
+sceKernelGetUserLevel	
+sceKernelGetVTimerBase	0,1
+sceKernelGetVTimerBaseWide	0
+sceKernelGetVTimerTime	0,1
+sceKernelGetVTimerTimeWide	0
+sceKernelGzipDecompress	0,1,2,3
+sceKernelHeapTotalFreeSize	0
+sceKernelIcacheClearAll	
+sceKernelIcacheInvalidateAll	
+sceKernelIcacheInvalidateRange	0,1
+sceKernelIcacheProbe	0
+sceKernelInitApitype	
+sceKernelInitFileName	
+sceKernelIsCpuIntrEnable	
+sceKernelIsCpuIntrSuspended	0
+sceKernelIsIntrContext	
+sceKernelIsRegisterSysEventHandler	0
+sceKernelIsUserModeThread	
+sceKernelLibcClock	
+sceKernelLibcGettimeofday	0,1
+sceKernelLibcTime	0
+sceKernelLoadExec	0,1
+sceKernelLoadExecBufferPlain	0,1,2
+sceKernelLoadExecVSHDisc	0,1
+sceKernelLoadExecVSHDiscUpdater	0,1
+sceKernelLoadExecVSHMs1	0,1
+sceKernelLoadExecVSHMs2	0,1
+sceKernelLoadExecVSHMs3	0,1
+sceKernelLoadExecVSHMs4	0,1
+sceKernelLoadModule	0,1,2
+sceKernelLoadModuleBuffer	0,1,2,3
+sceKernelLoadModuleBufferBootInitBtcnf	0,1,2,3
+sceKernelLoadModuleBufferUsbWlan	0,1,2,3
+sceKernelLoadModuleByID	0,1,2
+sceKernelLoadModuleMs	0,1,2
+sceKernelLoadModuleMs2	0,1,2,3
+sceKernelLoadModuleWithApitype2	0,1,2,3
+sceKernelLockLwMutex	0,1,2
+sceKernelMaxFreeMemSize	
+sceKernelModuleCount	
+sceKernelNotifyCallback	0,1
+sceKernelPartitionMaxFreeMemSize	0
+sceKernelPartitionTotalFreeMemSize	0
+sceKernelPollEventFlag	0,1,2,3
+sceKernelPollMbx	0,1
+sceKernelPollSema	0,1
+sceKernelProbeExecutableObject	0,1
+sceKernelQueryInitCB	
+sceKernelQueryMemoryPartitionInfo	0,1
+sceKernelQueryModuleInfo	0,1
+sceKernelQuerySystemCall	0
+sceKernelReceiveMbx	0,1,2
+sceKernelReceiveMbxCB	0,1,2
+sceKernelReceiveMsgPipe	0,1,2,3,4,5
+sceKernelReceiveMsgPipeCB	0,1,2,3,4,5
+sceKernelReferAlarmStatus	0,1
+sceKernelReferCallbackStatus	0,1
+sceKernelReferEventFlagStatus	0,1
+sceKernelReferFplStatus	0,1
+sceKernelReferGlobalProfiler	
+sceKernelReferMbxStatus	0,1
+sceKernelReferMsgPipeStatus	0,1
+sceKernelReferSemaStatus	0,1
+sceKernelReferSysEventHandler	
+sceKernelReferSystemStatus	0
+sceKernelReferThreadDebugStatus	0,1
+sceKernelReferThreadEventHandlerStatus	0,1
+sceKernelReferThreadProfiler	
+sceKernelReferThreadRunStatus	0,1
+sceKernelReferThreadStatus	0,1
+sceKernelReferVTimerStatus	0,1
+sceKernelReferVplStatus	0,1
+sceKernelRegisterDebugPutchar	0
+sceKernelRegisterDefaultExceptionHandler	0
+sceKernelRegisterExceptionHandler	0,1
+sceKernelRegisterExitCallback	0
+sceKernelRegisterIntrHandler	0,1,2,3,4
+sceKernelRegisterPriorityExceptionHandler	0,1,2
+sceKernelRegisterSubIntrHandler	0,1,2,3
+sceKernelRegisterSysEventHandler	0
+sceKernelRegisterThreadEventHandler	0,1,2,3,4
+sceKernelReleaseIntrHandler	0
+sceKernelReleaseSubIntrHandler	0,1
+sceKernelReleaseThreadEventHandler	0
+sceKernelReleaseWaitThread	0
+sceKernelResumeDispatchThread	0
+sceKernelResumeThread	0
+sceKernelRotateThreadReadyQueue	0
+sceKernelSelfStopUnloadModule	0,1,2
+sceKernelSendMbx	0,1
+sceKernelSendMsgPipe	0,1,2,3,4,5
+sceKernelSendMsgPipeCB	0,1,2,3,4,5
+sceKernelSetAlarm	0,1,2
+sceKernelSetCompiledSdkVersion	0
+sceKernelSetDdrMemoryProtection	0,1,2
+sceKernelSetEventFlag	0,1
+sceKernelSetSysClockAlarm	0,1,2
+sceKernelSetVTimerHandler	0,1,2,3
+sceKernelSetVTimerHandlerWide	0,2,3,4,5
+sceKernelSetVTimerTime	0,1
+sceKernelSetVTimerTimeWide	0,2,3
+sceKernelSignalSema	0,1
+sceKernelSleepThread	
+sceKernelSleepThreadCB	
+sceKernelStartModule	0,1,2,3,4
+sceKernelStartThread	0,1,2
+sceKernelStartVTimer	0
+sceKernelStderr	
+sceKernelStderrReopen	0,1,2
+sceKernelStdin	
+sceKernelStdout	
+sceKernelStdoutReopen	0,1,2
+sceKernelStopModule	0,1,2,3,4
+sceKernelStopUnloadSelfModule	0,1,2,3
+sceKernelStopVTimer	0
+sceKernelSuspendAllUserThreads	
+sceKernelSuspendDispatchThread	
+sceKernelSuspendThread	0
+sceKernelSysClock2USec	0,1,2
+sceKernelSysClock2USecWide	0,1,2,3
+sceKernelSysEventDispatch	0,1,2,3,4,5,6
+sceKernelSysMemDump	
+sceKernelSysMemDumpBlock	
+sceKernelSysMemDumpTail	
+sceKernelTerminateDeleteThread	0
+sceKernelTerminateThread	0
+sceKernelTotalFreeMemSize	
+sceKernelTryAllocateFpl	0,1
+sceKernelTryAllocateVpl	0,1,2
+sceKernelTryLockLwMutex	0,1
+sceKernelTryReceiveMsgPipe	0,1,2,3,4
+sceKernelTrySendMsgPipe	0,1,2,3,4
+sceKernelUSec2SysClock	0,1
+sceKernelUSec2SysClockWide	0
+sceKernelUnloadModule	0
+sceKernelUnlockLwMutex	0,1
+sceKernelUnregisterSysEventHandler	0
+sceKernelUtilsMd5BlockInit	0
+sceKernelUtilsMd5BlockResult	0,1
+sceKernelUtilsMd5BlockUpdate	0,1,2
+sceKernelUtilsMd5Digest	0,1,2
+sceKernelUtilsMt19937Init	0,1
+sceKernelUtilsMt19937UInt	0
+sceKernelUtilsSha1BlockInit	0
+sceKernelUtilsSha1BlockResult	0,1
+sceKernelUtilsSha1BlockUpdate	0,1,2
+sceKernelUtilsSha1Digest	0,1,2
+sceKernelVolatileMemLock	0,1,2
+sceKernelVolatileMemTryLock	0,1,2
+sceKernelVolatileMemUnlock	0
+sceKernelWaitEventFlag	0,1,2,3,4
+sceKernelWaitEventFlagCB	0,1,2,3,4
+sceKernelWaitSema	0,1,2
+sceKernelWaitSemaCB	0,1,2
+sceKernelWaitThreadEnd	0,1
+sceKernelWaitThreadEndCB	0,1
+sceKernelWakeupThread	0
+sceMesgd_driver_102DC8AF	0,1,2
+sceMp3CheckStreamDataNeeded	0
+sceMp3Decode	0,1
+sceMp3GetBitRate	0
+sceMp3GetFrameNum	0
+sceMp3GetInfoToAddStreamData	0,1,2,3
+sceMp3GetLoopNum	0
+sceMp3GetMPEGVersion	0
+sceMp3GetMaxOutputSample	0
+sceMp3GetMp3ChannelNum	0
+sceMp3GetSamplingRate	0
+sceMp3GetSumDecodedSample	0
+sceMp3Init	0
+sceMp3InitResource	
+sceMp3LowLevelDecode	0,1,2,3,4
+sceMp3LowLevelInit	0,1
+sceMp3NotifyAddStreamData	0,1
+sceMp3ReleaseMp3Handle	0
+sceMp3ReserveMp3Handle	0
+sceMp3ResetPlayPosition	0
+sceMp3ResetPlayPositionByFrame	0,1
+sceMp3SetLoopNum	0,1
+sceMp3TermResource	
+sceMpegAtracDecode	0,1,2,3
+sceMpegAvcDecode	0,1,2,3,4
+sceMpegAvcDecodeMode	0,1
+sceMpegAvcDecodeStop	0,1,2,3
+sceMpegBaseCscInit	0
+sceMpegBaseCscVme	0,1,2,3
+sceMpegBasePESpacketCopy	0
+sceMpegBaseYCrCbCopyVme	0,1,2
+sceMpegCreate	0,1,2,3,4,5,6
+sceMpegDelete	0
+sceMpegFinish	
+sceMpegFlushAllStream	0
+sceMpegFreeAvcEsBuf	0,1
+sceMpegGetAtracAu	0,1,2,3
+sceMpegGetAvcAu	0,1,2,3
+sceMpegInit	
+sceMpegInitAu	0,1,2
+sceMpegMallocAvcEsBuf	0
+sceMpegQueryAtracEsSize	0,1,2
+sceMpegQueryMemSize	0
+sceMpegQueryStreamOffset	0,1,2
+sceMpegQueryStreamSize	0,1
+sceMpegRegistStream	0,1,2
+sceMpegRingbufferAvailableSize	0
+sceMpegRingbufferConstruct	0,1,2,3,4,5
+sceMpegRingbufferDestruct	0
+sceMpegRingbufferPut	0,1,2
+sceMpegRingbufferQueryMemSize	0
+sceMpegUnRegistStream	0,1
+sceNandEraseBlock	0
+sceNandEraseBlockWithRetry	0
+sceNandGetPageSize	
+sceNandGetPagesPerBlock	
+sceNandGetTotalBlocks	
+sceNandIsBadBlock	0
+sceNandLock	0
+sceNandReadBlockWithRetry	0,1,2
+sceNandReadExtraOnly	0,1,2
+sceNandReadId	0,1
+sceNandReadPages	0,1,2,3
+sceNandReadPagesRawAll	0,1,2,3
+sceNandReadStatus	
+sceNandReset	0
+sceNandSetWriteProtect	0
+sceNandUnlock	
+sceNandWriteAccess	0,1,2,3,4
+sceNandWriteBlockWithVerify	0,1,2
+sceNetAdhocGameModeCreateMaster	0,1
+sceNetAdhocGameModeCreateReplica	0,1,2
+sceNetAdhocGameModeDeleteMaster	
+sceNetAdhocGameModeDeleteReplica	0
+sceNetAdhocGameModeUpdateMaster	
+sceNetAdhocGameModeUpdateReplica	0,1
+sceNetAdhocGetPdpStat	0,1
+sceNetAdhocGetPtpStat	0,1
+sceNetAdhocInit	
+sceNetAdhocMatchingAbortSendData	0,1
+sceNetAdhocMatchingCancelTarget	0,1
+sceNetAdhocMatchingCancelTargetWithOpt	0,1,2,3
+sceNetAdhocMatchingCreate	0,1,2,3,4,5,6,7
+sceNetAdhocMatchingDelete	0
+sceNetAdhocMatchingGetHelloOpt	0,1,2
+sceNetAdhocMatchingGetMembers	0,1,2
+sceNetAdhocMatchingGetPoolMaxAlloc	
+sceNetAdhocMatchingGetPoolStat	0
+sceNetAdhocMatchingInit	0
+sceNetAdhocMatchingSelectTarget	0,1,2,3
+sceNetAdhocMatchingSendData	0,1,2,3
+sceNetAdhocMatchingSetHelloOpt	0,1,2
+sceNetAdhocMatchingStart	0,1,2,3,4,5,6
+sceNetAdhocMatchingStop	0
+sceNetAdhocMatchingTerm	
+sceNetAdhocPdpCreate	0,1,2,3
+sceNetAdhocPdpDelete	0,1
+sceNetAdhocPdpRecv	0,1,2,3,4,5,6
+sceNetAdhocPdpSend	0,1,2,3,4,5,6
+sceNetAdhocPtpAccept	0,1,2,3,4
+sceNetAdhocPtpClose	0,1
+sceNetAdhocPtpConnect	0,1,2
+sceNetAdhocPtpFlush	0,1,2
+sceNetAdhocPtpListen	0,1,2,3,4,5,6
+sceNetAdhocPtpOpen	0,1,2,3,4,5,6,7
+sceNetAdhocPtpRecv	0,1,2,3,4
+sceNetAdhocPtpSend	0,1,2,3,4
+sceNetAdhocTerm	
+sceNetAdhocctlAddHandler	0,1
+sceNetAdhocctlConnect	0
+sceNetAdhocctlCreate	0
+sceNetAdhocctlCreateEnterGameMode	0,1,2,3,4,5
+sceNetAdhocctlDelHandler	0
+sceNetAdhocctlDisconnect	
+sceNetAdhocctlExitGameMode	
+sceNetAdhocctlGetAddrByName	0,1,2
+sceNetAdhocctlGetAdhocId	0
+sceNetAdhocctlGetGameModeInfo	0
+sceNetAdhocctlGetNameByAddr	0,1
+sceNetAdhocctlGetParameter	0
+sceNetAdhocctlGetPeerInfo	0,1,2
+sceNetAdhocctlGetPeerList	0,1
+sceNetAdhocctlGetScanInfo	0,1
+sceNetAdhocctlGetState	0
+sceNetAdhocctlInit	0,1,2
+sceNetAdhocctlJoin	0
+sceNetAdhocctlJoinEnterGameMode	0,1,2,3
+sceNetAdhocctlScan	
+sceNetAdhocctlTerm	
+sceNetApctlAddHandler	0,1
+sceNetApctlConnect	0
+sceNetApctlDelHandler	0
+sceNetApctlDisconnect	
+sceNetApctlGetInfo	0,1
+sceNetApctlGetState	0
+sceNetApctlInit	0,1
+sceNetApctlTerm	
+sceNetEtherNtostr	0,1
+sceNetEtherStrton	0,1
+sceNetFreeThreadinfo	0
+sceNetGetLocalEtherAddr	0
+sceNetGetMallocStat	0
+sceNetInetAccept	0,1,2
+sceNetInetBind	0,1,2
+sceNetInetClose	0
+sceNetInetConnect	0,1,2
+sceNetInetGetErrno	
+sceNetInetGetpeername	0,1,2
+sceNetInetGetsockname	0,1,2
+sceNetInetGetsockopt	0,1,2,3,4
+sceNetInetInetAddr	0
+sceNetInetInetAton	0,1
+sceNetInetInetNtop	0,1,2,3
+sceNetInetInetPton	0,1,2
+sceNetInetInit	
+sceNetInetListen	0,1
+sceNetInetPoll	0,1,2
+sceNetInetRecv	0,1,2,3
+sceNetInetRecvfrom	0,1,2,3,4,5
+sceNetInetRecvmsg	0,1,2
+sceNetInetSelect	0,1,2,3,4
+sceNetInetSend	0,1,2,3
+sceNetInetSendmsg	0,1,2
+sceNetInetSendto	0,1,2,3,4,5
+sceNetInetSetsockopt	0,1,2,3,4
+sceNetInetShutdown	0,1
+sceNetInetSocket	0,1,2
+sceNetInetTerm	
+sceNetInit	0,1,2,3,4
+sceNetResolverCreate	0,1,2
+sceNetResolverDelete	0
+sceNetResolverInit	
+sceNetResolverStartAtoN	0,1,2,3,4,5
+sceNetResolverStartNtoA	0,1,2,3,4
+sceNetResolverStop	0
+sceNetResolverTerm	
+sceNetTerm	
+sceNetThreadAbort	0
+sceNwman_driver_9555D68D	0,1,2
+sceOpenPSIDGetOpenPSID	0
+scePowerGetBatteryChargingStatus	
+scePowerGetBatteryElec	
+scePowerGetBatteryFullCapacity	
+scePowerGetBatteryLifePercent	
+scePowerGetBatteryLifeTime	
+scePowerGetBatteryRemainCapacity	
+scePowerGetBatteryTemp	
+scePowerGetBatteryVolt	
+scePowerGetBusClockFrequency	
+scePowerGetBusClockFrequencyFloat	
+scePowerGetBusClockFrequencyInt	
+scePowerGetCpuClockFrequency	
+scePowerGetCpuClockFrequencyFloat	
+scePowerGetCpuClockFrequencyInt	
+scePowerGetIdleTimer	
+scePowerIdleTimerDisable	0
+scePowerIdleTimerEnable	0
+scePowerIsBatteryCharging	
+scePowerIsBatteryExist	
+scePowerIsLowBattery	
+scePowerIsPowerOnline	
+scePowerIsSuspendRequired	
+scePowerLock	0
+scePowerRegisterCallback	0,1
+scePowerRequestColdReset	0
+scePowerRequestStandby	
+scePowerRequestSuspend	
+scePowerSetBusClockFrequency	0
+scePowerSetClockFrequency	0,1,2
+scePowerSetCpuClockFrequency	0
+scePowerTick	0
+scePowerUnlock	0
+scePowerUnregisterCallback	0
+sceRegCloseCategory	0
+sceRegCloseRegistry	0
+sceRegCreateKey	0,1,2,3
+sceRegFlushCategory	0
+sceRegFlushRegistry	0
+sceRegGetKeyInfo	0,1,2,3,4
+sceRegGetKeyInfoByName	0,1,2,3
+sceRegGetKeyValue	0,1,2,3
+sceRegGetKeyValueByName	0,1,2,3
+sceRegGetKeys	0,1,2
+sceRegGetKeysNum	0,1
+sceRegOpenCategory	0,1,2,3
+sceRegOpenRegistry	0,1,2
+sceRegRemoveCategory	0,1
+sceRegRemoveRegistry	0
+sceRegSetKeyValue	0,1,2,3
+sceRtcCheckValid	0
+sceRtcCompareTick	0,1
+sceRtcConvertLocalTimeToUTC	0,1
+sceRtcConvertUtcToLocalTime	0,1
+sceRtcFormatRFC2822	0,1,2
+sceRtcFormatRFC2822LocalTime	0,1
+sceRtcFormatRFC3339	0,1,2
+sceRtcFormatRFC3339LocalTime	0,1
+sceRtcGetCurrentClock	0,1
+sceRtcGetCurrentClockLocalTime	0
+sceRtcGetCurrentTick	0
+sceRtcGetDayOfWeek	0,1,2
+sceRtcGetDaysInMonth	0,1
+sceRtcGetDosTime	0,1
+sceRtcGetTick	0,1
+sceRtcGetTickResolution	
+sceRtcGetTime_t	0,1
+sceRtcGetWin32FileTime	0,1
+sceRtcIsLeapYear	0
+sceRtcParseDateTime	0,1
+sceRtcParseRFC3339	0,1
+sceRtcSetDosTime	0,1
+sceRtcSetTick	0,1
+sceRtcSetTime_t	0,1
+sceRtcSetWin32FileTime	0,1
+sceRtcTickAddDays	0,1,2
+sceRtcTickAddHours	0,1,2
+sceRtcTickAddMicroseconds	0,1,2,3
+sceRtcTickAddMinutes	0,1,2,3
+sceRtcTickAddMonths	0,1,2
+sceRtcTickAddSeconds	0,1,2,3
+sceRtcTickAddTicks	0,1,2,3
+sceRtcTickAddWeeks	0,1,2
+sceRtcTickAddYears	0,1,2
+sceSTimerAlloc	
+sceSTimerFree	0
+sceSTimerGetCount	0,1
+sceSTimerResetCount	0
+sceSTimerSetHandler	0,1,2,3
+sceSTimerSetPrscl	0,1,2
+sceSTimerSetTMCY	0,1
+sceSTimerStartCount	0
+sceSTimerStopCount	0
+sceSdCleanList	0
+sceSdCreateList	0,1,2,3,4
+sceSdGetLastIndex	0,1,2
+sceSdRemoveValue	0,1,2
+sceSdSetIndex	0,1
+sceSdSetMember	0,1,2
+sceSircsSend	0,1
+sceSslEnd	
+sceSslGetUsedMemoryCurrent	0
+sceSslGetUsedMemoryMax	0
+sceSslInit	0
+sceSysconCtrlHRPower	0
+sceSysconCtrlLED	0,1
+sceSysconCtrlUsbPower	0
+sceSysconGetBaryonVersion	0
+sceSysconGetHPConnect	
+sceSysconGetPolestarVersion	0
+sceSysconGetPommelVersion	0
+sceSysconGetTimeStamp	0
+sceSysconGetUsbPowerCtrl	
+sceSysconPowerStandby	
+sceSysconReceiveSetParam	0,1
+sceSysconResetDevice	0,1
+sceSysconSetHPConnectCallback	0,1
+sceSysconSetHRPowerCallback	0,1
+sceSysregAtaBusClockEnable	
+sceSysregGetTachyonVersion	
+sceSysregKirkBusClockEnable	
+sceSysregMeBusClockDisable	
+sceSysregMeBusClockEnable	
+sceSysregMeResetDisable	
+sceSysregMeResetEnable	
+sceSysregVmeResetDisable	
+sceSysregVmeResetEnable	
+sceUmdActivate	0,1
+sceUmdCancelWaitDriveStat	
+sceUmdCheckMedium	
+sceUmdDeactivate	0,1
+sceUmdGetDiscInfo	0
+sceUmdGetDriveStat	
+sceUmdGetErrorStat	
+sceUmdRegisterUMDCallBack	0
+sceUmdReplacePermit	
+sceUmdReplaceProhibit	
+sceUmdSetDriveStatus	0
+sceUmdUnRegisterUMDCallBack	0
+sceUmdWaitDriveStat	0
+sceUmdWaitDriveStatCB	0,1
+sceUmdWaitDriveStatWithTimer	0,1
+sceUsbActivate	0
+sceUsbCamAutoImageReverseSW	0
+sceUsbCamGetAutoImageReverseState	
+sceUsbCamGetBrightness	0
+sceUsbCamGetContrast	0
+sceUsbCamGetEvLevel	0
+sceUsbCamGetImageEffectMode	0
+sceUsbCamGetLensDirection	
+sceUsbCamGetReadVideoFrameSize	
+sceUsbCamGetReverseMode	0
+sceUsbCamGetSaturation	0
+sceUsbCamGetSharpness	0
+sceUsbCamGetZoom	0
+sceUsbCamPollReadVideoFrameEnd	
+sceUsbCamReadVideoFrame	0,1
+sceUsbCamReadVideoFrameBlocking	0,1
+sceUsbCamSetBrightness	0
+sceUsbCamSetContrast	0
+sceUsbCamSetEvLevel	0
+sceUsbCamSetImageEffectMode	0
+sceUsbCamSetReverseMode	0
+sceUsbCamSetSaturation	0
+sceUsbCamSetSharpness	0
+sceUsbCamSetZoom	0
+sceUsbCamSetupMic	0,1,2
+sceUsbCamSetupStill	0
+sceUsbCamSetupStillEx	0
+sceUsbCamSetupVideo	0,1,2
+sceUsbCamSetupVideoEx	0,1,2
+sceUsbCamStartVideo	
+sceUsbCamStillCancelInput	
+sceUsbCamStillGetInputLength	
+sceUsbCamStillInput	0,1
+sceUsbCamStillInputBlocking	0,1
+sceUsbCamStillPollInputEnd	
+sceUsbCamStillWaitInputEnd	
+sceUsbCamStopVideo	
+sceUsbCamWaitReadVideoFrameEnd	
+sceUsbDeactivate	0
+sceUsbGetDrvList	0,1,2
+sceUsbGetDrvState	0
+sceUsbGetState	
+sceUsbStart	0,1,2
+sceUsbStop	0,1,2
+sceUsbWaitCancel	
+sceUsbWaitState	0,1,2
+sceUsbbdClearFIFO	0
+sceUsbbdRegister	0
+sceUsbbdReqCancelAll	0
+sceUsbbdReqRecv	0
+sceUsbbdReqSend	0
+sceUsbbdStall	0
+sceUsbbdUnregister	0
+sceUsbstorBootGetDataSize	
+sceUsbstorBootRegisterNotify	0
+sceUsbstorBootSetCapacity	0
+sceUsbstorBootSetLoadAddr	0
+sceUsbstorBootSetStatus	0
+sceUsbstorBootUnregisterNotify	0
+sceUtilityCheckNetParam	0
+sceUtilityCopyNetParam	0,1
+sceUtilityCreateNetParam	0
+sceUtilityDeleteNetParam	0
+sceUtilityGameSharingGetStatus	
+sceUtilityGameSharingInitStart	0
+sceUtilityGameSharingShutdownStart	
+sceUtilityGameSharingUpdate	0
+sceUtilityGetNetParam	0,1,2
+sceUtilityGetSystemParamInt	0,1
+sceUtilityGetSystemParamString	0,1,2
+sceUtilityHtmlViewerGetStatus	
+sceUtilityHtmlViewerInitStart	0
+sceUtilityHtmlViewerShutdownStart	
+sceUtilityHtmlViewerUpdate	0
+sceUtilityLoadAvModule	0
+sceUtilityLoadModule	0
+sceUtilityLoadNetModule	0
+sceUtilityLoadUsbModule	0
+sceUtilityMsgDialogAbort	
+sceUtilityMsgDialogGetStatus	
+sceUtilityMsgDialogInitStart	0
+sceUtilityMsgDialogShutdownStart	
+sceUtilityMsgDialogUpdate	0
+sceUtilityNetconfGetStatus	
+sceUtilityNetconfInitStart	0
+sceUtilityNetconfShutdownStart	
+sceUtilityNetconfUpdate	0
+sceUtilityOskGetStatus	
+sceUtilityOskInitStart	0
+sceUtilityOskShutdownStart	
+sceUtilityOskUpdate	0
+sceUtilitySavedataGetStatus	
+sceUtilitySavedataInitStart	0
+sceUtilitySavedataShutdownStart	
+sceUtilitySavedataUpdate	0
+sceUtilitySetNetParam	0,1
+sceUtilitySetSystemParamInt	0,1
+sceUtilitySetSystemParamString	0,1
+sceUtilityUnloadAvModule	0
+sceUtilityUnloadModule	0
+sceUtilityUnloadNetModule	0
+sceUtilityUnloadUsbModule	0
+sceUtilsBufferCopyWithRange	0,1,2,3,4
+sceVaudioChRelease	
+sceVaudioChReserve	0,1,2
+sceVaudioOutputBlocking	0,1
+sceVaudioSetAlcMode	0
+sceVaudioSetEffectType	0,1
+sceVideocodecDecode	0,1
+sceVideocodecGetEDRAM	0,1
+sceVideocodecInit	0,1
+sceVideocodecOpen	0,1
+sceVideocodecReleaseEDRAM	0
+sceWlanDevAttach	
+sceWlanDevDetach	
+sceWlanDevIsPowerOn	
+sceWlanGetEtherAddr	0
+sceWlanGetSwitchState	

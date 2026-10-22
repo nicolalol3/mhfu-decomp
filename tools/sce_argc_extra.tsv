@@ -1,0 +1,6 @@
+sceKernelGetModuleId
+sceKernelStopUnloadSelfModuleWithStatus	0,1,2,3,4
+sceKernelPrintf	0
+sceKernelSetCompiledSdkVersion500_505	0
+sceKernelSetCompilerVersion	0
+sceKernelPowerTick	0

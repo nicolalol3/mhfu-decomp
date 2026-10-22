@@ -1,0 +1,10 @@
+build/
+tools/.venv/
+tools/.venv_u20/
+__pycache__/
+
+# Il gioco non va mai pubblicato: niente ISO, EBOOT originali o dati estratti
+*.iso
+*.ISO
+*.BIN
+*.bin
