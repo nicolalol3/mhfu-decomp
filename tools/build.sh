@@ -6,8 +6,9 @@ export PATH=$PATH:/opt/pspdev/bin
 cd "$(dirname "$0")/.."
 mkdir -p build/obj
 python3 tools/symbols.py
+# no division-by-zero traps (the original code has none)
 # no inlining or merging between functions: each game function stays a separate function (needed by tests and mods)
-CFLAGS="-I/opt/pspdev/psp/sdk/include -O2 -G0 -march=allegrex -mno-abicalls -fno-pic -mno-branch-likely -fno-builtin -fno-strict-aliasing -fno-tree-loop-distribute-patterns -fno-inline-small-functions -fno-inline-functions-called-once -fno-inline-functions -fno-ipa-icf -fno-ipa-cp -fno-ipa-sra -fno-ipa-vrp -fno-ipa-bit-cp -fno-ipa-pure-const -fno-ipa-reference -fno-ipa-ra -fno-ipa-modref -ffreestanding -Wall -Wno-unused -Iinclude"
+CFLAGS="-I/opt/pspdev/psp/sdk/include -O2 -G0 -march=allegrex -mno-abicalls -fno-pic -mno-branch-likely -mno-check-zero-division -fno-builtin -fno-strict-aliasing -fno-tree-loop-distribute-patterns -fno-inline-small-functions -fno-inline-functions-called-once -fno-inline-functions -fno-ipa-icf -fno-ipa-cp -fno-ipa-sra -fno-ipa-vrp -fno-ipa-bit-cp -fno-ipa-pure-const -fno-ipa-reference -fno-ipa-ra -fno-ipa-modref -ffreestanding -Wall -Wno-unused -Iinclude"
 OBJS=()
 for c in $(find src -name '*.c' | sort); do
   o=build/obj/$(echo "${c#src/}" | tr / _ | sed 's/\.c$/.o/')

@@ -126,7 +126,7 @@ void menu_draw_stars(void *self, int a);
 void menu_draw_number(void *self, int x, int y, u32 v);
 void menu_draw_time(void *self, int x, int y, s32 which);
 void func_08849D7C(void *self);
-void func_0883488C(void *self);
+void func_0883488C(void *self, int dim);
 int func_088239FC(void *self);
 int func_0882A864(void *self, int a);
 int func_09A6E5A8(void *p);

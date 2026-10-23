@@ -478,3 +478,19 @@ SPECS.update({
     "diff": bigint_spec(lambda m, r: [REENT, make_bigint(m, r), make_bigint(m, r)]),
     "quorem": bigint_spec(_quorem_args),
 })
+
+
+# --- menu (game code) ----------------------------------------------------------------
+
+def layout_pages_spec(rng, args, fargs, scratch):
+    """layout_draw_pages: without the page number (sprintf with random data never ends) and
+    with the fixed arrows (the blinking ones use the VFPU)."""
+    args = list(args)
+    args[3] = 0
+    args[5] = rng.randrange(1, 128)
+    return args, fargs, scratch
+
+
+SPECS.update({
+    "layout_draw_pages": layout_pages_spec,
+})

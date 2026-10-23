@@ -180,7 +180,7 @@ void menu_draw_page_list(void *self, s32 dim_arg)
     int i;
 
     if (GAME_FLAGS & 1) {
-        func_0883488C(self);
+        func_0883488C(self, dim_arg);
         return;
     }
     page = (s16)(U8(self, 0x57D) / 6);
