@@ -38,6 +38,16 @@ static inline f32 vfpu_rsqf(f32 x)
     return r;
 }
 
+/* square root with the VFPU instruction */
+static inline f32 vfpu_sqrtf(f32 x)
+{
+    f32 r;
+    __asm__ volatile("mtv %1, S000\n"
+                     "vsqrt.s S010, S000\n"
+                     "mfv %0, S010" : "=r"(r) : "r"(x));
+    return r;
+}
+
 /* square root with the FPU instruction */
 static inline f32 fpu_sqrtf(f32 x)
 {
