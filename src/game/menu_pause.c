@@ -21,7 +21,7 @@ extern const u16 D_0893B090, D_0893B094, D_0893B09E;
 extern const u8 D_0899D198[];     /* item table (0x18 bytes per item) */
 
 const char *func_09A63198(void *a, u16 id);
-void func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
 void func_08890E08(void *font, int v);
 int func_08890E48(void *font, const char *s);
 s32 func_08890F70(void *font, const char *s);
@@ -36,12 +36,12 @@ s32 func_0887E9AC(void *quest, s32 sum, int a);
 void menu_cursor_two_columns(void *self, u8 *pos, u32 keys, u32 count_arg);
 int menu_cursor_vertical(void *self, u8 *pos, u32 keys, u32 count);
 void menu_cursor_yes_no(void *self, u32 a, u32 b);
-void func_088AB514(void *net, int a, int b);
-void func_088567C8(void *game);
-s32 func_088567B4(void *game);
-void func_0885683C(void *game);
-s32 func_08853004(void *game, const char *s, s32 x, int size);
-void func_0886A054(void *a);
+void net_send(void *net, int a, int b);
+void save_start(void *game);
+s32 save_in_progress(void *game);
+void save_end(void *game);
+s32 text_center_x(void *game, const char *s, s32 x, int size);
+void quest_fail(void *a);
 void func_08880760(void *snd, int v);
 void layout_draw(void *self, Layout *l, const char *text, u32 alpha);
 
@@ -56,13 +56,13 @@ int menu_open_list_tabs(void *self);
 u32 func_0881CB2C(void *self, u32 keys);
 u32 func_0881DB5C(void *self, u32 keys);
 u32 menu_info_input(void *self, u32 keys);
-u32 func_0882A988(void *self, u32 keys);
+u32 menu_close(void *self, u32 keys);
 u32 func_08896228(void *self, u32 keys);
 u32 menu_status_input(void *self, u32 keys);
 u32 menu_equipment_input(void *self, u32 keys);
 u32 menu_list_tabs_input(void *self, u32 keys);
 
-#define SND(n) func_08883988(D_08A62D8C, 0, n, 0, 0, 0, 0, 0, 0)
+#define SND(n) sound_play(D_08A62D8C, 0, n, 0, 0, 0, 0, 0, 0)
 #define TXT(id) func_09A63198(D_09A44C5C, id)
 #define ONLINE ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0)
 
@@ -185,7 +185,7 @@ void hud_pause_input(u8 *self, u32 keys)
 
         if (*sig < 0) {
             *sig = 0;
-            func_088AB514(D_09A1DAEC, 9, 0);
+            net_send(D_09A1DAEC, 9, 0);
             hud_pause_close(self);
             return;
         }
@@ -265,7 +265,7 @@ u32 hud_pause_page_input(u8 *self, u32 k_arg, u32 keys)
     case 2:
         return (u16)menu_info_input(self, keys);
     case 3:
-        return (u16)func_0882A988(self, keys);
+        return (u16)menu_close(self, keys);
     case 4:
         return (u16)func_08896228(self, keys);
     case 5:
@@ -291,8 +291,8 @@ int hud_save_open(u8 *self)
         return -1;
     if ((u8)func_0884FA5C(D_089CC438, 0) != 0)
         return -1;
-    func_088567C8(D_089CC438);
-    if ((u8)func_088567B4(D_089CC438) == 1) {
+    save_start(D_089CC438);
+    if ((u8)save_in_progress(D_089CC438) == 1) {
         U32(self, 0x5E8) &= ~4;
         self[0x11AB] = 1;
         return 0;
@@ -305,7 +305,7 @@ u32 hud_save_input(u8 *self, u32 keys)
     if ((D_089CC438[0x2A] & 0xF) != 0)
         return 0;
     if ((u16)keys & 0x6008) {
-        func_0885683C(D_089CC438);
+        save_end(D_089CC438);
         self[0x11AB] = 0;
         return 8;
     }
@@ -315,7 +315,7 @@ u32 hud_save_input(u8 *self, u32 keys)
 /* slide of the "saving" window */
 void hud_save_update(u8 *self)
 {
-    if (self[0x11AB] != 0 && (u8)func_088567B4(D_089CC438) == 1) {
+    if (self[0x11AB] != 0 && (u8)save_in_progress(D_089CC438) == 1) {
         if (self[0x11AC] < 5)
             self[0x11AC]++;
         return;
@@ -335,7 +335,7 @@ void hud_draw_save(u8 *self)
     gfx_draw_window(self, 0xB7, (y - 8) & 0xFFFF, 0x70, 0x1E, 0xFF);
     func_08890DE8(D_08A631A8, 14, 14);
     s = TXT(D_089B5594);
-    func_088915B0(D_08A631A8, (s16)func_08853004(D_089CC438, s, 0xF0, 14), y, 0, s);
+    func_088915B0(D_08A631A8, (s16)text_center_x(D_089CC438, s, 0xF0, 14), y, 0, s);
 }
 
 /* page "options" */
@@ -487,7 +487,7 @@ u32 hud_quit_input(u8 *self, u32 keys)
         return keys;
     if (self[0x537] != 0)
         return 0x2000;
-    func_0886A054(D_08A62C7C);
+    quest_fail(D_08A62C7C);
     self[0x57E]++;
     SND(0x13);
     return 0;
@@ -500,7 +500,7 @@ void hud_draw_quit(u8 *self)
     layout_draw(self, (Layout *)&D_0893B090, TXT(D_089B5560), 0xFF);
     s = func_0885151C(D_089CC438, D_089AC588[self[0x537]]);
     func_088920A8(D_08A631A8,
-                  (s16)func_08853004(D_089CC438, s, (s16)(D_0893B090 + (D_0893B094 >> 1)), 14),
+                  (s16)text_center_x(D_089CC438, s, (s16)(D_0893B090 + (D_0893B094 >> 1)), 14),
                   (s16)(D_0893B09E + 0x96), D_0893B650, s);
 }
 
@@ -512,14 +512,14 @@ void func_0881A8F8(void *self, s32 x, s32 y, int a);
 void func_0881A8E0(void *self, s32 x, s32 y, u32 v);
 void func_08890DFC(void *font, int x, int y);
 void func_0889134C(void *font, const char *fmt, ...);
-s32 func_08872D74(void *q, int i);
-s32 func_08872DC4(void *q, int i);
-s32 func_08872DD4(void *q, int i);
-s32 func_08872DE4(void *q, int i);
-s32 func_0886C768(void *q, u32 id, int a);
-s32 func_0886E578(void *q, u32 id, u32 i);
-s32 func_0886F78C(void *q);
-u8 *func_088298E4(void *self);
+s32 quest_goal_kind(void *q, int i);
+s32 quest_goal_target(void *q, int i);
+s32 quest_goal_amount(void *q, int i);
+s32 quest_goal_left_i(void *q, int i);
+s32 quest_hunter_item_get(void *q, u32 id, int a);
+s32 quest_goal_count(void *q, u32 id, u32 i);
+s32 quest_points(void *q);
+u8 *menu_quest_data(void *self);
 
 void hud_quest_count(u8 *self, u32 a, u32 b);
 
@@ -576,17 +576,17 @@ void hud_draw_quest_info(u8 *self)
                 u16 id;
 
                 if (self[0x5E6] & 2) {
-                    if (func_08872D74(D_08A62C7C, i) != 3)
+                    if (quest_goal_kind(D_08A62C7C, i) != 3)
                         continue;
                     b = 1;
-                    a = ((u8 *)D_08A62C7C)[func_08872DC4(D_08A62C7C, i) * 2 + 0x29C];
+                    a = ((u8 *)D_08A62C7C)[quest_goal_target(D_08A62C7C, i) * 2 + 0x29C];
                 } else {
-                    if (func_08872D74(D_08A62C7C, i) != 2)
+                    if (quest_goal_kind(D_08A62C7C, i) != 2)
                         continue;
-                    b = func_08872DD4(D_08A62C7C, i);
-                    a = b - func_08872DE4(D_08A62C7C, i);
+                    b = quest_goal_amount(D_08A62C7C, i);
+                    a = b - quest_goal_left_i(D_08A62C7C, i);
                 }
-                id = func_08872DC4(D_08A62C7C, i);
+                id = quest_goal_target(D_08A62C7C, i);
                 func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), func_0885151C(D_089CC438, D_089AC710[id]));
                 func_08890DFC(D_08A631A8, 0x188, y);
                 hud_quest_count(self, a, b);
@@ -619,13 +619,13 @@ void hud_draw_quest_info(u8 *self)
         for (i = 0; i < 2; i++) {
             u16 id, a;
 
-            if (func_08872D74(D_08A62C7C, i) != 1)
+            if (quest_goal_kind(D_08A62C7C, i) != 1)
                 continue;
-            id = func_08872DC4(D_08A62C7C, i);
+            id = quest_goal_target(D_08A62C7C, i);
             func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), func_08851528(D_089CC438, id));
             func_08890DFC(D_08A631A8, 0x181, y);
-            a = func_0886C768(D_08A62C7C, id, 0);
-            hud_quest_count(self, a, (u16)func_0886E578(D_08A62C7C, id, (u16)i));
+            a = quest_hunter_item_get(D_08A62C7C, id, 0);
+            hud_quest_count(self, a, (u16)quest_goal_count(D_08A62C7C, id, (u16)i));
             y += 16;
         }
         break;
@@ -636,7 +636,7 @@ void hud_draw_quest_info(u8 *self)
         func_08891474(D_08A631A8, 0xFC, 0x70, D_0893B650, TXT(D_089B558E));
         break;
     case 5: {
-        s32 n = func_0886F78C(D_08A62C7C);
+        s32 n = quest_points(D_08A62C7C);
 
         if (n >= 1000000)
             n = 999999;
@@ -650,7 +650,7 @@ void hud_draw_quest_info(u8 *self)
     y2 = (rows + 1) * 16 + 0x40;
     func_08891474(D_08A631A8, 0xFC, y2, D_0893B650, TXT(D_089B558A));
     func_08890E38(D_08A631A8, 0);
-    func_0881A8E0(self, (s16)(D_0893B770[lang] + 0x142), y1, U32(func_088298E4(self), 8));
+    func_0881A8E0(self, (s16)(D_0893B770[lang] + 0x142), y1, U32(menu_quest_data(self), 8));
     func_0881A8E0(self, (s16)(D_0893B770[lang] + 0x142), y2, U32(D_08A62C7C, 0x14));
 }
 
@@ -665,7 +665,7 @@ void hud_quest_count(u8 *self, u32 a, u32 b)
 
 extern const f32 D_0893B1CC[];
 extern const u16 D_0893B1F4[];
-u32 func_088900C4(void *a);
+u32 game_rand(void *a);
 void func_08882D20(void *snd, int a, u32 id);
 
 /* animation of the quest banner (start / clear / fail) */
@@ -709,7 +709,7 @@ void hud_update_banner(u8 *self)
         if (S16(self, 0x11BA) >= 60) {
             self[0x11B1] = 2;
             S16(self, 0x11B8) = (int)(D_0893B1CC[self[0x11AD]] *
-                                      (-1.0f + 1.5258789e-05f * (2.0f * (f32)func_088900C4(D_08A631A0))));
+                                      (-1.0f + 1.5258789e-05f * (2.0f * (f32)game_rand(D_08A631A0))));
         }
         break;
     case 0:

@@ -1,6 +1,6 @@
 /* Result screens at the end of the quest: reward money, sold items (with the counting
  * animation). The object is D_08A62CB4. (Guessed names.) */
-#include "menu.h"
+#include "quest.h"
 
 extern u8 *D_08A62CB4;
 extern u8 *D_08A62D8C;             /* sound */
@@ -17,7 +17,7 @@ extern const u16 D_089A882C, D_089A882E;
 extern const s16 D_089A8838, D_089A883A, D_089A8842, D_089A8846;
 extern const s32 D_0899D1A8[];     /* item table (+0xC: price), 6 words per item */
 
-u32 func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+u32 sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
 void func_088854A0(u8 *snd, u32 h, int a);
 u32 game_buttons(u8 *g);
 void game_add_money(u8 *g, s32 n);
@@ -27,9 +27,7 @@ void menu_draw_sprite(void *menu, u32 x, u32 y, u32 id);
 void gfx_draw_item_icon_alpha(void *menu, u32 id, u32 x, u32 y, u32 w, u32 h, int a, int b);
 void gfx_draw_arrows_blink(void *menu, u32 a, u32 b, u32 c, u32 d);
 const char *text_item_name(void *g, u32 id);
-s32 quest_state(u8 *self, s32 mode);
-u8 *quest_text(u8 *self, s32 i);
-u8 func_088D6A54(u32 h, int a);
+u8 hunter_felyne_skill(u32 h, int a);
 u8 func_0887CA08(u8 *self);
 s32 func_0887E9AC(u8 *a, s32 b, s32 c);
 void func_08890E08(void *font, int a);
@@ -37,12 +35,12 @@ void func_08890DFC(void *font, int x, int y);
 void func_08892004(void *font, const char *fmt, ...);
 void func_088912BC(void *font, int x, int y, const char *s);
 void func_0887D02C(s32 x, s32 y, const char *s, s32 c);
-void func_08879488(u8 *self);
-void func_0887941C(u8 *self, s32 y, const char *s);
+void result_draw_windows(u8 *self);
+void result_text_center(u8 *self, s32 y, const char *s);
 void result_init_sounds(u8 *self);
 
 /* sound (with the 8 empty arguments of the sound function) */
-#define SE(id) func_08883988(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0)
+#define SE(id) sound_play(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0)
 #define RTEXT(id) func_09A63198(D_09A44C5C, id)
 
 /* waits a step of 10 frames; 1 when the step ends */
@@ -61,7 +59,7 @@ s32 result_money_update(u8 *self)
 {
     u32 h;
 
-    func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    player_get(D_09A4F0C4, D_089CC438[0x28]);
     if (S16(self, 0xAA) > 0)
         S16(self, 0xAA)--;
     switch (U16(self, 0xA4)) {
@@ -139,7 +137,7 @@ static s32 draw_header(u8 *self, const s16 *tbl, s16 *t)
     U8(D_089CBBEC, 0x534) = 9;
     func_08890E08(D_08A631A8, 0);
     menu_begin_draw(D_089CBBEC);
-    func_08879488(self);
+    result_draw_windows(self);
     func_08890E38(D_08A631A8, 0);
     func_08890DE8(D_08A631A8, 0x10, 0x10);
     for (i = 0; i < 7; i++)
@@ -173,33 +171,33 @@ void result_money_draw(u8 *self)
         /* fall through */
     case 3:
         v = 0;
-        if (quest_state(D_08A62C7C, 1) == 1) {
-            if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0 || (u8)func_0887CA08(self) == 1)
-                v = U32((u8 *)U32(D_08A62C7C, 0x68), 4);
+        if (quest_state(QUEST, 1) == 1) {
+            if ((OPT_FLAGS & 1) == 0 || (u8)func_0887CA08(self) == 1)
+                v = QUEST->info->fee;
         }
         func_0887D02C(0xF4, D_089A87E4, RTEXT(D_089B53BE), 0x10);
         func_08891474(D_08A631A8, 0xF4, D_089A87E4, RTEXT(D_089B541E), v);
         /* fall through */
     case 2:
         v = 0;
-        if (quest_state(D_08A62C7C, 1) == 1) {
-            u32 h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+        if (quest_state(QUEST, 1) == 1) {
+            u32 h = player_get(D_09A4F0C4, D_089CC438[0x28]);
 
-            if (func_088D6A54(h, 0x31) == 0)
-                v = U32(D_08A62C7C, 0x14);
+            if (hunter_felyne_skill(h, 0x31) == 0)
+                v = QUEST->reward;
             else
-                v = U32(D_08A62C7C, 0x14) << 1;
+                v = QUEST->reward << 1;
         }
         func_0887D02C(0xF4, D_089A87E2, RTEXT(D_089B53C0), 0x10);
         func_08891474(D_08A631A8, 0xF4, D_089A87E2, RTEXT(D_089B541A), v);
         /* fall through */
     case 1:
-        if (quest_state(D_08A62C7C, 1) == 1)
+        if (quest_state(QUEST, 1) == 1)
             sprintf(buf, RTEXT(D_089B53C2));
         else
             sprintf(buf, RTEXT(D_089B53C4));
-        func_0887941C(self, 0x30, buf);
-        func_0887941C(self, D_089A87E0, (const char *)quest_text(D_08A62C7C, 0));
+        result_text_center(self, 0x30, buf);
+        result_text_center(self, D_089A87E0, (const char *)quest_text(QUEST, 0));
         /* fall through */
     case 0:
         draw_footer(self, D_089A87F8, lang);
@@ -240,7 +238,7 @@ s32 result_sell_update(u8 *self)
 {
     s32 old, pages, h;
 
-    func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    player_get(D_09A4F0C4, D_089CC438[0x28]);
     if (S16(self, 0xAA) > 0)
         S16(self, 0xAA)--;
     if (S16(self, 0xA4) >= 2) {
@@ -368,7 +366,7 @@ void result_sell_draw(u8 *self)
         /* fall through */
     case 1:
         sprintf(buf, RTEXT(D_089B53EA));
-        func_0887941C(self, 0x30, buf);
+        result_text_center(self, 0x30, buf);
         /* fall through */
     case 0:
         draw_footer(self, D_089A8860, lang);

@@ -4,7 +4,7 @@
 extern void *D_08A62C54;
 extern const s16 D_0899CCFC[20];
 void *memcpy(void *d, const void *s, size_t n);
-s32 func_0885CD18(void *a, u32 b, u32 c);
+s32 equip_rarity(void *a, u32 b, u32 c);
 void log_entry_init(void *g, u8 *e, u32 a, u32 b);
 
 #define LOG(g, i) ((g) + 0x67D98 + (i) * 0x88)
@@ -59,7 +59,7 @@ int log_replace(u8 *g, u8 *e)
 void log_count_hunt(void *unused, u8 *m)
 {
     u8 e[0x88];
-    u8 k = func_0885CD18(D_08A62C54, m[1], U16(m, 2));
+    u8 k = equip_rarity(D_08A62C54, m[1], U16(m, 2));
     u32 *p = (u32 *)(D_089CC438 + 0x6AD7C + k * 4);
 
     if (*p == 0xFFFFFFFF)

@@ -19,10 +19,10 @@ extern const f32 D_08933A90;
 void func_08816264(void *cam);
 void camera_look_at(void *cam, const f32 *eye, const f32 *target, const u32 *up);
 void camera_apply_projection(void *cam);
-void func_08814984(void *cam);
+void camera_load_area_limits(void *cam);
 void func_08812BD0(void *cam);
-u32 func_088DCEBC(void *a, u8 b);
-int func_08865BAC(void *obj);
+u32 player_get(void *a, u8 b);
+int entity_in_area(void *obj);
 extern void *D_09A4F0C4;
 extern u8 *D_089CC438;
 
@@ -83,7 +83,7 @@ void camera_reset_state(void *cam)
     U8(cam, 0xB3C) = 1;
     camera_reset_projection(cam);
     U32(cam, 0xB10) = 0;
-    U32(cam, 0xA84) = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    U32(cam, 0xA84) = player_get(D_09A4F0C4, D_089CC438[0x28]);
     U8(cam, 0xB00) = 0;
     U8(cam, 0xAE0) = 0;
     U8(cam, 0xAC0) = 0;
@@ -92,7 +92,7 @@ void camera_reset_state(void *cam)
     U8(cam, 0xA88) = 0;
     U32(cam, 0xA7C) = 0;
     U8(cam, 0xA80) = 0;
-    func_08814984(cam);
+    camera_load_area_limits(cam);
     func_08812BD0(cam);
 }
 
@@ -126,7 +126,7 @@ void camera_apply_shake(void *cam, u8 *shake)
 /* starts a shake of type "type", from the position of object obj */
 static inline void start_shake(void *cam, int base, int type, u8 *obj, u8 flag)
 {
-    if (func_08865BAC(obj)) {
+    if (entity_in_area(obj)) {
         U8(cam, base + 0x10) = 1;
         U8(cam, base + 0x11) = type;
         S16(cam, base + 0x12) = D_08933A98[type];
@@ -350,7 +350,7 @@ f32 cosf(f32 x);
 void mat_look_at(f32 *m, const f32 *eye, const f32 *target, const f32 *up);
 void camera_build_frustum(void *cam);
 void camera_default_area(void *cam);
-int func_0884FA5C(void *a, int b);
+int game_quest_locked(void *a, int b);
 extern s32 D_08A62C68, D_08A62C6C;
 extern u16 D_08A62C78, D_08A62C7A;
 
@@ -459,7 +459,7 @@ void camera_load_area_limits(void *cam)
 /* reads the stick/buttons that move the camera */
 void camera_read_input(void *cam)
 {
-    if (func_0884FA5C(D_089CC438, 1) != 1) {
+    if (game_quest_locked(D_089CC438, 1) != 1) {
         if (((u8 *)U32(cam, 0xA84))[0x552] == 0) {
             S16(cam, 0xA70) = (s16)D_08A62C68;
             S16(cam, 0xA72) = (s16)D_08A62C6C;

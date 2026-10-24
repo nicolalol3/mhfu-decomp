@@ -6,7 +6,7 @@ extern u8 *D_08A62C58;
 extern u8 **D_09A4F060;
 extern u8 D_089BAB08[];
 extern const f32 D_089A5B90[][3], D_089A5BB4[][4], D_089A5BE4[][4], D_089A5C14[][4];
-void func_08860760(void);
+void light_obj_nop(void);
 void *memcpy(void *d, const void *s, size_t n);
 
 u32 *light_obj_dtor(u32 *o, s32 flag)
@@ -14,7 +14,7 @@ u32 *light_obj_dtor(u32 *o, s32 flag)
     if (o != NULL) {
         o[0] = (u32)D_089BAB08;
         if ((s16)flag > 0)
-            func_08860760();
+            light_obj_nop();
     }
     return o;
 }

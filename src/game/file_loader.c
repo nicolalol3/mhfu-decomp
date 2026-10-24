@@ -60,7 +60,7 @@ extern u8 D_0884E678[];            /* entry of the transfer thread */
 extern u8 *D_09A4F0D0;
 extern u8 *D_09A1FDDC;
 
-u32 func_088900C4(void *a, int b);
+u32 game_rand(void *a, int b);
 void func_088B8548(void *p);
 void func_088B85CC(void *p);
 void func_088B85F8(void *p);
@@ -500,7 +500,7 @@ int fl_queue_file(u8 *p, u32 id, u32 dst, s32 size, u32 mode, u32 done, u32 wake
     if (size == -1)
         size = VCALL(p, 0x18)(p, id);
     left = size;
-    if (p[0x2FBCC] != 0 && (u16)func_088900C4(D_08A631A0, 1) % 100 < 5)
+    if (p[0x2FBCC] != 0 && (u16)game_rand(D_08A631A0, 1) % 100 < 5)
         hash = 1;
     for (;;) {
         u8 *e = REQ(p, U32(p, 0x1008));

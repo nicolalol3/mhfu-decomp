@@ -1,6 +1,6 @@
 /* End of the quest (object D_08A62CB4): size records, items sold at the end, timers of
  * the result screen. (Guessed names.) */
-#include "menu.h"
+#include "quest.h"
 
 extern u8 *D_08A62CB4;
 extern u8 *D_08A62D8C;
@@ -17,10 +17,10 @@ f32 game_size_percent(u8 *g, u32 i, u32 v);
 void record_add_best(u8 *g, u8 *log, s32 kind, s32 i, u32 v);
 u8 *emblem_find(void *menu, u32 i);
 u32 game_table_byte(u8 *g, u32 i);
-u32 func_088D72A4(u32 h, s32 id, s32 n, s32 c);
-u8 func_088D6A54(u32 h, int a);
+u16 *pouch_slot(u8 *g, s32 i);
+u32 hunter_add_item(u32 h, s32 id, s32 n, s32 c);
+u8 hunter_felyne_skill(u32 h, int a);
 void func_08882C24(u8 *snd, int a, int b, int c);
-s32 quest_state(u8 *self, s32 mode);
 u8 func_0887CA08(u8 *self);
 
 void result_init_sounds(u8 *self);
@@ -47,7 +47,8 @@ void result_size_records(u8 *self)
 {
     u16 mx[90], mn[90];
     u8 own[90];
-    u8 *q = D_08A62C7C, *em;
+    Quest *q = QUEST;
+    u8 *em;
     s32 i, j;
     u32 g, v, w;
     int ch_max, ch_min;
@@ -73,13 +74,13 @@ void result_size_records(u8 *self)
     }
     /* sizes of this quest */
     for (i = 1; i < 90; i++) {
-        v = U16(q, 0x134 + i * 2);
+        v = q->size_max[i];
         if (v != 0 && (u16)game_record_max(D_089CC438, i & 0xFFFF) < v)
             game_update_record_max(D_089CC438, i & 0xFFFF, v);
-        w = U16(q, 0x1E8 + i * 2);
+        w = q->size_min[i];
         if (w != 0 && (w < (u16)game_record_min(D_089CC438, i & 0xFFFF) ||
                        (u16)game_record_min(D_089CC438, i & 0xFFFF) == 0))
-            game_update_record_min(D_089CC438, i & 0xFFFF, U16(q, 0x1E8 + i * 2));
+            game_update_record_min(D_089CC438, i & 0xFFFF, q->size_min[i]);
     }
     U32(self, 0xCC) = 0;
     for (j = 0; j < 10; j++) {
@@ -114,14 +115,14 @@ void result_size_records(u8 *self)
             u16 b = (u16)game_best_record_max(D_089CC438, i & 0xFF, 0);
 
             if (S16(em, 4) <= (s32)b)
-                record_add_best(D_089CC438, D_08A62C7C + 0x684, 8, i,
+                record_add_best(D_089CC438, QUEST->log, 8, i,
                                 (u32)((game_size_percent(D_089CC438, i & 0xFF, b) + 0.05f) * 10.0f));
         }
         if (ch_min) {
             u16 b = (u16)game_best_record_min(D_089CC438, i & 0xFF, 0);
 
             if ((s32)b <= S16(em, 8))
-                record_add_best(D_089CC438, D_08A62C7C + 0x684, 9, i,
+                record_add_best(D_089CC438, QUEST->log, 9, i,
                                 (u32)((game_size_percent(D_089CC438, i & 0xFF, b) + 0.05f) * 10.0f));
         }
     }
@@ -139,14 +140,14 @@ void result_init_timers(u8 *self)
  * returns their total price */
 s32 result_sell_items(u8 *self)
 {
-    u32 h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    u32 h = player_get(D_09A4F0C4, D_089CC438[0x28]);
     u16 *p, *o;
     s32 i, sum = 0;
 
     self[0x1E] = 0;
     for (i = 0; i < 60; i++)
         U16(self, 0x28 + i * 2) = 0;
-    p = func_08856884(D_089CC438, 0);
+    p = pouch_slot(D_089CC438, 0);
     U32(self, 0x24) = 0;
     o = &U16(self, 0x28);
     for (i = 0; i < 24; i++, p += 2) {
@@ -154,7 +155,7 @@ s32 result_sell_items(u8 *self)
             continue;
         o[0] = p[0];
         o[1] = p[1];
-        func_088D72A4(h, p[0], (s16)-p[1], 0);
+        hunter_add_item(h, p[0], (s16)-p[1], 0);
         self[0x1E] = 1;
         o += 2;
         U32(self, 0x24)++;
@@ -179,7 +180,7 @@ void result_init_sounds(u8 *self)
 /* reward money of the quest (doubled by a skill, plus the contract fee back) */
 void result_init_money(u8 *self)
 {
-    u8 *q = D_08A62C7C;
+    Quest *q = QUEST;
     u32 h;
 
     U16(self, 0xA4) = 0;
@@ -187,13 +188,13 @@ void result_init_money(u8 *self)
     U16(self, 0xAA) = 3600;
     U32(D_08A62CB4, 0x14) = 0;
     U16(self, 0xA8) = 10;
-    if (quest_state(D_08A62C7C, 1) != 1)
+    if (quest_state(QUEST, 1) != 1)
         return;
-    h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
-    if (func_088D6A54(h, 0x31) == 0)
-        U32(D_08A62CB4, 0x14) = U32(q, 0x14);
+    h = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    if (hunter_felyne_skill(h, 0x31) == 0)
+        U32(D_08A62CB4, 0x14) = q->reward;
     else
-        U32(D_08A62CB4, 0x14) = U32(q, 0x14) << 1;
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0 || (u8)func_0887CA08(self) == 1)
-        U32(D_08A62CB4, 0x14) += U32((u8 *)U32(D_08A62C7C, 0x68), 4) * 2;
+        U32(D_08A62CB4, 0x14) = q->reward << 1;
+    if ((OPT_FLAGS & 1) == 0 || (u8)func_0887CA08(self) == 1)
+        U32(D_08A62CB4, 0x14) += QUEST->info->fee * 2;
 }

@@ -13,14 +13,14 @@ extern const u32 D_0893AECC[];
 extern const u8 D_0893AF0C[], D_0893AF20[];
 extern const u16 D_0893AACC[][56];
 
-void func_088314A0(void *self, u16 a, u16 b);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
-void func_08832B98(void *self, int on);
-void func_08832F20(void *self, s32 x, s32 y, u32 a, u32 b, u32 c);
+void tex_select(void *self, u16 a, u16 b);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
+void gfx_set_filter(void *self, int on);
+void menu_draw_pager(void *self, s32 x, s32 y, u32 a, u32 b, u32 c);
 void func_0881EE84(void *self, u8 *a, u32 x, u32 y, u32 flags, u8 *b, void *hunter, s32 idx);
-u8 func_0885CD18(void *a, int type, u16 id);
-s32 func_0885E718(void *a, void *eq);
-void func_08859AE4(void *a, void *b, int n);
+u8 equip_rarity(void *a, int type, u16 id);
+s32 deco_count(void *a, void *eq);
+void heap_init(void *a, void *b, int n);
 void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id);
 void gfx_draw_window(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 alpha);
 void emblem_draw(u8 *self, u32 x, u32 y, u32 u, u32 v);
@@ -39,7 +39,7 @@ u32 equip_mark_one(void *self, u8 *a, u32 flags, u8 *b);
                 **(u32 **)((dl) + 0x80198) = (w)[i_];                               \
                 U32(dl, 0x80198) += 4;                                              \
             }                                                                       \
-            func_088596C8(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
+            dl_link(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
         }                                                                           \
     } while (0)
 
@@ -73,8 +73,8 @@ void emblem_draw(u8 *self, u32 x, u32 y, u32 u, u32 v)
     u32 w[15];
     u8 layer;
 
-    func_08832B98(self, 1);
-    func_088314A0(self, 0x8002, 11);
+    gfx_set_filter(self, 1);
+    tex_select(self, 0x8002, 11);
     dl = D_08A62C40;
     w[2] = y & 0xFFFF;
     w[5] = ((y & 0xFFFF) + 51) & 0xFFFF;
@@ -92,7 +92,7 @@ void emblem_draw(u8 *self, u32 x, u32 y, u32 u, u32 v)
     layer = self[0x534];
     if (layer < 20)
         DL_PUSH(dl, layer, w, 6, 9, 10);
-    func_08832B98(self, 0);
+    gfx_set_filter(self, 0);
 }
 
 /* box with the name of piece a (compared with piece b), size idx */
@@ -129,7 +129,7 @@ int equip_draw_name_box(u8 *self, u8 *a, u32 x, u32 y, u32 flags, u8 *b, s32 idx
                 mx = (s16)(mx - 15);
                 k = 7;
             }
-            func_08832F20(self, mx, (s16)((s16)y + D_08938758[idx][1] - 20), flags & 7, m, k);
+            menu_draw_pager(self, mx, (s16)((s16)y + D_08938758[idx][1] - 20), flags & 7, m, k);
         }
     }
     func_0881EE84(self, a, x, y, flags, b, *(void **)(self + 0x530), idx);
@@ -144,7 +144,7 @@ u16 equip_icon(void *self, u8 *eq, u32 which_arg)
     if (U16(eq, 2) >= 1501)
         return which != 0 ? 225 : 113;
     if ((u32)(eq[1] - 5) < 2)
-        return D_0893AE80[which][func_0885CD18(D_08A62C54, eq[1], U16(eq, 2))];
+        return D_0893AE80[which][equip_rarity(D_08A62C54, eq[1], U16(eq, 2))];
     return D_0893AEAC[which][eq[1]];
 }
 
@@ -224,11 +224,11 @@ u32 equip_mark_one(void *self, u8 *a, u32 flags, u8 *b)
             return 6;
         return b[1] == 6 ? 8 : 6;
     }
-    if (func_0885E718(D_08A62C54, a) != 0) {
+    if (deco_count(D_08A62C54, a) != 0) {
         deco = 1;
     } else if (b == NULL) {
         goto kind;
-    } else if (S16(b, 2) != 0 && func_0885E718(D_08A62C54, b) != 0) {
+    } else if (S16(b, 2) != 0 && deco_count(D_08A62C54, b) != 0) {
         deco = 1;
     }
 kind:
@@ -251,5 +251,5 @@ void menu_reset_messages(u8 *self)
     self[0x10F9] = 0;
     self[0x10FA] = 0;
     memset(self + 0xE28, 0, 0x2D0);
-    func_08859AE4(self + 0x500, self, 0x500);
+    heap_init(self + 0x500, self, 0x500);
 }

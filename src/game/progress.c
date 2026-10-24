@@ -9,11 +9,11 @@ extern const u16 D_089ACAE8;
 s32 game_box_size(void *g);
 int game_has_progress(u8 *g, u32 id);
 void game_add_money(u8 *g, s32 n);
-void func_0885ACA0(void *a, u32 item);
+void box_item_notify(void *a, u32 item);
 void func_08816730(void *a, void *dst, int n, const char *s);
-void func_08853E20(u8 *g);
+void guild_card_update(u8 *g);
 u64 func_08904350(u32 a, u32 b, u32 c, u32 d);
-void func_08858840(u8 *g, int a, u32 b);
+void log_add(u8 *g, int a, u32 b);
 void *memcpy(void *d, const void *s, size_t n);
 int sceWlanGetEtherAddr(u8 *mac);
 int sceRtcGetCurrentClockLocalTime(void *t);
@@ -69,7 +69,7 @@ u32 box_add_item(u8 *g, u32 item_arg, u32 n_arg, u32 slot_arg)
 
             if ((u16)n <= room) {
                 box[slot * 2 + 1] = have + n;
-                func_0885ACA0(D_08A62C50, item_arg);
+                box_item_notify(D_08A62C50, item_arg);
                 return 0;
             }
             n = (u16)(n - room);
@@ -86,7 +86,7 @@ u32 box_add_item(u8 *g, u32 item_arg, u32 n_arg, u32 slot_arg)
 
                     if ((u16)n <= room) {
                         e[1] = have + n;
-                        func_0885ACA0(D_08A62C50, item_arg);
+                        box_item_notify(D_08A62C50, item_arg);
                         return 0;
                     }
                     n = (u16)(n - room);
@@ -99,7 +99,7 @@ u32 box_add_item(u8 *g, u32 item_arg, u32 n_arg, u32 slot_arg)
         if (box[i * 2] == 0) {
             box[i * 2] = item_arg;
             box[i * 2 + 1] = n;
-            func_0885ACA0(D_08A62C50, item_arg);
+            box_item_notify(D_08A62C50, item_arg);
             return 0;
         }
     }
@@ -130,7 +130,7 @@ void hunter_card_init(u8 *g)
     U16(g, 0x677F4) = 0;
     U16(g, 0x677F6) = 0;
     func_08816730(D_089CBBE8, g + 0x6778C, 0x62, func_0885151C(g, D_089ACAE8));
-    func_08853E20(g);
+    guild_card_update(g);
 }
 
 /* current date: day, month, year */
@@ -211,7 +211,7 @@ void game_set_flag64(u8 *g, u32 i)
 
     U32(g, 0x678A0) |= (u32)m;
     U32(g, 0x678A4) |= (u32)(m >> 32);
-    func_08858840(g, 8, i);
+    log_add(g, 8, i);
 }
 
 int game_test_flag64(u8 *g, u32 i)

@@ -13,14 +13,14 @@ int sceRtcGetCurrentClockLocalTime(void *t);
 void func_08890080(void *a, u32 seed);
 void game_reset_options(u8 *g, u32 apply);
 void options_backup(u8 *g);
-void func_088689F4(void *a);
+void osk_init(void *a);
 void *heap_alloc(u32 *h, u32 size, u32 align);
 u32 *func_08897290(u32 size, void *mem);
 s32 func_0890C3D8(f32 *v);
-void func_0885C5BC(void *a, u32 item);
-s32 func_088D6A1C(void *hunter, int id);
+void item_set_seen(void *a, u32 item);
+s32 hunter_has_skill(void *hunter, int id);
 s32 pouch_count(u8 *g, u32 id_arg);
-s32 func_0885BD0C(void *p, u32 id);
+s32 box_find(void *p, u32 id);
 
 /* start of the village: options, random seed, screen fade object */
 void village_start(u8 *o)
@@ -34,7 +34,7 @@ void village_start(u8 *o)
     func_08890080(D_08A631A0, t[0xA]);
     game_reset_options(D_089CC438, 1);
     options_backup(D_089CC438);
-    func_088689F4(D_08A62C60);
+    osk_init(D_08A62C60);
     w = D_08A8B1E8;
     mem = heap_alloc((u32 *)(w + 0x14010), 0x34, 0x10);
     if (mem == NULL) {
@@ -81,7 +81,7 @@ void village_start(u8 *o)
 
 void box_item_notify(void *a, u32 item)
 {
-    func_0885C5BC(a, item);
+    item_set_seen(a, item);
 }
 
 /* second pouch (24 slots at g+0x43C8) */
@@ -126,7 +126,7 @@ int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag);
 u32 gather_count(void *p, u32 kind)
 {
     u8 *g = D_089CC438 + 0x4A0;
-    void *h = (void *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    void *h = (void *)player_get(D_09A4F0C4, D_089CC438[0x28]);
     const u8 *e = D_089A47D0;
     u16 n = 0;
     s32 i;
@@ -157,13 +157,13 @@ int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag)
 {
     if (e != NULL && (e[7] & 1) == 0)
         return 1;
-    if ((u8)func_088D6A1C(hunter, 0xA0) == 1)
+    if ((u8)hunter_has_skill(hunter, 0xA0) == 1)
         return 1;
     if (pouch_count(D_089CC438, 6) != 0)
         return 1;
     if ((u8)flag != 1)
         return 0;
-    return (u16)func_0885BD0C(p, 6) != 0xFFFF;
+    return (u16)box_find(p, 6) != 0xFFFF;
 }
 
 /* ids of the items that can be combined in the field */

@@ -7,7 +7,7 @@ extern u8 D_089CC440[];           /* text file */
 extern const u16 D_0899A1FC[], D_0899AAF8[], D_0899ADBC[], D_0899B124[], D_0899B46C[], D_0899B7A4[],
     D_0899BAD8[];
 extern const u8 D_08973834[], D_08963254[], D_08967674[], D_0896B814[], D_0896F84C[];
-u32 func_088900C4(void *a, int b);
+u32 game_rand(void *a, int b);
 void *memcpy(void *d, const void *s, size_t n);
 int memcmp(const void *a, const void *b, size_t n);
 
@@ -20,7 +20,7 @@ void partner_add_exp(void *g, u8 *p)
 
         U16(p, 0x22) -= 10;
         thr = (p[0x4C] < p[0x4D]) ? 0x54 : 0x10;
-        if ((s32)(u16)func_088900C4(D_08A631A0, 1) % 100 < thr) {
+        if ((s32)(u16)game_rand(D_08A631A0, 1) % 100 < thr) {
             if (p[0x24] < 99)
                 p[0x24]++;
         } else if (p[0x25] < 99) {

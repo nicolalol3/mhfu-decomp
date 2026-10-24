@@ -5,7 +5,7 @@
 
 extern const u16 D_08979758[];    /* bowgun parts: 5 u16 per entry, end 0xFFFF */
 void func_0885FFBC(f32 a, f32 b, void *p0, void *p1, void *p2, void *p3);
-void func_08863198(void *m, void *src, u32 t, void *out);
+void anim_eval(void *m, void *src, u32 t, void *out);
 void func_088632D8(void *dst, void *a, void *b);
 
 #define PARENT(n) (*(u8 **)((n) + 0x144))
@@ -131,7 +131,7 @@ void bone_update(f32 t, u8 *n, u32 id, u32 slot)
         for (i = 0; i < 9; i++)
             U32(d, 0x40 + i * 4) = U32(n, 0x120 + i * 4);
         if (U32(d, 0x64) != 0)
-            func_08863198(d, d + 0x40, (u32)t, d + 0x6C);
+            anim_eval(d, d + 0x40, (u32)t, d + 0x6C);
         func_088632D8(d, d, d + 0x40);
         if (CHILD(n) != NULL)
             bone_update(t, CHILD(n), id, slot);
@@ -173,7 +173,7 @@ void bone_copy_slot(u8 *n, u32 id)
         bone_copy_slot(NEXT(n), id);
 }
 
-f32 func_0886364C(void *a, void *b);
+f32 track_length(void *a, void *b);
 void func_0885FC9C(f32 a, f32 b, u8 *n, u32 id);
 
 void bone_blend_by_id(f32 a, f32 b, u8 *root, u32 id)
@@ -184,7 +184,7 @@ void bone_blend_by_id(f32 a, f32 b, u8 *root, u32 id)
         func_0885FC9C(a, b, n, id);
 }
 
-/* largest value of func_0886364C over all the keys of the animation anim */
+/* largest value of track_length over all the keys of the animation anim */
 f32 anim_max_value(u8 *m, u8 *anim)
 {
     f32 max = 0.0f;
@@ -195,7 +195,7 @@ f32 anim_max_value(u8 *m, u8 *anim)
         u8 *k = t + 0xC;
 
         for (j = 0; j < U32(t, 4); j++, k += U32(k, 8)) {
-            f32 v = func_0886364C(m + 0x150, k);
+            f32 v = track_length(m + 0x150, k);
 
             if (v > max)
                 max = v;

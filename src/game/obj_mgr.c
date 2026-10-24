@@ -37,11 +37,11 @@ int vram_create_buffer(void *m, u32 id, int size, u32 offset);
 void vram_free_surface(void *m, u32 id);
 u32 vram_surface_addr(void *m, u32 id);
 void *memcpy(void *d, const void *s, size_t n);
-s32 func_08898694(void *a, int b, s32 c);
-void func_08898748(void *a, int b);
+s32 temp_alloc(void *a, int b, s32 c);
+void temp_free(void *a, int b);
 s32 func_088CC4A8(void *a);
 u8 *func_088CC478(void *a);
-void func_0884C9B8(void *rl, int layer, void *obj, int b);
+void rl_add_model(void *rl, int layer, void *obj, int b);
 s32 func_088D6388(u32 a, u32 b, u32 c, u32 d, u32 e);
 u8 *func_088B89B0(u32 file, int i);
 s32 func_088623DC(void *a, void *b, void *c, void *d);
@@ -151,7 +151,7 @@ void objmgr_list_draw(u8 *self, s32 i)
 
     while (p != NULL) {
         if ((U32(p, 4) & 1) != 0 && (U32(p, 4) & 4) == 0)
-            func_0884C9B8(D_089CBFFC, 5, p, 0);
+            rl_add_model(D_089CBFFC, 5, p, 0);
         p = (u8 *)U32(p, 0x1C4);
     }
 }
@@ -193,7 +193,7 @@ void objmgr_setup2(u8 *self, const u8 *t)
 void objmgr_pool1_init(u8 *self, s32 size, u32 vsize)
 {
     U32(self, 0x80228) = size;
-    U32(self, 0x80230) = func_08898694(D_09A0B540, 2, size);
+    U32(self, 0x80230) = temp_alloc(D_09A0B540, 2, size);
     U32(self, 0x8022C) = 0;
     U32(self, 0x80234) = vsize;
     vram_create_buffer(D_089CBBE0, 7, vsize, 0xFFFFFFFF);
@@ -228,7 +228,7 @@ void objmgr_pool2_init(u8 *self, s32 size, u32 vsize)
 {
     if (size > 0) {
         U32(self, 0x80240) = size;
-        U32(self, 0x80248) = func_08898694(D_09A0B540, 3, size);
+        U32(self, 0x80248) = temp_alloc(D_09A0B540, 3, size);
         U32(self, 0x80244) = 0;
     }
     U32(self, 0x8024C) = vsize;
@@ -239,7 +239,7 @@ void objmgr_pool2_init(u8 *self, s32 size, u32 vsize)
 
 void objmgr_pool1_free(u8 *self)
 {
-    func_08898748(D_09A0B540, 2);
+    temp_free(D_09A0B540, 2);
     U32(self, 0x80230) = 0;
     U32(self, 0x80228) = 0;
     U32(self, 0x8022C) = 0;
@@ -251,7 +251,7 @@ void objmgr_pool1_free(u8 *self)
 
 void objmgr_pool2_free(u8 *self)
 {
-    func_08898748(D_09A0B540, 3);
+    temp_free(D_09A0B540, 3);
     U32(self, 0x80248) = 0;
     U32(self, 0x80240) = 0;
     U32(self, 0x80244) = 0;
@@ -312,7 +312,7 @@ void objmgr_move_group(u8 *self, u32 a, u32 b)
     u32 d = (u8)(a << 3), s = (u8)(b << 3);
     int i;
 
-    func_08898694(D_09A0B540, 0x19, 0x41000);
+    temp_alloc(D_09A0B540, 0x19, 0x41000);
     for (i = 0; i < 8; i++) {
         if (U16(self, 0x80408 + s * 2) != 0xFFFF) {
             memcpy((void *)U32(self, 0x80258 + d * 4), (void *)U32(self, 0x80258 + s * 4),
@@ -325,7 +325,7 @@ void objmgr_move_group(u8 *self, u32 a, u32 b)
         d = (u8)(d + 1);
         s = (u8)(s + 1);
     }
-    func_08898748(D_09A0B540, 0x19);
+    temp_free(D_09A0B540, 0x19);
 }
 
 /* loading state machine of a slot: 1 when the file is in memory */

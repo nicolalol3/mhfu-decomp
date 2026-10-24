@@ -19,15 +19,15 @@ int sceGeSetCallback(void *cb);
 int sceKernelSleepThreadCB(void);
 void sceKernelDcacheWritebackAll(void);
 
-void func_088592E4(u8 *dl);
-void func_08859728(u8 *dl);
-void func_088597BC(u8 *dl);
-void func_08868B6C(void *a);
+void dl_reset_layers(u8 *dl);
+void dl_kick(u8 *dl);
+void dl_wait_ge(u8 *dl);
+void osk_update(void *a);
 void func_088ADF24(void *a);
 void func_088AB1CC(void *a);
 void func_08898980(void *a);
 void func_088C0084(void *a);
-void func_08804678(int a, void *b, int c);
+void SetVblankSubIntrHandler(int a, void *b, int c);
 u32 vram_surface_addr(void *m, u32 id);
 
 void dl_swap(u8 *dl);
@@ -42,7 +42,7 @@ void dl_init(u8 *dl)
     sceDisplaySetMode(0, 0x1E0, 0x110);
     sceGeEdramSetAddrTranslation(0x400);
     U32(dl, 4) = 0;
-    func_088592E4(dl);
+    dl_reset_layers(dl);
     sceGeListSync(sceGeListEnQueue(D_0899CD94, NULL, -1, NULL), 0);
     cb[2] = (u32)D_08859768;
     cb[0] = 0;
@@ -50,7 +50,7 @@ void dl_init(u8 *dl)
     cb[3] = 0;
     U32(dl, 0x8019C) = sceGeSetCallback(cb);
     dl_swap(dl);
-    func_088592E4(dl);
+    dl_reset_layers(dl);
     D_08A62C45 = 1;
     dl[0x801A0] = 0;
 }
@@ -58,8 +58,8 @@ void dl_init(u8 *dl)
 /* end of the frame: networking, sound, wait for the vblank, next display list */
 void dl_end_frame(u8 *dl)
 {
-    func_088597BC(dl);
-    func_08868B6C(D_08A62C60);
+    dl_wait_ge(dl);
+    osk_update(D_08A62C60);
     if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0) {
         func_088ADF24(D_09A1FDDC);
         func_088AB1CC(D_09A1DAEC);
@@ -71,12 +71,12 @@ void dl_end_frame(u8 *dl)
     dl_wait_vblank(dl);
     sceKernelDcacheWritebackAll();
     dl_swap(dl);
-    func_08859728(dl);
+    dl_kick(dl);
 }
 
 void dl_set_vblank_handler(void)
 {
-    func_08804678(0, D_08859188, 0);
+    SetVblankSubIntrHandler(0, D_08859188, 0);
 }
 
 void dl_wait_vblank(u8 *dl)
@@ -91,7 +91,7 @@ void dl_swap(u8 *dl)
     U32(dl, 4) ^= 1;
     sceGeListSync(sceGeListEnQueue(D_0899CD34[U32(dl, 4)], NULL, -1, NULL), 0);
     U32(dl, 0x80198) = (u32)(dl + U32(dl, 4) * 0x40000 + 0x198);
-    func_088592E4(dl);
+    dl_reset_layers(dl);
 }
 
 /* shows the frame buffer drawn in this frame */

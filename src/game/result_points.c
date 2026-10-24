@@ -1,7 +1,7 @@
 /* Result screens at the end of the quest (3): hunter rank points, points of the online
  * friends, Felyne comrade experience, training points. The object is D_08A62CB4.
  * (Guessed names.) */
-#include "menu.h"
+#include "quest.h"
 
 extern u8 *D_08A62CB4;
 extern u8 *D_08A62D8C;
@@ -14,17 +14,14 @@ extern const u16 D_089B53CE, D_089B53D0, D_089B53D2, D_089B53D4, D_089B53D6, D_0
 extern const s16 D_089A88F0, D_089A88F2, D_089A88F4, D_089A88F6, D_089A88F8;
 extern const s16 D_089A88FC[7], D_089A890C[7];
 
-u32 func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+u32 sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
 void func_088854A0(u8 *snd, u32 h, int a);
 u32 game_buttons(u8 *g);
 void game_add_money2(u8 *g, s32 n);
 void menu_begin_draw(void *menu);
 void menu_draw_sprite(void *menu, u32 x, u32 y, u32 id);
-s32 quest_state(u8 *self, s32 mode);
-u8 *quest_text(u8 *self, s32 i);
-u32 quest_comrade_allowed(u8 *self);
 u8 *friend_marked(u8 *g);
-s32 func_088D6A1C(u32 h, int a);
+s32 hunter_has_skill(u32 h, int a);
 int memcmp(const void *a, const void *b, size_t n);
 s32 func_0887E9AC(u8 *a, s32 b, s32 c);
 void record_add_best(u8 *g, u8 *log, s32 kind, s32 i, u32 v);
@@ -37,7 +34,7 @@ void func_0887D02C(s32 x, s32 y, const char *s, s32 c);
 void result_draw_windows(u8 *self);
 void result_text_center(u8 *self, s32 y, const char *s);
 
-#define SE(id) func_08883988(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0)
+#define SE(id) sound_play(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0)
 #define RTEXT(id) func_09A63198(D_09A44C5C, id)
 
 /* training and tutorial quests: no points */
@@ -72,7 +69,8 @@ static s32 comrade_level(s16 v)
  * experience of the Felyne comrade */
 void result_points_init(u8 *self)
 {
-    u8 *q = D_08A62C7C, *g, *s3, *s5, *f, *pl;
+    Quest *q = QUEST;
+    u8 *g, *s3, *s5, *f, *pl;
     u32 h, pts = 0, old, nw;
     s32 n, k, j;
     u32 a, b, c;
@@ -82,22 +80,22 @@ void result_points_init(u8 *self)
     U16(self, 0xA6) = 0;
     U16(self, 0xAA) = 3600;
     U16(self, 0xA8) = 10;
-    if (quest_state(D_08A62C7C, 1) == 1)
-        U32(D_08A62CB4, 0x14) = U32((u8 *)U32(D_08A62C7C, 0x4C), 0x3C);
+    if (quest_state(QUEST, 1) == 1)
+        U32(D_08A62CB4, 0x14) = QUEST->file->hrp;
     else
-        U32(D_08A62CB4, 0x14) = U32((u8 *)U32(D_08A62C7C, 0x4C), 0x40);
+        U32(D_08A62CB4, 0x14) = QUEST->file->hrp_other;
     U32(D_08A62CB4, 0x18) = U32(D_08A62CB4, 0x14);
-    h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    h = player_get(D_09A4F0C4, D_089CC438[0x28]);
     U32(D_08A62CB4, 0x14) -= ((u8 *)h)[0x113E] * 10;
     if ((s32)U32(D_08A62CB4, 0x14) < 0)
         U32(D_08A62CB4, 0x14) = 0;
 
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0 && quest_state(D_08A62C7C, 1) == 1) {
+    if ((OPT_FLAGS & 1) != 0 && quest_state(QUEST, 1) == 1) {
         n = *(s8 *)(D_09A0B544 + 0xBBD);
-        q = D_08A62C7C;
-        if ((U32(q, 0x28) & 0x10) != 0)
-            pts = ((s32)U32(q, 0x5B0) + (s32)U32(q, 0x5B4)) / 400;
-        else if ((U32(q, 0x28) & 0x1000000) != 0)
+        q = QUEST;
+        if ((q->flags & QF_TREASURE) != 0)
+            pts = (q->points[0] + q->points[1]) / 400;
+        else if ((q->flags & QF_TRAINING) != 0)
             pts = U32(self, 0x120) / 200;
         else if (!is_training(U16(D_089CC438, 0x6AF12)))
             pts = U32(D_08A62CB4, 0x14) / 20;
@@ -140,10 +138,10 @@ void result_points_init(u8 *self)
             }
         }
     }
-    if (quest_comrade_allowed(D_08A62C7C) == 0)
+    if (quest_comrade_allowed(QUEST) == 0)
         return;
     f = friend_marked(D_089CC438);
-    h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    h = player_get(D_09A4F0C4, D_089CC438[0x28]);
     if (!is_training(U16(D_089CC438, 0x6AF12))) {
         u32 base = U32(D_08A62CB4, 0x18);
 
@@ -156,9 +154,9 @@ void result_points_init(u8 *self)
             b = 2;
         if (c < 20)
             c = 20;
-        if (func_088D6A1C(h, 0xBE) != 0) {
+        if (hunter_has_skill(h, 0xBE) != 0) {
             a = a * 15 / 10;
-        } else if (func_088D6A1C(h, 0xBF) != 0) {
+        } else if (hunter_has_skill(h, 0xBF) != 0) {
             a = a * 15 / 10;
             c = c * 15 / 10;
         }
@@ -193,7 +191,7 @@ s32 result_points_update(u8 *self)
     s32 n;
     u32 h;
 
-    func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    player_get(D_09A4F0C4, D_089CC438[0x28]);
     if (S16(self, 0xAA) > 0)
         S16(self, 0xAA)--;
     switch (S16(self, 0xA4)) {
@@ -261,7 +259,7 @@ void result_points_draw(u8 *self)
     U8(D_089CBBEC, 0x534) = 9;
     func_08890E08(D_08A631A8, 0);
     menu_begin_draw(D_089CBBEC);
-    h = (u8 *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    h = (u8 *)player_get(D_09A4F0C4, D_089CC438[0x28]);
     result_draw_windows(self);
     func_08890E38(D_08A631A8, 0);
     func_08890DE8(D_08A631A8, 0x10, 0x10);
@@ -292,18 +290,18 @@ void result_points_draw(u8 *self)
         sprintf(buf, RTEXT(D_089B53D6), U32(D_08A62CB4, 0x18));
         func_0887D02C(0xF4, D_089A88F2, buf, 0x10);
         func_08890DFC(D_08A631A8, D_089A88F8, D_089A88F2);
-        if (quest_state(D_08A62C7C, 1) == 1)
+        if (quest_state(QUEST, 1) == 1)
             func_08892004(D_08A631A8, RTEXT(D_089B53D4));
         else
             func_08892004(D_08A631A8, RTEXT(D_089B53D2));
         /* fall through */
     case 1:
-        if (quest_state(D_08A62C7C, 1) == 1)
+        if (quest_state(QUEST, 1) == 1)
             sprintf(buf, RTEXT(D_089B53C2));
         else
             sprintf(buf, RTEXT(D_089B53C4));
         result_text_center(self, 0x30, buf);
-        result_text_center(self, D_089A88F0, (const char *)quest_text(D_08A62C7C, 0));
+        result_text_center(self, D_089A88F0, (const char *)quest_text(QUEST, 0));
         /* fall through */
     case 0:
         func_08890DFC(D_08A631A8, 0xFC, 0xF2);
@@ -322,18 +320,18 @@ void result_points_draw(u8 *self)
 /* training points of the two hunters (training school), with the record of the quest */
 void result_training_init(u8 *self)
 {
-    u8 *q = D_08A62C7C;
+    Quest *q = QUEST;
 
     U16(self, 0xA4) = 0;
     U16(self, 0xA6) = 0;
     U16(self, 0xAA) = 3600;
     U16(self, 0xA8) = 10;
     if (D_089CC438[0x28] == 0) {
-        U32(self, 0xB0) = U32(q, 0x5B0);
-        U32(self, 0xB4) = U32(D_08A62C7C, 0x5B4);
+        U32(self, 0xB0) = q->points[0];
+        U32(self, 0xB4) = QUEST->points[1];
     } else {
-        U32(self, 0xB0) = U32(q, 0x5B4);
-        U32(self, 0xB4) = U32(D_08A62C7C, 0x5B0);
+        U32(self, 0xB0) = q->points[1];
+        U32(self, 0xB4) = QUEST->points[0];
     }
     U32(self, 0xBC) = 0;
     U32(self, 0xB8) = 0;
@@ -341,7 +339,7 @@ void result_training_init(u8 *self)
     U32(self, 0x14) = func_0887E9AC(self, U32(self, 0xB0) + U32(self, 0xB4), 0);
     if (U32(D_089CC438, 0x6397C + U16(D_089CC438, 0x6AF12) * 4) < U32(self, 0x120)) {
         U16(self, 0xAC) = 1;
-        record_add_best(D_089CC438, D_08A62C7C + 0x684, 10, U32(self, 0x120), 0);
+        record_add_best(D_089CC438, QUEST->log, 10, U32(self, 0x120), 0);
     } else {
         U16(self, 0xAC) = 0;
     }
@@ -430,7 +428,7 @@ s32 result_training_update(u8 *self)
         result_init_sounds(self);
         self[0xC1] = 1;
         src = NULL;
-        if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0)
+        if ((OPT_FLAGS & 1) != 0)
             src = D_089CC438[0x28] == 0 ? D_09A0B544 + 0xC90 : D_09A0B544 + 0xBC8;
         v = U32(self, 0x120);
         q = U16(D_089CC438, 0x6AF12);

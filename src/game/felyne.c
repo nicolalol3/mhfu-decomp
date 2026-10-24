@@ -3,11 +3,10 @@
 #include "menu.h"
 
 extern const u8 D_09CD01E0[];     /* Felyne levels (6 bytes each) */
-u32 func_088900C4(void *a, int b);
+u32 game_rand(void *a, int b);
 u32 func_08857E6C(void *g);
 int game_test_flag(u8 *g, s32 i);
 void log_push(u8 *g, u8 *e);
-#define func_08858904 log_push
 void *memcpy(void *d, const void *s, size_t n);
 int sceWlanGetEtherAddr(u8 *mac);
 int sceRtcGetCurrentClockLocalTime(void *t);
@@ -82,8 +81,8 @@ void felyne_create(u8 *g, u8 *e, s32 mode)
         F32(e, 0x1C) = (f32)(u16)(l[3] + 10);
         e[0x29] = D_09CD01E0[e[0x16] * 6 + 5] + 0xB;
         e[0x28] = D_09CD01E0[e[0x16] * 6 + 4] + 100;
-        e[0x4B] = (u16)func_088900C4(D_08A631A0, 1) & 0xF;
-        e[0x2C] = ((u16)func_088900C4(D_08A631A0, 1) & 1) ? 0 : 1;
+        e[0x4B] = (u16)game_rand(D_08A631A0, 1) & 0xF;
+        e[0x2C] = ((u16)game_rand(D_08A631A0, 1) & 1) ? 0 : 1;
         if ((u8)game_test_flag(D_089CC438, 0x5D) == 1)
             U32(e, 0x30) = 0xF;
     }
@@ -176,7 +175,7 @@ void log_add(u8 *g, u32 a, u32 b)
     U16(e, 2) = t[0];
     e[1] = t[1];
     e[0] = t[2];
-    func_08858904(g, e);
+    log_push(g, e);
 }
 
 void log_entry_init(void *g, u8 *e, u32 a, u32 b)

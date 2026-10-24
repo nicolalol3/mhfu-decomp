@@ -38,20 +38,20 @@ void menu_draw_sprite(u8 *self, u32 x, u32 y, s32 id);
 int menu_slot_usable(void *self, u32 id_arg);
 u16 item_icon_sprite(void *self, u32 i, u32 small);
 void tex_select(u8 *self, u32 tex, u32 file);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
 s32 func_09AD8358(void *obj);
 s32 func_09D296A8(void *obj);
 s32 func_09B31FB0(void *obj);
 s32 func_09D1E6E0(void *obj);
 s8 func_088D6AC8(void *hunter, int skill);
 int func_08890E48(void *font, const char *s);
-u8 *func_0885C580(void *a, u16 id);
+u8 *pouch_item_data(void *a, u16 id);
 void func_08845EA8(u8 *self);
-void func_088D72A4(void *hunter, u16 id, int a, int b);
+void hunter_add_item(void *hunter, u16 id, int a, int b);
 void func_088AB6D0(void *net, int a, void *data);
 void hud_box_take_anim(u8 *self, u32 id, u32 slot);
 void hud_box_cursor_flash(u8 *self, u8 *h);
-s32 func_088569F8(void *game, u32 id);
+s32 pouch_room_or_full(void *game, u32 id);
 void func_08825ADC(void *self, int a, u32 b, int c);
 void layout_draw(void *self, Layout *l, const char *text, u32 alpha);
 
@@ -67,7 +67,7 @@ void layout_draw(void *self, Layout *l, const char *text, u32 alpha);
                 **(u32 **)((dl) + 0x80198) = (w)[i_];                               \
                 U32(dl, 0x80198) += 4;                                              \
             }                                                                       \
-            func_088596C8(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
+            dl_link(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
         }                                                                           \
     } while (0)
 
@@ -446,7 +446,7 @@ int hud_count_usable_items(void)
 
     for (i = 0; i < 0x18; i++) {
         if ((s16)func_08856884(D_089CC438, i)[1] > 0 && func_08856884(D_089CC438, i)[0] != 0
-            && func_0885C580(D_08A62C50, i)[1] == 1)
+            && pouch_item_data(D_08A62C50, i)[1] == 1)
             n++;
     }
     return n;
@@ -555,7 +555,7 @@ void hud_take_box_item(u8 *self, u8 *h)
 
         S16(h, 0x5EC) = 0;
         U32(h, 0x614) &= ~0x10000;
-        func_088D72A4(h, U16(game, 0x390 + h[0x55D] * 4), S16(game, 0x392 + h[0x55D] * 4), 0);
+        hunter_add_item(h, U16(game, 0x390 + h[0x55D] * 4), S16(game, 0x392 + h[0x55D] * 4), 0);
         slot = h[0x55D];
         U32(game, 0x410 + (slot >> 5) * 4) |= 1 << (slot & 0x1F);
         hud_box_take_anim(self, U16(game, 0x390 + h[0x55D] * 4), h[0x55D]);
@@ -649,7 +649,7 @@ void hud_draw_supply_box(u8 *self)
         str = func_08851528(D_089CC438, 0);
     } else {
         s16 n = S16(game, slot * 4 + 0x392);
-        s16 have = func_088569F8(D_089CC438, item);
+        s16 have = pouch_room_or_full(D_089CC438, item);
         s16 k = -1;
 
         if (have < 0)
@@ -699,8 +699,8 @@ void hud_box_cursor_flash(u8 *self, u8 *h)
 
 extern u8 *D_08A62CB4;
 extern void *D_08A62D8C;
-u32 func_0884FB6C(void *game);
-void func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+u32 game_buttons(void *game);
+void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
 
 /* pages of the quest info (left / right), button 0x2000 closes it */
 void hud_info_pages_input(u8 *self)
@@ -712,17 +712,17 @@ void hud_info_pages_input(u8 *self)
     p = D_08A62CB4;
     old = *(s32 *)(p + 0x20);
     last = (*(s32 *)(p + 0x24) - 1) / 10 + 1;
-    if ((u16)func_0884FB6C(D_089CC438) & 0x80) {
+    if ((u16)game_buttons(D_089CC438) & 0x80) {
         if (--*(s32 *)(p + 0x20) < 0)
             *(s32 *)(p + 0x20) = last - 1;
-    } else if ((u16)func_0884FB6C(D_089CC438) & 0x20) {
+    } else if ((u16)game_buttons(D_089CC438) & 0x20) {
         if (last - 1 < ++*(s32 *)(p + 0x20))
             *(s32 *)(p + 0x20) = 0;
     }
     if (old != *(s32 *)(p + 0x20))
-        func_08883988(D_08A62D8C, 0, 0x11, 0, 0, 0, 0, 0, 0);
-    if ((u16)func_0884FB6C(D_089CC438) & 0x2000) {
-        func_08883988(D_08A62D8C, 0, 0x14, 0, 0, 0, 0, 0, 0);
+        sound_play(D_08A62D8C, 0, 0x11, 0, 0, 0, 0, 0, 0);
+    if ((u16)game_buttons(D_089CC438) & 0x2000) {
+        sound_play(D_08A62D8C, 0, 0x14, 0, 0, 0, 0, 0, 0);
         U32(*(u8 **)(self + 0x530), 0x614) ^= 0x200;
         U32(self, 0x1194) &= ~0x33;
     }

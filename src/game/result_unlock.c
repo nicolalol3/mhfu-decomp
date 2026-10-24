@@ -1,6 +1,6 @@
 /* Result screens at the end of the quest (2): unlocked contents, size records, special
  * conditions; helpers of all the result screens. The object is D_08A62CB4. (Guessed names.) */
-#include "menu.h"
+#include "quest.h"
 
 extern void *D_09A44C5C;
 extern const char D_089A8870[];    /* "%s" */
@@ -28,6 +28,7 @@ void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id);
 void emblem_draw(u8 *self, u32 x, u32 y, u32 u, u32 v);
 void menu_draw_rating_icon(void *menu, u8 *em, s32 x, s32 y, s32 v);
 void text_draw_lines_block(void *menu, int x, int y, const char *s, int w, int h);
+u16 *pouch_slot(u8 *g, s32 i);
 u8 *emblem_find(void *menu, u32 i);
 f32 game_size_percent(void *g, u32 id, u32 v);
 f32 game_size_max(u8 *g, u32 id, s32 mode);
@@ -44,11 +45,10 @@ int event_quest_any_done(u8 *g, u32 id);
 s32 flag_id_at(u8 *g, s32 i);
 int game_rank(u8 *g);
 void record_add_best(u8 *g, u8 *log, s32 kind, s32 i, u32 v);
-u32 quest_unlock_check(u8 *self, s32 i);
 void result_size_records(u8 *self);
 void result_init_sounds(u8 *self);
-u8 *func_0885C580(void *a, s32 i);
-u32 func_088D72A4(u32 h, s32 id, s32 n, s32 c);
+u8 *pouch_item_data(void *a, s32 i);
+u32 hunter_add_item(u32 h, s32 id, s32 n, s32 c);
 void func_08890114(void *a);
 void func_08890E08(void *font, int a);
 void func_08890DFC(void *font, int x, int y);
@@ -103,7 +103,7 @@ void result_unlock_draw(u8 *self)
     draw_title(self, buf);
     text_draw_lines_block(D_089CBBEC, 0xF0, 0x60, RTEXT(D_089B53A2), 0x10, 0x10);
     for (i = 0; i < 0x3D; i++) {
-        if (quest_unlock_check(self, i) == 0)
+        if (quest_unlock_check((Quest *)self, i) == 0)
             continue;
         f = flag_id_at(D_089CC438, (s8)i);
         if ((f < 0 || f >= 0xB) && f < 0x39)
@@ -329,8 +329,8 @@ s32 result_rewards_count(void)
 /* end of the quest: items used up, hunting counters, records, rank */
 void result_finish(u8 *self)
 {
-    u32 h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
-    u8 *q;
+    u32 h = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    Quest *q;
     u8 t[24];
     s32 i, j;
     u32 n, step, c, tot;
@@ -339,15 +339,15 @@ void result_finish(u8 *self)
     func_08890114(D_08A631A0);
     U32(D_089CC438, 0x47C) = 0;
     for (i = 0; i < 0x18; i++) {
-        if ((func_0885C580(D_08A62C50, i)[4] & 4) == 0)
+        if ((pouch_item_data(D_08A62C50, i)[4] & 4) == 0)
             continue;
-        p = func_08856884(D_089CC438, i);
-        s = func_08856884(D_089CC438, i);
-        func_088D72A4(h, p[0], (s16)-(s16)s[1], 0);
+        p = pouch_slot(D_089CC438, i);
+        s = pouch_slot(D_089CC438, i);
+        hunter_add_item(h, p[0], (s16)-(s16)s[1], 0);
     }
     for (i = 0; i < 0x5A; i++) {
-        q = D_08A62C7C;
-        n = U16(q, 0x29C + i * 2) + U16(q, 0x350 + i * 2);
+        q = QUEST;
+        n = q->kills[i] + q->captures[i];
         if (n != 0 && i != 0x1D) {
             for (j = 0; j < 24; j++)
                 t[j] = D_089A88B0[j];
@@ -361,14 +361,14 @@ void result_finish(u8 *self)
             c = game_group_count_total(D_089CC438, i & 0xFF) & 0xFFFF;
             tot = c + n;
             if (tot < 9999 && n + c % step >= step)
-                record_add_best(D_089CC438, D_08A62C7C + 0x684, 0x15, i, (step / 10) * (tot / step));
+                record_add_best(D_089CC438, QUEST->log, 0x15, i, (step / 10) * (tot / step));
         }
-        q = D_08A62C7C;
-        if (U16(q, 0x29C + i * 2) != 0)
-            game_add_count_a(D_089CC438, i & 0xFF, U16(q, 0x29C + i * 2));
-        q = D_08A62C7C;
-        if (U16(q, 0x350 + i * 2) != 0)
-            game_add_count_b(D_089CC438, i & 0xFF, U16(q, 0x350 + i * 2));
+        q = QUEST;
+        if (q->kills[i] != 0)
+            game_add_count_a(D_089CC438, i & 0xFF, q->kills[i]);
+        q = QUEST;
+        if (q->captures[i] != 0)
+            game_add_count_b(D_089CC438, i & 0xFF, q->captures[i]);
     }
     result_size_records(self);
     self[0xC0] = game_rank(D_089CC438);

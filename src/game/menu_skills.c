@@ -10,12 +10,12 @@ extern void *D_089CBBE8;          /* text converter */
 extern const s32 D_0893AEB8[5];
 extern u8 *const D_08978474[];      /* armor tables (0x28 bytes per piece) */
 
-s32 func_0885CF9C(void *a, void *eq, u8 skill);
-s32 func_0885D1D4(void *a, void *hunter, u8 skill);
+s32 equip_skill_points(void *a, void *eq, u8 skill);
+s32 armor_set_points(void *a, void *hunter, u8 skill);
 u8 func_088D6AC8(void *hunter, int skill);
 u8 *func_0885CA50(void *a, void *eq);
-u8 func_0885CD18(void *a, int type, u16 id);
-u8 func_0885CE1C(void *a, u8 v);
+u8 equip_rarity(void *a, int type, u16 id);
+u8 table_314fc_b(void *a, u8 v);
 u32 func_088D7DE8(void *hunter);
 void func_088D897C(void *hunter);
 s16 func_08828658(void *self, void *hunter);
@@ -36,12 +36,12 @@ int skill_entry_fill(u8 *self, u8 *hunter, u8 *e, int cmp)
 
     if (e[3] == 1)
         return skill_entry_flags(self, hunter, e);
-    e[4] = func_0885CF9C(D_08A62C54, hunter + 0x4E8, e[3]);
-    e[5] = func_0885CF9C(D_08A62C54, hunter + 0x500, e[3]);
-    e[6] = func_0885D1D4(D_08A62C54, hunter, e[3]);
-    e[7] = func_0885CF9C(D_08A62C54, hunter + 0x518, e[3]);
-    e[8] = func_0885CF9C(D_08A62C54, hunter + 0x524, e[3]);
-    e[9] = func_0885CF9C(D_08A62C54, hunter + 0x4F4, e[3]);
+    e[4] = equip_skill_points(D_08A62C54, hunter + 0x4E8, e[3]);
+    e[5] = equip_skill_points(D_08A62C54, hunter + 0x500, e[3]);
+    e[6] = armor_set_points(D_08A62C54, hunter, e[3]);
+    e[7] = equip_skill_points(D_08A62C54, hunter + 0x518, e[3]);
+    e[8] = equip_skill_points(D_08A62C54, hunter + 0x524, e[3]);
+    e[9] = equip_skill_points(D_08A62C54, hunter + 0x4F4, e[3]);
     if (e[9] == 0 && e[8] == 0 && e[7] == 0 && e[6] == 0 && e[4] == 0 && e[5] == 0)
         return 0;
     e[2] = 0x80;
@@ -90,12 +90,12 @@ int skill_entry_flags(void *self, u8 *hunter, u8 *e)
 {
     int any;
 
-    e[4] = (s8)func_0885CF9C(D_08A62C54, hunter + 0x4E8, e[3]) > 0;
-    e[5] = (s8)func_0885CF9C(D_08A62C54, hunter + 0x500, e[3]) > 0;
-    e[6] = (s8)func_0885CF9C(D_08A62C54, hunter + 0x50C, e[3]) > 0;
-    e[7] = (s8)func_0885CF9C(D_08A62C54, hunter + 0x518, e[3]) > 0;
-    e[8] = (s8)func_0885CF9C(D_08A62C54, hunter + 0x524, e[3]) > 0;
-    e[9] = (s8)func_0885CF9C(D_08A62C54, hunter + 0x4F4, e[3]) > 0;
+    e[4] = (s8)equip_skill_points(D_08A62C54, hunter + 0x4E8, e[3]) > 0;
+    e[5] = (s8)equip_skill_points(D_08A62C54, hunter + 0x500, e[3]) > 0;
+    e[6] = (s8)equip_skill_points(D_08A62C54, hunter + 0x50C, e[3]) > 0;
+    e[7] = (s8)equip_skill_points(D_08A62C54, hunter + 0x518, e[3]) > 0;
+    e[8] = (s8)equip_skill_points(D_08A62C54, hunter + 0x524, e[3]) > 0;
+    e[9] = (s8)equip_skill_points(D_08A62C54, hunter + 0x4F4, e[3]) > 0;
     any = e[9] || e[8] || e[7] || e[6] || e[4] || e[5];
     if (any) {
         e[2] = 0x82;
@@ -267,8 +267,8 @@ void text_draw_lines(void *self, s32 x_arg, s32 y_arg, const char *s, s32 align,
 int skill_applies_to_weapon(u8 *self, u8 *eq, u32 k_arg, const s8 *list)
 {
     s8 k = k_arg;
-    u8 cls = func_0885CD18(D_08A62C54, eq[1], U16(eq, 2));
-    u8 f = func_0885CE1C(D_08A62C54, cls);
+    u8 cls = equip_rarity(D_08A62C54, eq[1], U16(eq, 2));
+    u8 f = table_314fc_b(D_08A62C54, cls);
     s8 other;
     int i;
 
@@ -307,11 +307,11 @@ int skill_applies_to_weapon(u8 *self, u8 *eq, u32 k_arg, const s8 *list)
 }
 
 extern const s8 D_08978E38[];      /* shells of the gunlances (4 per weapon) */
-s32 func_088D6A1C(void *hunter, int skill);
+s32 hunter_has_skill(void *hunter, int skill);
 s32 func_0885B3A0(void *a, s32 id, int b, int c);
-void func_088D72A4(void *hunter, u16 id, int a, int b);
+void hunter_add_item(void *hunter, u16 id, int a, int b);
 void func_088D8900(void *hunter);
-s32 func_0885B718(void *a, void *b, int c, int d);
+s32 combo_known(void *a, void *b, int c, int d);
 
 /* 1 if the gunlance wd has a shell of the kind of skill k (0x16, 0x17, 0x18) */
 int skill_gunlance_shell(void *self, void *hunter, u8 *wd, u32 k_arg)
@@ -324,9 +324,9 @@ int skill_gunlance_shell(void *self, void *hunter, u8 *wd, u32 k_arg)
     if (wd[0xB] == 4)
         n++;
     else if (wd[0xB] == 2) {
-        if ((u8)func_088D6A1C(hunter, 0xAA) == 0)
+        if ((u8)hunter_has_skill(hunter, 0xAA) == 0)
             n--;
-    } else if ((u8)func_088D6A1C(hunter, 0xAA) == 1)
+    } else if ((u8)hunter_has_skill(hunter, 0xAA) == 1)
         n++;
     p = D_08978E38 + wd[0x10] * 4;
     for (i = 0; i < n; i++, p++) {
@@ -394,7 +394,7 @@ int menu_slot_combine(u8 *self, s32 a_arg, s32 b_arg)
     U32(self, 0x5A8) = (u32)e;
     if (e == NULL)
         return 0;
-    if (func_0885B718(D_08A62C50, e, 0, 0) == 0)
+    if (combo_known(D_08A62C50, e, 0, 0) == 0)
         U16(self, 0x5B4) = 0xFFFF;
     else
         U16(self, 0x5B4) = U16(*(u8 **)(self + 0x5A8), 2);
@@ -410,7 +410,7 @@ void menu_slot_restore(u8 *self)
         return;
     for (i = 0; i < 2; i++)
         if (U16(self, 0x5AC + i * 2) != 0xFFFF)
-            func_088D72A4(*(void **)(self + 0x530), U16(self, 0x5AC + i * 2), 1, 0);
+            hunter_add_item(*(void **)(self + 0x530), U16(self, 0x5AC + i * 2), 1, 0);
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) != 0)
         func_088D8900(*(void **)(self + 0x530));
     U32(self, 0x528) &= ~8;
@@ -418,9 +418,9 @@ void menu_slot_restore(u8 *self)
 
 extern const s16 D_08938AFC[][3], D_08939140[][3];
 extern f32 D_09CDEF40[][8];        /* screen rectangles (overlay data) */
-u32 func_0885C124(void *a, void *e);
-s32 func_08852F1C(void *game, u8 i);
-s32 func_08852F58(void *game);
+u32 combo_amount(void *a, void *e);
+s32 game_test_bit62(void *game, u8 i);
+s32 game_count_bits62(void *game);
 
 /* 1 if both items of the combination are chosen */
 int menu_combo_ready(u8 *self)
@@ -455,12 +455,12 @@ int menu_combo_room(u8 *self, u16 *it)
         return -1;
     if (it[0] != S16(e, 2))
         return -1;
-    if ((u8)func_0885B718(D_08A62C50, e, 0, 0) == 0)
+    if ((u8)combo_known(D_08A62C50, e, 0, 0) == 0)
         return -1;
     room = D_0899D19B[it[0] * 0x18] - (s16)it[1];
     if (room <= 0)
         return 0;
-    if (room < (u8)func_0885C124(D_08A62C50, *(void **)(self + 0x5A8)))
+    if (room < (u8)combo_amount(D_08A62C50, *(void **)(self + 0x5A8)))
         return 1;
     return 2;
 }
@@ -509,7 +509,7 @@ s32 menu_next_hunter(void *self, s32 cur_arg, s32 dir_arg)
     s32 v;
     int n;
 
-    if (func_08852F58(D_089CC438) == 0)
+    if (game_count_bits62(D_089CC438) == 0)
         return -1;
     if (cur < 0) {
         v = 0;
@@ -526,7 +526,7 @@ s32 menu_next_hunter(void *self, s32 cur_arg, s32 dir_arg)
     for (n = 62; n > 0; n--) {
         s8 c;
 
-        if (func_08852F1C(D_089CC438, v & 0xFF) != 0)
+        if (game_test_bit62(D_089CC438, v & 0xFF) != 0)
             return v;
         c = v;
         if (dir < 0) {

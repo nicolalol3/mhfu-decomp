@@ -10,18 +10,18 @@ extern const char D_08938620[];
 extern const u16 D_089AD020[];
 extern const s16 D_08938690[];
 
-u8 func_088567B4(void *game);
+u8 save_in_progress(void *game);
 void func_08890E08(void *font, int v);
-void func_0885A1B8(void *msg);
-void func_0885A95C(void *msg, u32 a, u8 b, int c);
-void func_0885A934(void *msg, s32 a, s32 b, s32 c, u8 d);
+void popup_update(void *msg);
+void popup_show_text(void *msg, u32 a, u8 b, int c);
+void popup_show(void *msg, s32 a, s32 b, s32 c, u8 d);
 void func_0887D02C(u16 x, u16 y, const char *s, int size);
-u32 *func_088597FC(void *dl);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
-void func_0885980C(void *dl, u32 *end);
-void func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
-s16 func_08826734(void *self, u8 v);
-void func_0882B624(void *self, u16 x, u16 y, u8 r, u8 g, u8 b, u32 icon, int c);
+u32 *dl_cur(void *dl);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
+void dl_set_cur(void *dl, u32 *end);
+void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+s16 menu_slot_first(void *self, u8 v);
+void gfx_draw_sprite(void *self, u16 x, u16 y, u8 r, u8 g, u8 b, u32 icon, int c);
 void menu_set_state(void *self);
 void menu_msg_next(void *self);
 void menu_begin_draw(void *self);
@@ -42,7 +42,7 @@ void menu_draw_messages(void *self)
     u8 *p = self;
     int i;
 
-    if (func_088567B4(D_089CC438) == 1)
+    if (save_in_progress(D_089CC438) == 1)
         return;
     U8(self, 0x534) = 14;
     func_08890E08(D_08A631A8, 5);
@@ -50,7 +50,7 @@ void menu_draw_messages(void *self)
     menu_msg_next(self);
     for (i = 0; i < 20; i++, p += 0x24)
         if (U8(p, 0xE28) != 0)
-            func_0885A1B8(p + 0xE28);
+            popup_update(p + 0xE28);
 }
 
 /* 1 if a message of kind k is waiting in the queue */
@@ -89,11 +89,11 @@ void menu_msg_next(void *self)
         return;
     e = (u8 *)self + S8(self, 0x10F9) * 0x24;
     if (S8(e, 0xE42) == -1)
-        func_0885A95C(e + 0xE28, U32(e, 0xE48), U8(e, 0xE43), 0);
+        popup_show_text(e + 0xE28, U32(e, 0xE48), U8(e, 0xE43), 0);
     else if (S8(e, 0xE42) == -2)
-        func_0885A95C(e + 0xE28, U32(e, 0xE48), U8(e, 0xE43), 1);
+        popup_show_text(e + 0xE28, U32(e, 0xE48), U8(e, 0xE43), 1);
     else
-        func_0885A934(e + 0xE28, S8(e, 0xE42), S16(e, 0xE44), S16(e, 0xE46), U8(e, 0xE43));
+        popup_show(e + 0xE28, S8(e, 0xE42), S16(e, 0xE44), S16(e, 0xE46), U8(e, 0xE43));
     h = S8(self, 0x10F9) + 1;
     S8(self, 0x10F9) = h;
     if (h > 19)
@@ -169,7 +169,7 @@ void menu_update_counter(u8 *h)
 /* starts the display list of the menu (2D drawing state) */
 void menu_begin_draw(void *self)
 {
-    u32 *p = func_088597FC(D_08A62C40);
+    u32 *p = dl_cur(D_08A62C40);
 
     p[0] = 0x23000000;
     p[1] = 0xDE000000;
@@ -183,16 +183,16 @@ void menu_begin_draw(void *self)
     p[9] = 0xC6000000;
     p[10] = 0x10000000;
     p[11] = 0x08000000;
-    func_088596C8(D_08A62C40, p, 12, U8(self, 0x534));
-    func_0885980C(D_08A62C40, p + 12);
+    dl_link(D_08A62C40, p, 12, U8(self, 0x534));
+    dl_set_cur(D_08A62C40, p + 12);
 }
 
 /* goes back one page (with sound) */
 void menu_page_back(void *self)
 {
     U8(self, 0x585) -= 1;
-    func_08883988(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
-    S16(self, 0x5FC) = func_08826734(self, U8(self, 0x586)) + 24;
+    sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+    S16(self, 0x5FC) = menu_slot_first(self, U8(self, 0x586)) + 24;
 }
 
 /* two equipment names side by side with a blinking arrow */
@@ -204,14 +204,14 @@ void menu_draw_compare(void *self, u32 a, u32 b, s32 x, s32 y, u32 flags, s32 bi
     func_08830078(self, a, x, y, (flags | 0x20) & ~8, b, n);
     func_08830078(self, b, x, (s16)((s16)y + 120 + D_08938690[big]), flags, a, n);
     s = vfpu_sinf((f32)(u16)((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x1F) << 11) * (3.14159265f / 32768.0f));
-    func_0882B624(self, (s16)x + 104, (s16)y + 112 + D_08938690[big],
+    gfx_draw_sprite(self, (s16)x + 104, (s16)y + 112 + D_08938690[big],
                   (s8)(int)(s * 95.0f) + 159, (s8)(int)(s * 63.0f) + 191, 255, 0x9C, 0);
 }
 
 extern void *D_089CBBE8;          /* text converter */
 extern const s8 D_089AA1D2;
 int utf8_byte_len(void *self, const char *s);
-void *func_08859B44(void *heap, int size, int align);
+void *heap_alloc(void *heap, int size, int align);
 void *memcpy(void *d, const void *s, size_t n);
 s16 func_08892708(void *font, s32 i, u8 *ch, const char *s, void *aux);
 s32 func_088855D0(void *snd, int v);
@@ -262,7 +262,7 @@ u8 menu_msg_push_copy(u8 *self, const char *s)
     if (S8(self, 0x10F8) >= 19)
         return 0xFF;
     n = utf8_byte_len(D_089CBBE8, s) + 1;
-    p = func_08859B44(self + 0x500, n, 16);
+    p = heap_alloc(self + 0x500, n, 16);
     if (p == NULL)
         return 0xFF;
     D_089CC438[0x380] = (D_089CC438[0x380] + 1) & 0x7F;
@@ -279,9 +279,9 @@ u8 menu_msg_push_copy(u8 *self, const char *s)
 static void typewriter_sound(int quest_sound, int alt_sound)
 {
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0)
-        func_08883988(D_08A62D8C, func_088855D0(D_08A62D8C, 0x4A), quest_sound, D_089AA1D2, 0, 0, 0, 0, 0);
+        sound_play(D_08A62D8C, func_088855D0(D_08A62D8C, 0x4A), quest_sound, D_089AA1D2, 0, 0, 0, 0, 0);
     else
-        func_08883988(D_08A62D8C, 1, alt_sound, 0, 0, 0, 0, 0, 0);
+        sound_play(D_08A62D8C, 1, alt_sound, 0, 0, 0, 0, 0, 0);
 }
 
 /* text s shown one character at a time: t = time since the start, mode 3/4 = close,
@@ -369,10 +369,10 @@ extern const u16 D_0893B208[];     /* save data file ids per language */
 extern const s16 D_08939A34;
 extern void **D_089CC434;         /* save data manager (C++ object) */
 extern void *D_09A0B540;
-void func_0882FC50(void *self, const void *layout, const char *text, int alpha);
+void layout_draw(void *self, const void *layout, const char *text, int alpha);
 void func_08890E40(void *font, int v);
 void func_088921FC(void *font, s32 n, const char *s);
-s32 func_08898694(void *a, int b, s32 c);
+s32 temp_alloc(void *a, int b, s32 c);
 s32 func_08898898(void *a, int b);
 void menu_draw_sprite(u8 *self, u32 x, u32 y, s32 id);
 void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id);
@@ -394,7 +394,7 @@ void menu_draw_typewriter(u8 *self)
 
     if ((S8(self, 0x5F0) & 0x10) != 0)
         return;
-    func_0882FC50(self, D_08938770, NULL, 255);
+    layout_draw(self, D_08938770, NULL, 255);
     if ((S8(self, 0x5F0) & 0x20) != 0)
         return;
     func_08890E40(D_08A631A8, 16);
@@ -472,7 +472,7 @@ int menu_load_data(u8 *self)
         u16 id = D_0893B208[LANG];
         s32 r = VCALL(VFunc1, D_089CC434, 0x18)(D_089CC434, id);
 
-        r = func_08898694(D_09A0B540, 11, r);
+        r = temp_alloc(D_09A0B540, 11, r);
         VCALL(VFunc6, D_089CC434, 0x34)(D_089CC434, id, r, -1, 0, 0, 1);
         U32(self, 0x1198) += 1;
     } else {

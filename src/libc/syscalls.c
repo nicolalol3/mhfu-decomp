@@ -21,8 +21,8 @@ extern SceUID g_sbrk_block;
 struct _reent;
 extern struct _reent *_getmodreent(void) __attribute__((weak)); /* module's libc (reent.c) */
 extern struct _reent *__getreent(void);                         /* libc of the current thread */
-extern void func_0880E19C(struct _reent *r);
-extern SceUID func_0880C7E0(struct _reent *r);
+extern void _reclaim_reent(struct _reent *r);
+extern SceUID _delmodreent(struct _reent *r);
 
 /* file descriptors 0, 1, 2 of the libc correspond to the system's stdin/stdout/stderr. */
 static inline int libc_fd_to_sce(int fd)
@@ -54,8 +54,8 @@ void _exit(int status)
             sceKernelPrintf("libc:%s: should be called from main thread\n", "_exit");
             sceKernelExitThread(status);
         }
-        func_0880E19C(thid);
-        modid = func_0880C7E0(thid);
+        _reclaim_reent(thid);
+        modid = _delmodreent(thid);
         if (sceKernelGetModuleId() != modid) {
             int st[4];
             sceKernelStopModule(modid, 0, NULL, st, NULL);

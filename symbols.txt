@@ -1108,7 +1108,7 @@
 0x08869570 quest_map_object
 0x088695F4 quest_snap_point
 0x08869750 quest_table_entry
-0x08869774 quest_reward_list
+0x08869774 quest_large_list
 0x088697D4 quest_find_entry
 0x08869880 quest_sub_data
 0x088698B8 quest_ctor
@@ -1122,7 +1122,7 @@
 0x0886A3AC quest_is_target
 0x0886A444 quest_clear_waves
 0x0886A4CC quest_wave_add
-0x0886A524 quest_check_objective
+0x0886A524 quest_wave_is_last
 0x0886A58C quest_is_target2
 0x0886A648 quest_spawn_waves
 0x0886A77C quest_send_wave
@@ -1133,7 +1133,7 @@
 0x0886AD58 quest_target_captured
 0x0886AEEC quest_set_target
 0x0886AF2C quest_check_targets_done
-0x0886B064 quest_tick
+0x0886B064 quest_faint
 0x0886B0E0 quest_update
 0x0886B7C0 quest_rand_seed
 0x0886B8DC quest_rand
@@ -1142,10 +1142,10 @@
 0x0886BBE4 quest_goal_reached
 0x0886BCD0 quest_check_deliveries
 0x0886BD84 quest_kill_count
-0x0886BE34 quest_clear_goals
-0x0886BE50 quest_load_goals
+0x0886BE34 quest_clear_steps
+0x0886BE50 quest_load_steps
 0x0886BEA4 quest_text
-0x0886BF28 quest_rewards
+0x0886BF28 quest_large_kinds
 0x0886BFBC quest_item_count
 0x0886C008 quest_item_add
 
@@ -1305,3 +1305,15 @@
 0x0887B7C4 result_flags_init
 0x0887B7E0 result_flags_update
 0x0887B8D8 result_flags_draw
+
+# --- not decompiled yet: names only (guessed from what they do) ---
+0x08883988 sound_play
+0x088900C4 game_rand
+0x08898694 temp_alloc
+0x08898748 temp_free
+0x088AB514 net_send
+0x088D6A1C hunter_has_skill
+0x088D6A54 hunter_felyne_skill
+0x088D72A4 hunter_add_item
+0x088D7904 hunter_deliver
+0x088DCEBC player_get

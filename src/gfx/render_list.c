@@ -11,10 +11,10 @@ extern u8 **D_09A4F060;
 extern const s8 D_0893B7BC[20];   /* number of lists of each layer */
 extern const u32 D_0893B7D0[][4];
 
-u32 *func_088597FC(void *dl);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
-void func_0885980C(void *dl, u32 *end);
-void func_08859480(void *dl, u32 *cmds, int n, u8 layer);
+u32 *dl_cur(void *dl);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
+void dl_set_cur(void *dl, u32 *end);
+void dl_add(void *dl, u32 *cmds, int n, u8 layer);
 int vram_get_surface(void *m, u32 id, void *out);
 void func_088CACD4(void *a);
 
@@ -200,7 +200,7 @@ void rl_draw_copy(u8 *self)
     c[9] = 0xCC000000;
     c[10] = 0x10000000;
     c[11] = 0x08000000;
-    func_08859480(D_08A62C40, c, 12, self[0x215]);
+    dl_add(D_08A62C40, c, 12, self[0x215]);
 }
 
 /* GE states of the layers 1, 2, 5, 6 and 18 */
@@ -280,7 +280,7 @@ int rl_open(u8 *self, u32 layer)
 {
     if (self[0x20C] != 0)
         rl_close(self);
-    D_089CC000 = func_088597FC(D_08A62C40);
+    D_089CC000 = dl_cur(D_08A62C40);
     if (D_089CC000 != NULL) {
         self[0x20C] = 1;
         U32(self, 0x210) = (u32)D_089CC000;
@@ -299,8 +299,8 @@ void rl_close(u8 *self)
     n = (s32)((u32)D_089CC000 - U32(self, 0x210)) / 4;
     if (n != 0) {
         D_089CC000 += 2;
-        func_088596C8(D_08A62C40, (u32 *)U32(self, 0x210), n + 2, self[0x20D]);
-        func_0885980C(D_08A62C40, D_089CC000);
+        dl_link(D_08A62C40, (u32 *)U32(self, 0x210), n + 2, self[0x20D]);
+        dl_set_cur(D_08A62C40, D_089CC000);
     }
     D_089CC000 = NULL;
     U32(self, 0x210) = 0;

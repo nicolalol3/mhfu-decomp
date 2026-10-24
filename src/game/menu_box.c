@@ -57,7 +57,7 @@ void menu_open(void *self)
     u8 *g;
     u32 f;
 
-    U32(self, 0x530) = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    U32(self, 0x530) = player_get(D_09A4F0C4, D_089CC438[0x28]);
     U8(self, 0x52F) = 0;
     U8(self, 0x52E) = 0;
     U8(self, 0x52D) = 0;

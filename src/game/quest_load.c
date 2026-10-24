@@ -1,11 +1,7 @@
-/* Quest (D_08A62C7C): network events, loading of the quest file and of the monsters of the
- * area, records of the hunts, sizes and helpers of the goals. (Guessed names.) */
-#include "menu.h"
-
-typedef struct QEvent {
-    u8 type, b1;
-    u16 a, b, c, d;
-} QEvent;
+/* Quest (D_08A62C7C): events sent to the other players, loading of the quest file and of
+ * the monsters of the area, life records of the hunts, sizes and helpers of the goals.
+ * (Guessed names.) */
+#include "quest.h"
 
 extern void *D_09A1DAEC;
 extern u8 *D_09C121B0;
@@ -15,7 +11,6 @@ extern void *D_09A0B540;
 extern void *D_09A44C60;
 extern u8 *D_08A62D8C;
 extern void *D_089CBBE4;
-extern u8 D_08A5C440[];
 extern const u8 *const *D_089A7CE8[];   /* quest id -> file id tables */
 extern const u16 D_09BC8400[][3];        /* monster models: 3 file ids each */
 extern const s32 D_089A8278[];
@@ -23,7 +18,7 @@ extern const s32 D_089ABD18[][2];        /* min / max size of each monster */
 extern const u8 D_09CDE6C0[];            /* extra rewards: 14 bytes each, 0xFF = end */
 extern const u32 D_09CDD850[];
 extern const s8 D_089A7F64[], D_089A7F74[], D_089A7F78[], D_089A7F7C[];
-extern const u8 D_089A8184[8];
+extern const u8 D_089A8184[8];           /* monsters whose life is recorded */
 extern const s16 D_089A818C[][8], D_089A81DC[][8];
 extern const s8 D_089A8040[20], D_089A8054[20];
 
@@ -32,22 +27,12 @@ typedef s32 (*LdFunc1)(void *, u32);
 typedef s32 (*LdFunc6)(void *, u32, void *, s32, s32, s32, s32);
 #define LDCALL(type, off) ((type)((void **)*D_089CC434)[(off) / 4])
 
-void func_088AB514(void *a, int b, void *c);
-u8 *quest_table_entry(u8 *self, s32 i);
-u8 *quest_find_entry(u8 *self, u32 id, s32 which, s32 idx);
-u8 *quest_reward_list(u8 *self, s32 which);
-u8 *quest_find_monster(u8 *self, u8 *h);
-void quest_check_monsters_done(u8 *self, u32 id);
-void quest_reset_monsters(u8 *self, u32 id);
-void quest_target_killed(u8 *self, u8 *h);
-u32 quest_rand(u8 *self);
 u16 game_map_id(u8 *g);
 int party_has_kitchen_skill(u8 *p, u32 k);
 void camera_mode_for_area(void *cam);
-u32 func_088900C4(void *a, int b);
-s32 func_088D6A1C(u32 h, int a);
-s32 func_08898694(void *a, int b, s32 c);
-void func_08898748(void *a, int b);
+s32 hunter_has_skill(u32 h, int a);
+s32 temp_alloc(void *a, int b, s32 c);
+void temp_free(void *a, int b);
 s32 func_08898898(void *a, int b);
 void func_088C2BE0(void *a, void *b, s32 c);
 s32 func_088DDFE8(u8 *a, u32 b);
@@ -58,7 +43,7 @@ void func_088DE3D4(u8 *a, u32 b);
 void func_09AF4050(u8 *p);
 void func_09AB2E68(u8 *a, s32 i);
 void func_09AB46A8(u8 *a, u32 b);
-u8 *func_09AB2958(u8 *a, u8 *m);
+u8 *func_09AB2958(u8 *a, QuestMonster *m);
 void func_09AB35F0(u8 *a);
 void func_08880CF8(u8 *snd, s32 i);
 void func_08880D64(u8 *snd, s32 a, u32 b, u32 c, u32 d, u32 k, s32 i);
@@ -66,78 +51,75 @@ u8 func_08880D94(u8 *snd, u16 *ids, s32 i);
 void func_08880E50(u8 *snd, const s32 *t, u16 *a, u16 *b, u16 *c, u8 *k, s32 n, s32 f, u32 *sz);
 void func_08881114(u8 *snd, s32 a, u32 b, u32 c, u32 d, u32 k, s32 i);
 
-u32 quest_area_has_monster(u8 *self, u32 k);
-void quest_monster_detach(u8 *self, u8 *p);
-u16 quest_table_rand(const u16 *l, u16 *out);
-u32 quest_record_slot(u8 *self, s32 id);
-s32 quest_size_clamp(u8 *self, s32 a, s32 b);
+#define SMALL_END 0xFFFFFFFF        /* end of the lists of small monsters */
 
-static void send_event(QEvent *ev)
+static void send_event(QuestEvent *ev)
 {
-    func_088AB514(D_09A1DAEC, 6, ev);
+    net_send(D_09A1DAEC, 6, ev);
 }
 
 /* time left, sent to the other players */
-void quest_send_time(u8 *self)
+void quest_send_time(Quest *self)
 {
-    QEvent ev;
+    QuestEvent ev;
 
-    if (D_089CC438[0x422] != 0)
+    if (G_TIME_STOP != 0)
         return;
     ev.type = 5;
-    ev.a = 0;
-    ev.c = U32(self, 0x10);
-    ev.b = U32(self, 0x10) >> 16;
+    ev.zero = 0;
+    ev.arg[1] = self->time_left;
+    ev.arg[0] = self->time_left >> 16;
     send_event(&ev);
 }
 
-void quest_send_killed(u8 *self, u8 *m, u8 *h)
+void quest_send_killed(Quest *self, QuestMonster *m, u8 *h)
 {
-    QEvent ev;
+    QuestEvent ev;
 
     ev.type = 7;
-    ev.a = 0;
-    ev.b = S16(m, 0x2C);
-    ev.c = U16(h, 0x29A) | (u16)(*(s8 *)(m + 4) << 8);
+    ev.zero = 0;
+    ev.arg[0] = m->index;
+    ev.arg[1] = U16(h, E_AREA) | (u16)(m->count << 8);
     send_event(&ev);
 }
 
-void quest_send_captured(u8 *self, u8 *m, u8 *h)
+void quest_send_captured(Quest *self, QuestMonster *m, u8 *h)
 {
-    QEvent ev;
+    QuestEvent ev;
 
     ev.type = 8;
-    ev.a = 0;
-    ev.b = U16(m, 0x2C);
-    ev.c = U16(h, 0x29A);
+    ev.zero = 0;
+    ev.arg[0] = m->index;
+    ev.arg[1] = U16(h, E_AREA);
     send_event(&ev);
 }
 
-u16 quest_table_item(u8 *self, u32 i)
+u32 quest_table_item(Quest *self, u32 i)
 {
     return quest_table_rand((const u16 *)quest_table_entry(self, i & 0xFFFF), NULL);
 }
 
 /* loads the file of the quest id (0: not loaded yet, 1: done) */
-s32 quest_load_file(u8 *self, u32 id, u8 *dst)
+s32 quest_load_file(Quest *self, u32 id, u8 *dst)
 {
     u32 k, f;
 
-    if (self[0x716] == 1) {
+    if (self->load_step == 1) {
         if (LDCALL(LdFunc0, 0x38)(D_089CC434) != 0)
             return 0;
         if (dst == NULL)
             dst = D_08A5C440;
         func_088C2BE0(D_09A44C60, dst, func_08898898(D_09A0B540, 0x17));
-        func_08898748(D_09A0B540, 0x17);
-        self[0x716] = 0;
+        temp_free(D_09A0B540, 0x17);
+        self->load_step = 0;
         return 1;
     }
-    if (self[0x716] != 0)
+    if (self->load_step != 0)
         return 0;
     id &= 0xFFFF;
     if (id >= 60000)
         return 1;
+    /* file of the quest: the ids are grouped by thousands */
     if (id < 10000)
         k = id / 1000;
     else if (id < 20000)
@@ -151,59 +133,59 @@ s32 quest_load_file(u8 *self, u32 id, u8 *dst)
     else
         k = 12;
     f = ((const u16 *)D_089A7CE8[k][(s32)id % 1000 / 100])[(s32)id % 100];
-    if (U16(self, 0x714) == f)
+    if (self->file_id == f)
         return 1;
-    LDCALL(LdFunc6, 0x34)(D_089CC434, f, (void *)func_08898694(D_09A0B540, 0x17, 0x6800), -1, 0, 0, 1);
-    U16(self, 0x714) = f;
-    self[0x716]++;
+    LDCALL(LdFunc6, 0x34)(D_089CC434, f, (void *)temp_alloc(D_09A0B540, 0x17, 0x6800), -1, 0, 0, 1);
+    self->file_id = f;
+    self->load_step++;
     return 0;
 }
 
-void quest_load_init(u8 *self)
+void quest_load_init(Quest *self)
 {
-    self[0x716] = 0;
-    U16(self, 0x714) = 0xFFFF;
+    self->load_step = 0;
+    self->file_id = 0xFFFF;
 }
 
 /* loads the models of the monsters of the waves (biggest file first) */
-void quest_load_wave_models(u8 *self)
+void quest_load_wave_models(Quest *self)
 {
     u32 sz[2];
     u8 done[2] = {0xFF, 0xFF};
     s32 w, j, k, uniq;
-    u8 *e;
+    QuestWave *e;
     u32 v;
 
-    for (w = 0, e = self; w < 2; w++, e += 0x2C) {
+    for (w = 0, e = self->wave; w < 2; w++, e++) {
         sz[w] = 0;
-        for (j = 0; j < *(s8 *)(e + 0x786); j++) {
-            v = LDCALL(LdFunc1, 0x18)(D_089CC434, (e[0x77C + j] + 0x17DF) & 0xFFFF);
+        for (j = 0; j < e->n; j++) {
+            v = LDCALL(LdFunc1, 0x18)(D_089CC434, ((u8)e->kind[j] + 0x17DF) & 0xFFFF);
             if (sz[w] < v)
                 sz[w] = v;
         }
     }
-    for (w = 0, e = self; w < 2; w++, e += 0x2C) {
-        if (*(s8 *)(e + 0x786) <= 0)
+    for (w = 0, e = self->wave; w < 2; w++, e++) {
+        if (e->n <= 0)
             continue;
         uniq = 1;
         for (k = 0; k < w; k++) {
-            if (done[k] == *(s8 *)(e + 0x77C)) {
+            if (done[k] == e->kind[0]) {
                 uniq = 0;
                 break;
             }
         }
         if (uniq) {
-            func_088DE0B8(D_09A4F0D0, e[0x77C], sz[w], w);
-            done[w] = e[0x77C];
+            func_088DE0B8(D_09A4F0D0, (u8)e->kind[0], sz[w], w);
+            done[w] = e->kind[0];
         }
     }
 }
 
 /* small monsters of the area: id 0x12 (in the map of the quest), 10 and 0x4A in some
  * areas, then the list of the area in the quest file */
-static int area_has_10(u8 *self, u32 a)
+static int area_has_10(Quest *self, u32 a)
 {
-    if ((U32(self, 0x28) & 0x1000010) != 0)
+    if ((self->flags & (QF_TRAINING | QF_TREASURE)) != 0)
         return 0;
     switch (a) {
     case 0x29: case 0xC2: case 0x36: case 0x94: case 0x10: case 0x97: case 1: case 0x6E:
@@ -213,9 +195,9 @@ static int area_has_10(u8 *self, u32 a)
     return 0;
 }
 
-static int area_has_4a(u8 *self, u32 a)
+static int area_has_4a(Quest *self, u32 a)
 {
-    if ((U32(self, 0x28) & 0x10) == 0)
+    if ((self->flags & QF_TREASURE) == 0)
         return 0;
     switch (a) {
     case 0x15: case 0x8C: case 0x97: case 0xA1: case 0x6E: case 0x62: case 0xF7:
@@ -234,37 +216,37 @@ static void load_monster(u32 k)
         func_088DE0B8(m, k, 0, -1);
 }
 
-void quest_load_area_monsters(u8 *self)
+void quest_load_area_monsters(Quest *self)
 {
-    u32 a = U16(D_089CC438, 0x6AF0E);
+    u32 a = G_AREA;
     u32 *l;
     s32 i;
 
-    quest_check_monsters_done(D_08A62C7C, a);
+    quest_check_monsters_done(QUEST, a);
     if (a == game_map_id(D_089CC438))
         load_monster(0x12);
     if (area_has_10(self, a))
         load_monster(10);
     if (area_has_4a(self, a))
         load_monster(0x4A);
-    l = (u32 *)quest_find_entry(self, a, 0, *(s8 *)(self + 0x20));
-    self[0x82] = self[0x20];
+    l = (u32 *)quest_find_entry(self, a, 0, self->phase);
+    self->area_phase = self->phase;
     if (l == NULL)
         return;
     for (i = 0; i < 4; i++, l++)
-        if (*l != 0xFFFFFFFF)
+        if (*l != SMALL_END)
             load_monster(*l & 0xFF);
 }
 
 /* slots of the small monsters of the area a (after the large ones of the waves) */
-void quest_place_area_monsters(u8 *self, u32 a)
+void quest_place_area_monsters(Quest *self, u32 a)
 {
-    u8 *q = D_08A62C7C;
-    u32 n = *(s8 *)(q + 0x786) > 0;
+    Quest *q = QUEST;
+    u32 n = q->wave[0].n > 0;
     u32 *l;
     s32 i;
 
-    if (*(s8 *)(q + 0x7B2) > 0 && *(s8 *)(q + 0x77C) != *(s8 *)(q + 0x7A8))
+    if (q->wave[1].n > 0 && q->wave[0].kind[0] != q->wave[1].kind[0])
         n++;
     if ((a & 0xFFFF) == game_map_id(D_089CC438))
         func_088DE22C(D_09A4F0D0, 0x12, n++);
@@ -272,153 +254,155 @@ void quest_place_area_monsters(u8 *self, u32 a)
         func_088DE22C(D_09A4F0D0, 10, n++);
     if (area_has_4a(self, a & 0xFFFF))
         func_088DE22C(D_09A4F0D0, 0x4A, n++);
-    l = (u32 *)quest_find_entry(self, a, 0, *(s8 *)(self + 0x20));
+    l = (u32 *)quest_find_entry(self, a, 0, self->phase);
     if (l == NULL)
         return;
     for (i = 0; i < 4; i++, l++)
-        if (*l != 0xFFFFFFFF)
+        if (*l != SMALL_END)
             func_088DE22C(D_09A4F0D0, *l & 0xFF, n++);
 }
 
 /* 1 when the small monster k belongs to the current area */
-u32 quest_area_has_monster(u8 *self, u32 k)
+u32 quest_area_has_monster(Quest *self, u32 k)
 {
     u32 *l;
 
     k &= 0xFF;
     if (k == 0x12 || k == 10 || k == 0x4A)
         return 1;
-    l = (u32 *)quest_find_entry(self, U16(D_089CC438, 0x6AF0E), 0, *(s8 *)(self + 0x82));
+    l = (u32 *)quest_find_entry(self, G_AREA, 0, self->area_phase);
     if (l == NULL)
         return 0;
-    for (; *l != 0xFFFFFFFF; l++)
+    for (; *l != SMALL_END; l++)
         if ((*l & 0xFF) == k)
             return 1;
     return 0;
 }
 
 /* change of area: the monsters of the old area are removed */
-void quest_leave_area(u8 *self)
+void quest_leave_area(Quest *self)
 {
     s32 i;
-    u8 *p, *e;
+    u8 *p;
+    QuestMonster *e;
     u32 *l;
 
     for (i = 0; i < 20; i++) {
         p = (i >= 0 && i < 20) ? (u8 *)U32(D_09C121B0, 0x1220 + i * 4) : NULL;
-        if (p == NULL || quest_area_has_monster(self, p[0x1E8]) == 0)
+        if (p == NULL || quest_area_has_monster(self, p[E_KIND]) == 0)
             continue;
         e = quest_find_monster(self, p);
-        if (e != NULL && S16(e, 0x2E) != 1) {
-            if (p[0x1E8] == 0x17)
+        if (e != NULL && e->state != QM_DONE) {
+            if (p[E_KIND] == 0x17)
                 func_09AF4050(p);
             if (p[0x1D4] < 2 && p[0x298] != 5) {
-                S16(e, 0x32) = S16(p, 0x2E4);
+                e->life = S16(p, E_LIFE);
             } else {
                 quest_target_killed(self, p);
-                if ((S16(e, 0x2E) & 4) != 0) {
-                    S16(e, 0x2E) = 2;
-                    S16(e, 0x32) = -1;
+                if ((e->state & QM_RESPAWN) != 0) {
+                    e->state = QM_WAITING;
+                    e->life = -1;
                 }
             }
-            e[0x34] = 0xFF;
+            e->slot = -1;
         }
         quest_monster_detach(self, p);
         func_09AB2E68(D_09C121B0, i);
     }
-    quest_reset_monsters(self, U16(D_089CC438, 0x6AF0E));
+    quest_reset_monsters(self, G_AREA);
     func_09AB46A8(D_09C121B0, 0x12);
     func_09AB46A8(D_09C121B0, 10);
     func_09AB46A8(D_09C121B0, 0x4A);
     func_088DE3D4(D_09A4F0D0, 0x12);
     func_088DE3D4(D_09A4F0D0, 10);
     func_088DE3D4(D_09A4F0D0, 0x4A);
-    l = (u32 *)quest_find_entry(self, U16(D_089CC438, 0x6AF0E), 0, *(s8 *)(self + 0x82));
+    l = (u32 *)quest_find_entry(self, G_AREA, 0, self->area_phase);
     if (l == NULL)
         return;
-    for (; *l != 0xFFFFFFFF; l++) {
+    for (; *l != SMALL_END; l++) {
         func_09AB46A8(D_09C121B0, *l & 0xFF);
         func_088DE3D4(D_09A4F0D0, *(u8 *)l);
     }
 }
 
 /* the hunters that were riding / attached to the monster 0x12 are released */
-void quest_monster_detach(u8 *self, u8 *p)
+void quest_monster_detach(Quest *self, u8 *p)
 {
     s32 i;
     u8 *h;
 
-    if (*(s8 *)(p + 0x1E8) != 0x12)
+    if (*(s8 *)(p + E_KIND) != 0x12)
         return;
     for (i = 0; i < 4; i++) {
-        h = (u8 *)func_088DCEBC(D_09A4F0C4, i);
+        h = (u8 *)player_get(D_09A4F0C4, i);
         if (h != NULL && (U32(h, 4) & 1) != 0 && U32(h, 0x560) == (u32)p)
             U32(h, 0x560) = 0;
     }
 }
 
-/* spawns the monsters of the list 1; the sizes of monsters of the same kind are spread */
-void quest_spawn_sub_monsters(u8 *self)
+/* spawns the large monsters of the first group; the sizes of the monsters of the same
+ * kind are spread apart */
+void quest_spawn_sub_monsters(Quest *self)
 {
-    u8 *l = quest_reward_list(self, 1);
+    QuestMonster *l = (QuestMonster *)quest_large_list(self, 1);
     u32 psz = 0, pk = 0, first = 0;
     s32 pv = 0, d;
     u8 *p = NULL;
     s16 v;
 
     if (l != NULL) {
-        while (S16(l, 0) >= 0) {
+        while (l->kind >= 0) {
             p = func_09AB2958(D_09C121B0, l);
-            if (p != NULL && *(s8 *)(l + 0x35) != 0) {
-                U32(self, 0x720) = (u32)p;
-                if (D_09BC8400[p[0x1E8]][0] == D_09BC8400[pk][0]) {
-                    v = S16(p, 0x5F4);
+            if (p != NULL && l->large != 0) {
+                self->record_target = p;
+                if (D_09BC8400[p[E_KIND]][0] == D_09BC8400[pk][0]) {
+                    v = S16(p, E_SIZE_SHOWN);
                     d = v - pv;
                     if (d < 0)
                         d = -d;
                     if (d < 200) {
-                        if (psz < U16(p, 0x274)) {
-                            S16(p, 0x5F4) = v - 200;
-                            if (S16(p, 0x5F4) < D_089ABD18[pk][0])
-                                S16(p, 0x5F4) += 200;
-                        } else if (U16(p, 0x274) < psz) {
-                            S16(p, 0x5F4) = v + 200;
-                            if (D_089ABD18[pk][1] < S16(p, 0x5F4))
-                                S16(p, 0x5F4) -= 200;
+                        if (psz < U16(p, E_SIZE)) {
+                            S16(p, E_SIZE_SHOWN) = v - 200;
+                            if (S16(p, E_SIZE_SHOWN) < D_089ABD18[pk][0])
+                                S16(p, E_SIZE_SHOWN) += 200;
+                        } else if (U16(p, E_SIZE) < psz) {
+                            S16(p, E_SIZE_SHOWN) = v + 200;
+                            if (D_089ABD18[pk][1] < S16(p, E_SIZE_SHOWN))
+                                S16(p, E_SIZE_SHOWN) -= 200;
                         } else {
-                            S16(p, 0x5F4) = v - 200;
-                            if (!(S16(p, 0x5F4) < D_089ABD18[pk][0]))
+                            S16(p, E_SIZE_SHOWN) = v - 200;
+                            if (!(S16(p, E_SIZE_SHOWN) < D_089ABD18[pk][0]))
                                 break;
-                            S16(p, 0x5F4) += 200;
-                            S16(p, 0x5F4) += 200;
-                            if (D_089ABD18[pk][1] < S16(p, 0x5F4))
-                                S16(p, 0x5F4) -= 200;
+                            S16(p, E_SIZE_SHOWN) += 200;
+                            S16(p, E_SIZE_SHOWN) += 200;
+                            if (D_089ABD18[pk][1] < S16(p, E_SIZE_SHOWN))
+                                S16(p, E_SIZE_SHOWN) -= 200;
                         }
                     }
                 }
             }
             if (first == 0 && p != NULL) {
-                pv = S16(p, 0x5F4);
-                pk = p[0x1E8];
-                psz = U16(p, 0x274);
+                pv = S16(p, E_SIZE_SHOWN);
+                pk = p[E_KIND];
+                psz = U16(p, E_SIZE);
                 first++;
             }
-            l += 0x3C;
+            l++;
         }
     }
     func_09AB35F0(D_09C121B0);
 }
 
-/* sounds / models of the main monsters of the quest (up to 4) */
-void quest_load_main_models(u8 *self)
+/* sounds / models of the large monsters of the quest (up to 4) */
+void quest_load_main_models(Quest *self)
 {
-    s32 *l = (s32 *)quest_reward_list(self, 0);
+    s32 *l = (s32 *)quest_large_list(self, 0);
     u8 k[4] = {0, 0, 0, 0};
     u32 sz[4] = {0, 0, 0, 0};
     u16 a[4], b[4], c[4];
     s32 i, j, n = 0;
     u8 r;
-    u8 *w;
+    QuestWave *w;
     u32 v;
 
     for (i = 0; i < 4; i++)
@@ -443,9 +427,9 @@ void quest_load_main_models(u8 *self)
     func_08880D94(D_08A62D8C, a, 0);
     r = func_08880D94(D_08A62D8C, b, 1);
     func_08880D94(D_08A62D8C, c, 2);
-    for (i = 0, w = self; i < n; i++, w += 0x2C) {
-        for (j = 0; j < *(s8 *)(w + 0x786); j++) {
-            v = LDCALL(LdFunc1, 0x18)(D_089CC434, D_09BC8400[*(s8 *)(w + 0x77C + j)][1]);
+    for (i = 0, w = self->wave; i < n; i++, w++) {
+        for (j = 0; j < w->n; j++) {
+            v = LDCALL(LdFunc1, 0x18)(D_089CC434, D_09BC8400[w->kind[j]][1]);
             if (sz[i] < v)
                 sz[i] = v;
         }
@@ -453,18 +437,18 @@ void quest_load_main_models(u8 *self)
             sz[i] = 0;
     }
     func_08880E50(D_08A62D8C, D_089A8278, a, b, c, k, n, 0, sz);
-    S16(self, 0x5C0) = n;
+    self->main_models = n;
 }
 
 /* model of the next monster of the wave w */
-void quest_load_wave_model(u8 *self, u32 w)
+void quest_load_wave_model(Quest *self, u32 w)
 {
-    u8 *e;
+    QuestWave *e;
     u32 id, a, b, c;
 
     w &= 0xFF;
-    e = self + w * 0x2C;
-    id = e[0x77C + *(s8 *)(e + 0x787)];
+    e = &self->wave[w];
+    id = (u8)e->kind[e->cur];
     func_08880CF8(D_08A62D8C, w);
     a = D_09BC8400[id][0];
     b = D_09BC8400[id][1];
@@ -473,8 +457,8 @@ void quest_load_wave_model(u8 *self, u32 w)
     func_08881114(D_08A62D8C, D_089A8278[w], a, b, c, id, w);
 }
 
-/* models of the monsters already present in the area (slots after 0x5C0) */
-void quest_load_area_models(u8 *self)
+/* models of the monsters already present in the area (slots after Quest.main_models) */
+void quest_load_area_models(Quest *self)
 {
     u8 k[4] = {0, 0, 0, 0};
     u16 a[4], b[4], c[4];
@@ -484,7 +468,7 @@ void quest_load_area_models(u8 *self)
 
     for (i = 0; i < 4; i++)
         a[i] = b[i] = c[i] = 0xFFFF;
-    for (i = S16(self, 0x5C0); i < 4; i++) {
+    for (i = self->main_models; i < 4; i++) {
         func_08880CF8(D_08A62D8C, i);
         e = D_09A4F0D0 + i * 0xC;
         v = (U16(e, 0x6C) & 3) != 0 ? U16(e, 0x6E) : 0xFFFF;
@@ -502,38 +486,38 @@ void quest_load_area_models(u8 *self)
     func_08880D94(D_08A62D8C, a, 0);
     func_08880D94(D_08A62D8C, b, 1);
     func_08880D94(D_08A62D8C, c, 2);
-    func_08880E50(D_08A62D8C, D_089A8278, a, b, c, k, S16(self, 0x5C0) + n, 1, NULL);
+    func_08880E50(D_08A62D8C, D_089A8278, a, b, c, k, self->main_models + n, 1, NULL);
 }
 
-/* extra rewards (carves, captures, broken parts) added after the 16 normal ones */
-void quest_extra_rewards(u8 *self)
+/* extra rewards (captures and broken parts) added after the 16 normal ones */
+void quest_extra_rewards(Quest *self)
 {
     const u8 *e = D_09CDE6C0;
     s32 n = 16, off = 0x40, j;
     u32 id, bit, li, h;
     const s8 *ch;
-    u8 *p;
 
     for (; e[0] != 0xFF; e += 14) {
         id = e[0];
         if (e[1] == 0x80) {
-            if (U16(self, 0x350 + id * 2) == 0 || (U32(self, 0x28) & 0x400000) != 0)
+            /* captures */
+            if (self->captures[id] == 0 || (self->flags & QF_NO_HUNT_MSG) != 0)
                 continue;
         } else {
-            p = self + id;
+            /* the part e[1] is broken and not rewarded yet */
             bit = 1 << e[1];
-            if ((p[0x5C2] & bit) == 0 || (p[0x61C] & bit) != 0)
+            if ((self->parts_broken[id] & bit) == 0 || (self->parts_rewarded[id] & bit) != 0)
                 continue;
-            p[0x61C] |= bit;
+            self->parts_rewarded[id] |= bit;
         }
-        li = U16(e, 2 + *(s8 *)(U32(self, 0x4C) + 0x44) * 2);
+        li = U16(e, 2 + self->file->kind * 2);
         if (li == 0xFFFF)
             continue;
         if (e[1] == 0x80) {
-            h = func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
-            if (func_088D6A1C(h, 0xCE) != 0)
+            h = player_get(D_09A4F0C4, G_MY_SLOT);
+            if (hunter_has_skill(h, 0xCE) != 0)
                 ch = D_089A7F7C;
-            else if (func_088D6A1C(h, 0xCD) != 0)
+            else if (hunter_has_skill(h, 0xCD) != 0)
                 ch = D_089A7F78;
             else
                 ch = D_089A7F74;
@@ -543,7 +527,7 @@ void quest_extra_rewards(u8 *self)
         for (j = 0; n < 32; j++) {
             s8 c = ch[j];
 
-            if (!((s32)(func_088900C4(D_08A631A0, 0) & 0xFFFF & 0x1F) < c))
+            if (!((s32)(game_rand(D_08A631A0, 0) & 0xFFFF & 0x1F) < c))
                 break;
             {
                 u16 v = quest_table_rand((const u16 *)D_09CDD850[li], &U16(D_089CC438, off + 0x392));
@@ -565,7 +549,7 @@ u16 quest_table_rand(const u16 *l, u16 *out)
 
     for (p = l; *p != 0xFFFF; p += st)
         sum = (sum + *p) & 0xFFFF;
-    r = ((s32)(func_088900C4(D_08A631A0, 0) & 0xFFFF) % (s32)(sum & 0xFFFF)) & 0xFFFF;
+    r = ((s32)(game_rand(D_08A631A0, 0) & 0xFFFF) % (s32)(sum & 0xFFFF)) & 0xFFFF;
     for (p = l; *p != 0xFFFF; p += st) {
         acc = (acc + *p) & 0xFFFF;
         if ((s32)r < (s32)acc) {
@@ -579,12 +563,12 @@ u16 quest_table_rand(const u16 *l, u16 *out)
     return 0xFFFF;
 }
 
-/* slot of the monster in the table of the hunting records (0xFF: not recorded) */
-u32 quest_record_slot(u8 *self, s32 id)
+/* slot of the monster in the table of the life records (0xFF: not recorded) */
+u32 quest_record_slot(Quest *self, s32 id)
 {
     u32 i;
 
-    if ((U32(D_08A62C7C, 0x28) & 0x80) == 0)
+    if ((QUEST->flags & QF_KEEP_LIFE) == 0)
         return 0xFF;
     for (i = 0; i < 8; i = (u8)(i + 1))
         if (D_089A8184[i] == (u8)id)
@@ -593,10 +577,10 @@ u32 quest_record_slot(u8 *self, s32 id)
 }
 
 /* rank of the quest for the records: 0-1 (village), 2-4 (guild, by stars) */
-static s32 record_rank(u8 *self)
+static s32 record_rank(Quest *self)
 {
-    s8 st = *(s8 *)(U32(self, 0x68) + 0x1A);
-    u32 a = U16(D_089CC438, 0x6AF12);
+    s8 st = self->info->stars;
+    u32 a = G_QUEST_ID;
 
     if (a >= 10000 && a < 20000)
         return st < 7 ? 0 : 1;
@@ -608,46 +592,46 @@ static s32 record_rank(u8 *self)
 }
 
 /* sets the life of the recorded monster h from the record (or the default value) */
-void quest_record_apply(u8 *self, u8 *h)
+void quest_record_apply(Quest *self, u8 *h)
 {
-    u32 k = quest_record_slot(self, h[0x1E8]) & 0xFF;
+    u32 k = quest_record_slot(self, h[E_KIND]) & 0xFF;
     s32 r = record_rank(self);
     u8 *rec;
 
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0)
+    if ((OPT_FLAGS & 1) != 0)
         rec = D_089CC438 + 0x388;
     else
         rec = D_089CC438 + r * 0x20 + k * 4 + 0x6A54A;
     if (S16(rec, 0) == 0)
         S16(rec, 0) = D_089A818C[r][k];
     S16(h, 0x41E) = D_089A818C[r][k];
-    S16(h, 0x2E4) = S16(rec, 0);
-    if (S16(h, 0x2E4) < D_089A81DC[r][k])
-        S16(h, 0x2E4) = D_089A81DC[r][k];
-    if (D_089CC438[0x480] != 0)
+    S16(h, E_LIFE) = S16(rec, 0);
+    if (S16(h, E_LIFE) < D_089A81DC[r][k])
+        S16(h, E_LIFE) = D_089A81DC[r][k];
+    if (G_ARENA != 0)
         return;
-    U16(h, 0x774) = rec[2];
-    self[0x5C2 + h[0x1E8]] = U16(h, 0x774);
-    self[0x61C + h[0x1E8]] = rec[3];
-    S16(self, 0x114) = S16(h, 0x2E4);
-    self[0x74A] = h[0x1E8];
+    U16(h, E_PARTS) = rec[2];
+    self->parts_broken[h[E_KIND]] = U16(h, E_PARTS);
+    self->parts_rewarded[h[E_KIND]] = rec[3];
+    self->target_life = S16(h, E_LIFE);
+    self->record_kind = h[E_KIND];
 }
 
 /* saves the state of the recorded monster (life and broken parts) */
-void quest_record_save(u8 *self)
+void quest_record_save(Quest *self)
 {
-    u32 k = quest_record_slot(self, self[0x74A]);
+    u32 k = quest_record_slot(self, self->record_kind);
     u8 *rec, *m;
 
     if ((k & 0xFF) == 0xFF)
         return;
     rec = D_089CC438 + record_rank(self) * 0x20 + (k & 0xFF) * 4 + 0x6A54A;
-    m = (u8 *)U32(self, 0x720);
-    self[0x5C2 + self[0x74A]] = U16(m, 0x774);
-    rec[2] = self[0x5C2 + self[0x74A]];
-    rec[3] = self[0x61C + self[0x74A]];
-    S16(rec, 0) = S16((u8 *)U32(self, 0x720), 0x2E4);
-    S16(self, 0x114) = S16((u8 *)U32(self, 0x720), 0x2E4);
+    m = self->record_target;
+    self->parts_broken[self->record_kind] = U16(m, E_PARTS);
+    rec[2] = self->parts_broken[self->record_kind];
+    rec[3] = self->parts_rewarded[self->record_kind];
+    S16(rec, 0) = S16(self->record_target, E_LIFE);
+    self->target_life = S16(self->record_target, E_LIFE);
     if (S16(rec, 0) <= 0) {
         S16(rec, 0) = 0;
         rec[2] = 0;
@@ -656,67 +640,67 @@ void quest_record_save(u8 *self)
 }
 
 /* the hunter h starts the second timer (18000 frames) */
-void quest_start_timer2(u8 *self, u8 *h)
+void quest_start_timer2(Quest *self, u8 *h)
 {
-    QEvent ev;
+    QuestEvent ev;
 
-    D_089CC438[0x418] = 1;
-    U32(self, 0x678) = 18000;
-    if (U16(h, 0x1E6) != D_089CC438[0x28])
+    G_TIMER2_ON = 1;
+    self->timer2 = 18000;
+    if (U16(h, E_SLOT) != G_MY_SLOT)
         return;
     camera_mode_for_area(D_089CBBE4);
     ev.type = 0x13;
-    ev.a = 0;
-    ev.b = 0;
-    ev.c = 0;
+    ev.zero = 0;
+    ev.arg[0] = 0;
+    ev.arg[1] = 0;
     send_event(&ev);
 }
 
 /* monsters left in the two waves */
-s32 quest_waves_left(u8 *self)
+s32 quest_waves_left(Quest *self)
 {
     s16 n = 0;
     s32 i;
-    u8 *w = self;
+    QuestWave *w = self->wave;
 
-    for (i = 0; i < 2; i++, w += 0x2C)
-        if (*(s8 *)(w + 0x786) > 0)
-            n += *(s8 *)(U32(w, 0x768) + 4);
+    for (i = 0; i < 2; i++, w++)
+        if (w->n > 0)
+            n += w->mon[0]->count;
     return n;
 }
 
-void quest_timer2_update(u8 *self)
+void quest_timer2_update(Quest *self)
 {
-    QEvent ev;
+    QuestEvent ev;
 
-    if (D_089CC438[0x418] != 1 || (s32)U32(self, 0x678) > 0)
+    if (G_TIMER2_ON != 1 || self->timer2 > 0)
         return;
-    if (U32(self, 0x678) != 0) {
-        D_089CC438[0x418] = 0;
+    if (self->timer2 != 0) {
+        G_TIMER2_ON = 0;
         return;
     }
-    D_089CC438[0x418] = 0;
-    self[0x724]++;
+    G_TIMER2_ON = 0;
+    self->timer2_count++;
     ev.type = 0x12;
-    ev.a = 0;
-    ev.b = *(s8 *)(self + 0x724);
-    ev.c = 0;
+    ev.zero = 0;
+    ev.arg[0] = self->timer2_count;
+    ev.arg[1] = 0;
     send_event(&ev);
 }
 
 /* random size class of the large monster */
-void quest_pick_size(u8 *self, s8 *p)
+void quest_pick_size(Quest *self, s8 *p)
 {
     const s8 *t;
 
-    if ((U32(self, 0x28) & 0x4000) != 0)
+    if ((self->flags & QF_FIXED_SIZE) != 0)
         return;
     t = party_has_kitchen_skill(D_089CC438, 0x1D) == 0 ? D_089A8040 : D_089A8054;
     *p = quest_size_clamp(self, *p, t[(s32)(quest_rand(self) & 0xFFFF) % 20]);
 }
 
 /* adds b to a, staying in the group of 8 of a (0-7, 8-15, 16-23, 24-31) */
-s32 quest_size_clamp(u8 *self, s32 a, s32 b)
+s32 quest_size_clamp(Quest *self, s32 a, s32 b)
 {
     s8 lo, hi, v;
 
@@ -742,31 +726,32 @@ s32 quest_size_clamp(u8 *self, s32 a, s32 b)
     return v;
 }
 
-/* kind of the goal i: 2 hunt, 1 delivery, 3 timed, 0 other */
-u32 quest_goal_kind(u8 *self, s32 i)
+/* kind of the goal i: 2 hunt, 1 delivery, 3 repel at half time, 0 other */
+u32 quest_goal_kind(Quest *self, s32 i)
 {
-    u32 f = U32(self, 0x738 + i * 8);
+    u32 f = self->goal_orig[i].flags;
 
-    if ((f & 1) != 0)
+    if ((f & GOAL_HUNT) != 0)
         return 2;
-    if ((f & 2) != 0)
+    if ((f & GOAL_DELIVER) != 0)
         return 1;
-    if ((f & 0x18004) == 0x18004)
+    if ((f & (GOAL_HALF_TIME | GOAL_REPEL | GOAL_SPECIAL)) ==
+        (GOAL_HALF_TIME | GOAL_REPEL | GOAL_SPECIAL))
         return 3;
     return 0;
 }
 
-u16 quest_goal_target(u8 *self, s32 i)
+u16 quest_goal_target(Quest *self, s32 i)
 {
-    return U16(self, 0x73C + i * 8);
+    return self->goal_orig[i].target;
 }
 
-s32 quest_goal_amount(u8 *self, s32 i)
+s32 quest_goal_amount(Quest *self, s32 i)
 {
-    return S16(self, 0x73E + i * 8);
+    return self->goal_orig[i].count;
 }
 
-s32 quest_goal_left_i(u8 *self, s32 i)
+s32 quest_goal_left_i(Quest *self, s32 i)
 {
-    return S16(self, 0x72E + i * 8);
+    return self->goal[i].count;
 }

@@ -47,7 +47,7 @@ void func_0890BE54(void *arr, void *dtor, int size, int count);
 void func_0890BFA4(void *p);
 void *memset(void *p, int c, size_t n);
 void func_08832838(void *self);
-u32 func_088DCEBC(void *a, u8 b);
+u32 player_get(void *a, u8 b);
 void func_0883D274(void *self);
 u32 func_0886A35C(void *a, int b);
 void func_08829674(void *self);

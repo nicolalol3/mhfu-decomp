@@ -11,13 +11,12 @@ extern const s16 D_0899D110, D_0899D112;   /* centre of the popup */
 extern u8 D_089BAB98[], D_089BAAF4[];
 extern const f32 D_0899D174[3], D_0899D180[3];
 
-void func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
 char *strchr(const char *s, int c);
 s32 func_08891074(void *font, const char *s);
 s32 func_08890F70(void *font, const char *s);
-const char *func_08851598(void *game, u32 id);
+const char *text_table7(void *game, u32 id);
 void popup_draw(u8 *m);
-#define func_0885A23C popup_draw
 void heap_free(u32 *h, u8 *p);
 s32 func_0890C3D8(f32 *v);
 void func_08897298(void *p);
@@ -35,7 +34,7 @@ void popup_open(u8 *m)
 
     m[2]++;
     m[3] = 0;
-    func_08883988(D_08A62D8C, 0, 0x10, 0, 0, 0, 0, 0, 0);
+    sound_play(D_08A62D8C, 0, 0x10, 0, 0, 0, 0, 0, 0);
     switch (m[1]) {
     case 0:
         sprintf(buf, D_0899D114, TEXT(D_089ACA0C[S16(m, 0xA)]));
@@ -68,7 +67,7 @@ void popup_open(u8 *m)
         break;
     }
     case 8:
-        sprintf(buf, TEXT(D_089ACA40[S16(m, 0xA)]), func_08851598(D_089CC438, U16(m, 8)));
+        sprintf(buf, TEXT(D_089ACA40[S16(m, 0xA)]), text_table7(D_089CC438, U16(m, 8)));
         break;
     }
     s = buf;
@@ -100,7 +99,7 @@ void popup_open(u8 *m)
     F32(m, 4) = ((f32)cy - (f32)(S16(m, 0x14) >> 1)) / 3.0f;
     U32(m, 0x10) = 0;
     S16(m, 0x16) = cx - ((maxw * 7) >> 1);
-    func_0885A23C(m);
+    popup_draw(m);
 }
 
 void popup_next(u8 *m);
@@ -114,7 +113,7 @@ void popup_update(u8 *m)
         popup_open(m);
         break;
     case 1:
-        func_0885A23C(m);
+        popup_draw(m);
         break;
     case 2:
         popup_next(m);
@@ -287,7 +286,7 @@ void popup_draw(u8 *m)
     }
     case 8:
         func_08890E38(D_08A631A8, 0);
-        func_088920A8(D_08A631A8, x, y, TEXT(D_089ACA40[S16(m, 0xA)]), func_08851598(D_089CC438, U16(m, 8)));
+        func_088920A8(D_08A631A8, x, y, TEXT(D_089ACA40[S16(m, 0xA)]), text_table7(D_089CC438, U16(m, 8)));
         break;
     }
     switch (m[3]) {

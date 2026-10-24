@@ -7,11 +7,11 @@ extern void *D_08A62D8C;          /* sound */
 extern u32 D_08A62C68;            /* buttons held */
 extern u8 *D_09A0B544;            /* player data (overlay) */
 
-void *func_0885C13C(void *a, u8 *pos, int dir, u16 *x, u16 *y, int c);
-s32 func_0885B718(void *a, void *b, int c, int d);
-s32 func_08852F58(void *game);
-s32 func_088291B4(void *self, int a, int b);
-void func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+void *combo_next(void *a, u8 *pos, int dir, u16 *x, u16 *y, int c);
+s32 combo_known(void *a, void *b, int c, int d);
+s32 game_count_bits62(void *game);
+s32 menu_next_hunter(void *self, int a, int b);
+void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
 void func_088911A0(void *font, void *p);
 void menu_cursor_grid(void *self, u8 *g, u32 keys, s32 quiet_arg);
 void menu_page_fill(u8 *self, u32 keys);
@@ -20,14 +20,14 @@ void menu_page_fill(u8 *self, u32 keys);
 void menu_select_hunter(u8 *self, u32 keys)
 {
     U32(self, 0x5E8) &= ~4;
-    if (func_08852F58(D_089CC438) == 0) {
+    if (game_count_bits62(D_089CC438) == 0) {
         U8(self, 0x5D9) = 0xFF;
     } else if (keys & 0xA0) {
-        s8 c = func_088291B4(self, S8(self, 0x5D9), (keys & 0x80) ? -1 : 1);
+        s8 c = menu_next_hunter(self, S8(self, 0x5D9), (keys & 0x80) ? -1 : 1);
 
         if (S8(self, 0x5D9) != c) {
             U8(self, 0x5D9) = c;
-            func_08883988(D_08A62D8C, 0, 23, 0, 0, 0, 0, 0, 0);
+            sound_play(D_08A62D8C, 0, 23, 0, 0, 0, 0, 0, 0);
         }
     }
 }
@@ -59,7 +59,7 @@ void menu_page_input(u8 *self, u32 keys_arg)
     }
     if (U16(self, 0x1208) != 0)
         return;
-    if ((u8)func_0885B718(D_08A62C50, *(void **)(self + 0x5A8), 1, 0) == 1)
+    if ((u8)combo_known(D_08A62C50, *(void **)(self + 0x5A8), 1, 0) == 1)
         S16(self, 0x5FC) = S16(*(u8 **)(self + 0x5A8), 2) + 24;
     else
         S16(self, 0x5FC) = 9;
@@ -68,7 +68,7 @@ void menu_page_input(u8 *self, u32 keys_arg)
 /* stores the id of entry e in *slot, with the flags 0x8000 (marked) / 0x4000 (not usable) */
 #define PAGE_STORE(slot, e) do {                                       \
         *(slot) = S16(e, 2);                                            \
-        if ((u8)func_0885B718(D_08A62C50, e, 1, 0) == 1) {              \
+        if ((u8)combo_known(D_08A62C50, e, 1, 0) == 1) {              \
             if ((U8(e, 7) & 1) != 0)                                    \
                 *(slot) |= 0x8000;                                      \
         } else {                                                        \
@@ -91,7 +91,7 @@ int menu_page_build(u8 *self)
     for (i = 0; i < U8(box, 6); i++)
         U16(self, 0x5C8 + i * 2) = 0;
     U8(self, 0x5D8) = 0;
-    if (func_0885C13C(D_08A62C50, self + 0x5D8, -1, &x, &y, 1) == NULL) {
+    if (combo_next(D_08A62C50, self + 0x5D8, -1, &x, &y, 1) == NULL) {
         U32(self, 0x5A8) = 0;
         return 0;
     }
@@ -101,7 +101,7 @@ int menu_page_build(u8 *self)
     first = U8(box, 6) * page;
     last = first + U8(box, 6);
     for (i = 0, n = 0; i < 172; i++, n++) {
-        u8 *e = func_0885C13C(D_08A62C50, &pos, 1, &x, &y, 1);
+        u8 *e = combo_next(D_08A62C50, &pos, 1, &x, &y, 1);
 
         if (pos <= prev)
             break;
@@ -145,7 +145,7 @@ void menu_page_fill(u8 *self, u32 keys)
     last = first + n;
     pos = U8(self, 0x5D8);
     for (i = 0; i < last; i++) {
-        u8 *e = func_0885C13C(D_08A62C50, &pos, 1, &x, &y, 1);
+        u8 *e = combo_next(D_08A62C50, &pos, 1, &x, &y, 1);
 
         if (i < first || i >= last)
             continue;
@@ -192,10 +192,10 @@ s32 menu_slot_first(void *self, u32 v)
     return (s16)*func_08856884(D_089CC438, (u8)v);
 }
 
-u8 *func_0885C580(void *a, u16 id);
+u8 *pouch_item_data(void *a, u16 id);
 u8 *func_0885CA50(void *a, void *eq);
-s32 func_08827194(void *self, void *hunter, u8 *e, int c);
-void func_088275B0(void *self, void *hunter, s32 c, void *other);
+s32 skill_entry_fill(void *self, void *hunter, u8 *e, int c);
+void skill_list_add(void *self, void *hunter, s32 c, void *other);
 extern void *D_08A62C54;
 
 /* chooses the quantity of an item with the arrows (0x80 min, 0x20 max, 0x10 +1, 0x40 -1) */
@@ -230,9 +230,9 @@ void menu_select_count(u8 *self, u32 keys)
             self[0x58A] = c - 1;
     }
     if ((s16)old < 0)
-        func_08883988(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
+        sound_play(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
     else if (old != self[0x58A])
-        func_08883988(D_08A62D8C, 0, 23, 0, 0, 0, 0, 0, 0);
+        sound_play(D_08A62D8C, 0, 23, 0, 0, 0, 0, 0, 0);
     if (max <= self[0x58A])
         self[0x58B] = 1;
 }
@@ -266,7 +266,7 @@ int menu_slot_usable(void *self, u32 id_arg)
         return 0;
     if (*(s16 *)func_08856884(D_089CC438, id) == 0)
         return 0;
-    if (func_0885C580(D_08A62C50, id)[1] != 1)
+    if (pouch_item_data(D_08A62C50, id)[1] != 1)
         return 0;
     return 1;
 }
@@ -324,7 +324,7 @@ void menu_build_equip_lists(u8 *self, u8 *hunter, u8 *other)
             if (c == 1)
                 continue;
             e[3] = c;
-            if ((u8)func_08827194(self, other, e, 0) == 1) {
+            if ((u8)skill_entry_fill(self, other, e, 0) == 1) {
                 n--;
                 e += 0x12;
                 if (n < 1)
@@ -350,5 +350,5 @@ void menu_build_equip_lists(u8 *self, u8 *hunter, u8 *other)
     for (i = 0; i < 54; i++)
         U8(self, 0x686 + i * 0x12) = 0;
     for (c = 1; c < 100; c++)
-        func_088275B0(self, hunter, c, other);
+        skill_list_add(self, hunter, c, other);
 }

@@ -7,9 +7,9 @@ extern const u8 D_089A47D0[];     /* combinations: s16 a, s16 b(=result), ..., 1
 extern const u8 D_089A4E88[];     /* per item: count, first combination */
 extern const u8 D_089A5B50[];
 extern const u8 *D_089A5B34[];
-u32 func_088900C4(void *a, int b);
-s32 func_088D6A1C(void *hunter, int id);
-void func_088D72A4(void *hunter, u16 id, int a, int b);
+u32 game_rand(void *a, int b);
+s32 hunter_has_skill(void *hunter, int id);
+void hunter_add_item(void *hunter, u16 id, int a, int b);
 int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag);
 s32 game_box_size(void *g);
 
@@ -17,7 +17,7 @@ s32 game_box_size(void *g);
 
 static void *own_hunter(void)
 {
-    return (void *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    return (void *)player_get(D_09A4F0C4, D_089CC438[0x28]);
 }
 
 /* the combination of the items a and b (mode -1: without tool, 0: possible now, 1: any) */
@@ -85,16 +85,16 @@ s32 combo_do(void *p, u8 *out, void *hunter, u32 a, u32 b, s32 mode)
     if (e == NULL)
         return -1;
     rate = combo_rate(p, a, b, mode);
-    if ((s32)((u16)func_088900C4(D_08A631A0, 1) % 100) < rate) {
+    if ((s32)((u16)game_rand(D_08A631A0, 1) % 100) < rate) {
         res = S16(e, 2);
-        if ((u8)func_088D6A1C(hunter, 0x9F) == 1) {
+        if ((u8)hunter_has_skill(hunter, 0x9F) == 1) {
             *out = D_089A5B50[e[5]];
         } else {
             const u8 *t = D_089A5B34[e[5]];
             s32 r;
 
             *out = t[0];
-            r = (u16)func_088900C4(D_08A631A0, 1) % 100;
+            r = (u16)game_rand(D_08A631A0, 1) % 100;
             for (t++; *t <= r; t++) {
                 (*out)++;
                 r -= *t;
@@ -105,8 +105,8 @@ s32 combo_do(void *p, u8 *out, void *hunter, u32 a, u32 b, s32 mode)
         res = -1;
     }
     if (mode == 0) {
-        func_088D72A4(hunter, a & 0xFFFF, -1, 0);
-        func_088D72A4(hunter, b & 0xFFFF, -1, 0);
+        hunter_add_item(hunter, a & 0xFFFF, -1, 0);
+        hunter_add_item(hunter, b & 0xFFFF, -1, 0);
     }
     return res;
 }
@@ -220,7 +220,7 @@ extern const u16 D_089A5B60[5];
 extern const s16 D_089A5864[][2];  /* pairs of items of the combination list */
 extern const u8 D_0899D198[];
 s32 func_088D6AC8_(void *hunter, int skill) __asm__("func_088D6AC8");
-s32 func_088D6A54(void *hunter, int id);
+s32 hunter_felyne_skill(void *hunter, int id);
 s32 pouch_count(u8 *g, u32 id_arg);
 u32 box_find(void *p, u32 id_arg);
 u16 *pouch_slot(u8 *g, s32 i);
@@ -236,9 +236,9 @@ s32 combo_rate_of(void *p, u8 *e, s32 mode)
 
     if ((u8)gather_has_tool(p, h, e, mode == 1) != 1)
         return -1;
-    if ((e[7] & 2) && (u8)func_088D6A1C(h, 0x45) == 1)
+    if ((e[7] & 2) && (u8)hunter_has_skill(h, 0x45) == 1)
         return 100;
-    if ((e[7] & 0x10) && (u8)func_088D6A1C(h, 0xC2) == 1)
+    if ((e[7] & 0x10) && (u8)hunter_has_skill(h, 0xC2) == 1)
         return 100;
     r = D_089A5B58[(s8)e[4]];
     switch ((u8)func_088D6AC8_(h, 0x3B)) {
@@ -261,9 +261,9 @@ s32 combo_rate_of(void *p, u8 *e, s32 mode)
         r -= 15;
         break;
     }
-    if (func_088D6A54(h, 0xF) != 0)
+    if (hunter_felyne_skill(h, 0xF) != 0)
         r += 10;
-    if (func_088D6A54(h, 0x10) != 0)
+    if (hunter_felyne_skill(h, 0x10) != 0)
         r += 5;
     if (mode == 0) {
         for (i = 0; i < 5; i++) {
@@ -583,7 +583,6 @@ extern const u8 D_08960BA4[], D_08960B9F[], D_08959FDA[], D_08959FDC[];
 extern const u8 *D_08979448[];
 extern s16 D_089CC004;
 u8 *deco_data(void *p, u32 id);
-#define func_0885E834 deco_data
 
 /* attack of the weapon e (kind 6), with its upgrades and sharpness bonus */
 s32 weapon_attack(void *p, u8 *e)
@@ -650,7 +649,7 @@ s8 equip_skill_points(void *p, u8 *e, u32 skill_arg)
 s8 deco_skill_points(void *p, u32 d, u32 skill_arg)
 {
     u8 skill = skill_arg;
-    u8 *x = func_0885E834(p, d);
+    u8 *x = deco_data(p, d);
     s8 n = 0;
     int i;
 
@@ -860,7 +859,6 @@ extern const s32 D_089A5B80[4];
 extern const u8 D_089779D4[], D_08959FDE[], D_08960BA8[];
 u32 func_0885CB98(void *p, u32 kind, u32 c);
 u32 armor_max_level(void *p, u8 *e);
-#define func_0885EF20 armor_max_level
 
 void slot_set_flag80(void *p, s32 i, s32 clear)
 {
@@ -915,7 +913,7 @@ s32 deco_free_slots(void *p, u8 *e)
         s = 3;
     for (i = 0; i < s; i++) {
         if (U16(e, 6 + i * 2) != 0) {
-            s8 c = *(const s8 *)func_0885E834(p, U16(e, 6 + i * 2));
+            s8 c = *(const s8 *)deco_data(p, U16(e, 6 + i * 2));
 
             if (c == 0 || c >= 4)
                 c = 1;
@@ -984,7 +982,7 @@ u32 armor_defense(void *p, u8 *e)
         return 0;
     a = D_08978474[e[1]] + id * 0x28;
     lv = e[4];
-    m = func_0885EF20(p, e);
+    m = armor_max_level(p, e);
     if (m < lv)
         lv = m;
     return (u16)(a[0xC] + lv * 2);
@@ -1019,7 +1017,7 @@ u32 armor_sell_price(void *p, u8 *e)
     if (U16(e, 2) == 0)
         return 0;
     v = *(const u32 *)(D_08978474[e[1]] + U16(e, 2) * 0x28 + 8);
-    m = func_0885EF20(p, e);
+    m = armor_max_level(p, e);
     if (m != 0) {
         c[0] = e[0];
         c[1] = e[1];

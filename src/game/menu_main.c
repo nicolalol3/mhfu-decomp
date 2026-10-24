@@ -8,22 +8,22 @@ extern const char D_0893879C[];   /* "%2d/%2d" */
 extern const char D_08938540[];   /* "%d/%d" */
 extern const s16 D_08939854, D_08939856, D_08939434;
 
-void func_08883988(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
-u16 func_0884FB6C(void *game);
+void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
+u16 game_buttons(void *game);
 s32 func_0883E928(void *self, u32 key);
 s32 func_08834B0C(void *self, u32 key);
 void func_088D8900(void *hunter);
 void func_08890E08(void *font, int v);
 void func_088392F4(void *self);
-void func_0883E4B8(void *self);
+void hud_draw_item_get(void *self);
 
-void func_0883B870(void *self);
-void func_08839F64(void *self);
-void func_08838E30(void *self);
-void func_08838F58(void *self);
-void func_08839824(void *self);
-void func_0883D290(void *self);
-void func_0883AB4C(void *self);
+void hud_draw_choice_grid(void *self);
+void hud_draw_player_page(void *self);
+void hud_draw_quest_page(void *self);
+void hud_draw_card_page(void *self);
+void hud_draw_options(void *self);
+void hud_notice_draw(void *self);
+void hud_draw_player_page2(void *self);
 void menu_draw_choice(void *self);
 void menu_draw_trade(void *self);
 void menu_draw_info(void *self);
@@ -142,7 +142,7 @@ void menu_show(u8 *self)
     menu_close_state(self);
     self[0x111D] = 1;
     U16(self, 0x111E) = 0;
-    func_08883988(D_08A62D8C, 0, 17, 0, 0, 0, 0, 0, 0);
+    sound_play(D_08A62D8C, 0, 17, 0, 0, 0, 0, 0, 0);
 }
 
 /* resets the state of the current page */
@@ -172,7 +172,7 @@ int menu_check_closed(u8 *self)
         menu_close_all(self);
         return 1;
     }
-    U16(self, 0x111E) = func_0884FB6C(D_089CC438);
+    U16(self, 0x111E) = game_buttons(D_089CC438);
     return 0;
 }
 
@@ -227,7 +227,7 @@ void menu_draw_layer1(u8 *self)
     func_08890E08(D_08A631A8, 1);
     menu_begin_draw(self);
     if (self[0x52F] != 0)
-        func_0883E4B8(self);
+        hud_draw_item_get(self);
     else if (D_089CC438[0x10] != 0)
         menu_draw_page(self);
 }
@@ -252,16 +252,16 @@ void menu_draw_page(u8 *self)
         case 0: menu_draw_choice(self); break;
         case 1: menu_draw_trade(self); break;
         case 2: menu_draw_info(self); break;
-        case 3: func_0883B870(self); break;
-        case 4: func_08839F64(self); break;
-        case 5: func_08838E30(self); break;
-        case 6: func_08838F58(self); break;
+        case 3: hud_draw_choice_grid(self); break;
+        case 4: hud_draw_player_page(self); break;
+        case 5: hud_draw_quest_page(self); break;
+        case 6: hud_draw_card_page(self); break;
         case 7: menu_draw_item_box(self); break;
         case 8: menu_draw_equip_box(self); break;
         case 9: menu_draw_main(self); break;
-        case 10: func_08839824(self); break;
-        case 11: func_0883D290(self); break;
-        case 12: func_0883AB4C(self); break;
+        case 10: hud_draw_options(self); break;
+        case 11: hud_notice_draw(self); break;
+        case 12: hud_draw_player_page2(self); break;
         }
     } else if (self[0x1118] == 0) {
         func_0883488C(self, 0);
@@ -274,7 +274,7 @@ void menu_draw_page(u8 *self)
 u32 menu_get_key(u8 *self)
 {
     if (self[0x111D] == 0)
-        return func_0884FB6C(D_089CC438);
+        return game_buttons(D_089CC438);
     return U16(self, 0x111E);
 }
 
@@ -282,7 +282,7 @@ extern const u16 D_089AC850;
 extern const char D_0893B218[], D_0893B220[];
 extern const u8 D_0893AFA0[];
 const char *func_09A7B790(void *a, u16 id);
-s32 func_08838AB4(void *self, u8 a, u8 b);
+s32 hud_event_state(void *self, u8 a, u8 b);
 void func_0882F580(void *self, void *layout, int a, int b, int alpha, int c);
 void layout_build(Layout *out, const u8 *src, int title, s32 dx_arg, s32 dy_arg);
 void layout_draw_pages(void *self, Layout *l, u32 cur, u32 total_arg, s32 color, s32 alt);
@@ -331,7 +331,7 @@ void menu_draw_main_page(u8 *self, int dim)
         } else {
             u8 *h = *(u8 **)(self + 0x530);
 
-            if ((u8)func_08838AB4(self, h[0x298], h[0x299]) == 1)
+            if ((u8)hud_event_state(self, h[0x298], h[0x299]) == 1)
                 col[5] = 10;
             if (U32(*(u8 **)(self + 0x530), 0x614) & 8)
                 col[5] = 10;
@@ -357,12 +357,12 @@ s32 menu_input(u8 *self, u32 keys)
         if (U32(self, 0x121C) == 0) {
             if (r & 8) {
                 self[0x111D] = 0;
-                func_08883988(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+                sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
                 return 1;
             }
             if (r & 0x2000) {
                 menu_close_state(self);
-                func_08883988(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+                sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
             }
         }
     } else if (st[0] == 0) {
@@ -372,13 +372,13 @@ s32 menu_input(u8 *self, u32 keys)
             if (menu_select_entry(self, self[0x111C]) == 0) {
                 st[0] += 1;
                 U32(self, 0x121C) = 0;
-                func_08883988(D_08A62D8C, 0, 19, 0, 0, 0, 0, 0, 0);
+                sound_play(D_08A62D8C, 0, 19, 0, 0, 0, 0, 0, 0);
             } else {
-                func_08883988(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
+                sound_play(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
             }
         } else if (keys & 0x2008) {
             self[0x111D] = 0;
-            func_08883988(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+            sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
             return 1;
         }
     } else {
@@ -387,33 +387,33 @@ s32 menu_input(u8 *self, u32 keys)
     return 0;
 }
 
-s32 func_0881C884(void *self);
-s32 func_0881C944(void *self);
-s32 func_0881CA34(void *self);
-s32 func_0881CAC8(void *self);
-s32 func_0881CB0C(void *self);
-s32 func_0881E8F8(void *self);
+s32 menu_open_item_list(void *self);
+s32 menu_open_use_list(void *self);
+s32 menu_open_info(void *self);
+s32 menu_open_status(void *self);
+s32 menu_open_equipment(void *self);
+s32 menu_open_list_tabs(void *self);
 void func_088D897C(void *hunter);
-void func_088277DC(void *self, void *hunter);
+void skill_update_hunter(void *self, void *hunter);
 
 /* opens entry i of the main page; 0 if it was opened */
 s32 menu_select_entry(u8 *self, u32 i_arg)
 {
     u8 i = i_arg;
-    u8 *h = (u8 *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    u8 *h = (u8 *)player_get(D_09A4F0C4, D_089CC438[0x28]);
     int online = (*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0;
     s32 r = 1;
 
     switch (i) {
     case 0:
-        r = func_0881C884(self);
+        r = menu_open_item_list(self);
         break;
     case 1:
         func_088D897C(h);
-        r = func_0881C944(self);
+        r = menu_open_use_list(self);
         break;
     case 2:
-        r = func_0881CA34(self);
+        r = menu_open_info(self);
         break;
     case 3:
         if (online) {
@@ -463,16 +463,16 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
         break;
     }
     case 7:
-        func_088277DC(self, h);
-        r = func_0881CAC8(self);
+        skill_update_hunter(self, h);
+        r = menu_open_status(self);
         break;
     case 8:
         func_088D897C(h);
-        r = func_0881CB0C(self);
+        r = menu_open_equipment(self);
         break;
     case 9:
         func_088D897C(h);
-        r = func_0881E8F8(self);
+        r = menu_open_list_tabs(self);
         break;
     case 10: {
         s8 m;
@@ -497,7 +497,7 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
             r = 0;
         break;
     case 12:
-        if (online && (u8)func_08838AB4(self, h[0x298], h[0x299]) == 0
+        if (online && (u8)hud_event_state(self, h[0x298], h[0x299]) == 0
             && (U32(*(u8 **)(self + 0x530), 0x614) & 8) == 0) {
             self[0x57E] = 0;
             self[0x57F] = 0;
@@ -511,16 +511,16 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
 
 u32 func_0881CB2C(void *self, u32 keys);
 u32 func_0881DB5C(void *self, u32 keys);
-u32 func_0881EAF8(void *self, u32 keys);
-u32 func_0883BA38(void *self, u32 keys);
-u32 func_0883A8A4(void *self, u32 keys);
-u32 func_08839688(void *self, u32 keys);
+u32 menu_info_input(void *self, u32 keys);
+u32 hud_grid_input(void *self, u32 keys);
+u32 hud_player_page_input(void *self, u32 keys);
+u32 hud_card_input(void *self, u32 keys);
 u32 func_0883BB10(void *self, u32 keys);
-u32 func_0881EB60(void *self, u32 keys);
-u32 func_0881EC2C(void *self, u32 keys);
-u32 func_0881E92C(void *self, u32 keys);
-u32 func_08839B30(void *self, u32 keys);
-u32 func_0883B190(void *self, u32 keys);
+u32 menu_status_input(void *self, u32 keys);
+u32 menu_equipment_input(void *self, u32 keys);
+u32 menu_list_tabs_input(void *self, u32 keys);
+u32 hud_options_input(void *self, u32 keys);
+u32 hud_invite_input(void *self, u32 keys);
 
 /* input of the open sub-page */
 u16 menu_page_input_dispatch(u8 *self, u32 page, u32 keys)
@@ -530,23 +530,23 @@ u16 menu_page_input_dispatch(u8 *self, u32 page, u32 keys)
     switch ((u8)page) {
     case 0:
         r = func_0881CB2C(self, keys);
-        func_088D8900((void *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]));
+        func_088D8900((void *)player_get(D_09A4F0C4, D_089CC438[0x28]));
         return r;
     case 1:
         r = func_0881DB5C(self, keys);
-        func_088D8900((void *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]));
+        func_088D8900((void *)player_get(D_09A4F0C4, D_089CC438[0x28]));
         break;
-    case 2: r = func_0881EAF8(self, keys); break;
-    case 3: r = func_0883BA38(self, keys); break;
-    case 4: r = func_0883A8A4(self, keys); break;
-    case 5: r = func_08839688(self, keys); break;
+    case 2: r = menu_info_input(self, keys); break;
+    case 3: r = hud_grid_input(self, keys); break;
+    case 4: r = hud_player_page_input(self, keys); break;
+    case 5: r = hud_card_input(self, keys); break;
     case 6: r = func_0883BB10(self, keys); break;
-    case 7: r = func_0881EB60(self, keys); break;
-    case 8: r = func_0881EC2C(self, keys); break;
-    case 9: r = func_0881E92C(self, keys); break;
-    case 10: r = func_08839B30(self, keys); break;
+    case 7: r = menu_status_input(self, keys); break;
+    case 8: r = menu_equipment_input(self, keys); break;
+    case 9: r = menu_list_tabs_input(self, keys); break;
+    case 10: r = hud_options_input(self, keys); break;
     case 11: break;
-    case 12: r = func_0883B190(self, keys); break;
+    case 12: r = hud_invite_input(self, keys); break;
     }
     return r;
 }

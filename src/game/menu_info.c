@@ -6,7 +6,7 @@ extern const u8 D_0893B0A4[], D_0893B0B8[];
 extern const char D_08938580[], D_08938584[];
 extern const char D_08938588[];          /* "%02d:%02d" */
 extern const u16 D_089AC620[], D_089AC630[];
-s32 func_0885B718(void *a, u32 b, int c, int d);
+s32 combo_known(void *a, u32 b, int c, int d);
 char *strcat(char *d, const char *s);
 
 /* details of the selected trade (0x5A8): requested items and reward */
@@ -51,7 +51,7 @@ void menu_draw_trade_info(void *self)
     p = (u8 *)U32(self, 0x5A8);
     func_088920A8(D_08A631A8, S16(l2, 0x24), S16(l2, 0x26),
                   func_0885151C(D_089CC438, D_089AC630[(p[7] & 1) ? 2 : 0]), U8(self, 0x5BB) + 1);
-    if ((s8)func_0885B718(D_08A62C50, U32(self, 0x5A8), 1, 0) == 1) {
+    if ((s8)combo_known(D_08A62C50, U32(self, 0x5A8), 1, 0) == 1) {
         p = (u8 *)U32(self, 0x5A8);
         c3 = c4 = c6 = c1 = 0;
         c5 = D_0893AF2C[(s8)p[4]];

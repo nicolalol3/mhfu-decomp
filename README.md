@@ -17,7 +17,7 @@ to **behave** the same way.
 | Path | Contents |
 |---|---|
 | `src/` | the decompiled C code (`libc/` = C library, `libm/` = math) |
-| `include/` | shared headers |
+| `include/` | shared headers (`quest.h`: the quest object and the format of the quest files; `game.h`: fields of the general game state) |
 | `symbols.txt` | readable names of game functions and variables (address → name) |
 | `tools/` | tools: build, injection, tests |
 | `build/` | generated files (modified EBOOT, test screenshots, ...) |
@@ -30,6 +30,16 @@ to **behave** the same way.
   the result, the memory written and the calls to the operating system.
 - **Boot test** (`tools/boottest.sh`): starts the game in PPSSPP with the modified EBOOT and
   saves a screenshot to `build/screenshot.png`.
+- **Same code** (`tools/samecode.py`): after a cleanup that should not change anything
+  (renames, macros), checks that the compiled code is identical to a saved reference.
+
+## Readability
+
+The code is written first with raw offsets (`U32(self, 0x28)`), then, once a part of the game
+is complete and tested, it is cleaned up: structures with named fields, names instead of
+`func_XXXXXXXX` / `D_XXXXXXXX`, named constants. Done so far: the quest system
+(`src/game/quest*.c`, `include/quest.h`). With structures GCC can keep fields in registers, so
+the compiled code changes a little: the cleaned functions are checked again with the test bench.
 
 ## Commands (run by Claude)
 

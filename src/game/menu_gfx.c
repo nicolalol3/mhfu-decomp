@@ -3,18 +3,18 @@
  *
  * Common pattern: nh words of vertex data followed by nc commands, among which
  * BASE/VADDR (pointing at the vertex data) at positions bi and bi + 1; the
- * commands are then linked in the layer self[0x534] by func_088596C8. */
+ * commands are then linked in the layer self[0x534] by dl_link. */
 #include "menu.h"
 #include "vfpu.h"
 
 extern u8 *D_08A62C40;            /* display list manager */
 extern const s16 D_089391A8[][6];  /* menu sprites: s16 u, v, w, h, u16 texture[2] */
 
-u32 *func_088597FC(void *dl);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
-void func_0885980C(void *dl, u32 *end);
-void func_088314A0(void *self, u16 a, u16 b);
-void func_0883185C(void *self, const s16 *sprite);
+u32 *dl_cur(void *dl);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
+void dl_set_cur(void *dl, u32 *end);
+void tex_select(void *self, u16 a, u16 b);
+void tex_select_sprite(void *self, const s16 *sprite);
 
 /* copies the nh + nc words of w at the end of the display list and links them */
 #define DL_PUSH(dl, layer, w, nh, nc, bi) do {                                         \
@@ -28,7 +28,7 @@ void func_0883185C(void *self, const s16 *sprite);
                 **(u32 **)((dl) + 0x80198) = (w)[i_];                               \
                 U32(dl, 0x80198) += 4;                                              \
             }                                                                       \
-            func_088596C8(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
+            dl_link(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
         }                                                                           \
     } while (0)
 
@@ -37,8 +37,8 @@ void gfx_draw_tex_rect(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id)
 {
     u32 *p;
 
-    func_0883185C(self, D_089391A8[id]);
-    p = func_088597FC(D_08A62C40);
+    tex_select_sprite(self, D_089391A8[id]);
+    p = dl_cur(D_08A62C40);
     p[0] = 0;
     p[1] = ((x & 0xFFFF) << 16) | 0xFFFF;
     p[2] = y & 0xFFFF;
@@ -53,8 +53,8 @@ void gfx_draw_tex_rect(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id)
     p[11] = 0x04060002;
     p[12] = 0x10000000;
     p[13] = 0x08000000;
-    func_088596C8(D_08A62C40, p + 6, 8, self[0x534]);
-    func_0885980C(D_08A62C40, p + 14);
+    dl_link(D_08A62C40, p + 6, 8, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 14);
 }
 
 /* colored texture rectangle (0,0)-(w,h) of the texture of sprite id */
@@ -63,13 +63,13 @@ void gfx_draw_tex_rect_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g,
     u32 *p;
     u32 c;
 
-    func_0883185C(self, D_089391A8[id]);
-    p = func_088597FC(D_08A62C40);
+    tex_select_sprite(self, D_089391A8[id]);
+    p = dl_cur(D_08A62C40);
     p[0] = 0x10000000;
     p[1] = 0x08000000;
-    func_088596C8(D_08A62C40, p, 2, self[0x534]);
-    func_0885980C(D_08A62C40, p + 2);
-    p = func_088597FC(D_08A62C40);
+    dl_link(D_08A62C40, p, 2, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 2);
+    p = dl_cur(D_08A62C40);
     c = ((u32)a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
     p[0] = 0;
     p[1] = c;
@@ -87,8 +87,8 @@ void gfx_draw_tex_rect_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g,
     p[13] = 0x04060002;
     p[14] = 0x10000000;
     p[15] = 0x08000000;
-    func_088596C8(D_08A62C40, p + 8, 8, self[0x534]);
-    func_0885980C(D_08A62C40, p + 16);
+    dl_link(D_08A62C40, p + 8, 8, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 16);
 }
 
 /* sprite id stretched to w x h at (x, y) */
@@ -99,7 +99,7 @@ void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id)
     u32 v[15];
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     v[4] = (((x & 0xFFFF) + (w & 0xFFFF)) << 16) | 0xFFFF;
     v[5] = ((y & 0xFFFF) + (h & 0xFFFF)) & 0xFFFF;
@@ -130,7 +130,7 @@ void gfx_draw_sprite_color(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, u32 a, s
     s32 h;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     c = (a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
     xm = x & 0xFFFF;
@@ -179,7 +179,7 @@ void gfx_draw_sprite(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, s32 id, s32 fl
     u32 c, u0, v0, u1, v1, ua, ub, va, vb;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     u0 = (u16)t[0];
     c = (((b & 0xFF) >> 3) << 10) | ((r & 0xFF) >> 3) | (((g & 0xFF) >> 3) << 5) | 0x8000;
@@ -245,7 +245,7 @@ void gfx_draw_sprite_rgba(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, u32 a, s3
     u32 c;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     c = (a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
     CMDS_C(v);
@@ -264,7 +264,7 @@ void gfx_draw_sprite_rgba_ptr(u8 *self, u32 x, u32 y, const u8 *cp, s32 id)
     u32 c;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     CMDS_C(v);
     c = ((u32)cp[3] << 24) | ((u32)cp[2] << 16) | cp[0] | ((u32)cp[1] << 8);
@@ -283,7 +283,7 @@ void gfx_draw_sprite_scaled_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u
     u32 c;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     c = (((b & 0xFF) >> 3) << 10) | ((r & 0xFF) >> 3) | (((g & 0xFF) >> 3) << 5) | 0x8000;
     v[4] = (((x & 0xFFFF) + (w & 0xFFFF)) << 16) | c;
@@ -316,7 +316,7 @@ void gfx_draw_sprite_scaled_rgba(u8 *self, u32 x, u32 y, s32 w_arg, s32 h_arg, u
     u32 c;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     CMDS_C(v);
     c = ((u32)a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
@@ -336,7 +336,7 @@ void gfx_draw_sprite_part(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g, u3
     u32 c;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     v[6] = 0x1E000001;
     v[8] = 0x50000001;
@@ -377,7 +377,7 @@ void gfx_draw_quad(u8 *self, const s16 *pt, u32 r, u32 g, u32 b, s32 id)
     u32 c, u0, v0, v1;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     v[12] = 0x1E000001;
     v[13] = 0x50000001;
@@ -421,7 +421,7 @@ void gfx_draw_sprite_mode(u8 *self, u32 x, u32 y, s32 w_arg, s32 h_arg, u32 r, u
     u32 c, pa, pb;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     CMDS_C(v);
     v[3] = 0;
@@ -483,7 +483,7 @@ void gfx_draw_quad_rgba(u8 *self, const s16 *pt, u32 r, u32 g, u32 b, u32 a, s32
     u32 c;
     u8 layer;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     c = (a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
     v[1] = v[5] = v[9] = v[13] = c;
@@ -692,9 +692,9 @@ void gfx_draw_subwindow(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 alpha)
 extern void *D_08A62C54;          /* equipment data */
 extern const u8 D_0893AA5C[];      /* item colors (r, g, b, -) */
 s32 func_088269C0(void *self, u32 id);
-u32 func_088303B8(void *self, s32 icon, int small);
-void func_08832B98(void *self, int on);
-u8 func_0885CD18(void *a, int type, u16 id);
+u32 item_icon_sprite(void *self, s32 icon, int small);
+void gfx_set_filter(void *self, int on);
+u8 equip_rarity(void *a, int type, u16 id);
 u32 func_088D7D6C(void *hunter);
 
 /* icon of item id (greyed out if not usable, with a mark if it is new);
@@ -716,7 +716,7 @@ void gfx_draw_item_icon(u8 *self, u32 id, u32 x, u32 y, u32 w, u32 h, s8 mode)
         if (e[4] & 1)
             st = 1;
     }
-    tex = func_088303B8(self, e[5], (w & 0xFFFF) < 21);
+    tex = item_icon_sprite(self, e[5], (w & 0xFFFF) < 21);
     c = D_0893AA5C + col * 4;
     if (mode == 0)
         gfx_draw_sprite_scaled_color(self, x, y, w, h, c[0], c[1], c[2], tex);
@@ -741,9 +741,9 @@ void gfx_draw_item_icon_alpha(u8 *self, u32 id, u32 x, u32 y, u32 w, s32 h_arg, 
 
     if (e[5] == 0xFF)
         return;
-    func_08832B98(self, 1);
+    gfx_set_filter(self, 1);
     w16 = w & 0xFFFF;
-    tex = func_088303B8(self, e[5], w16 < 21);
+    tex = item_icon_sprite(self, e[5], w16 < 21);
     c = D_0893AA5C + e[6] * 4;
     gfx_draw_sprite_scaled_rgba(self, x, y, (s16)w, h, c[0], c[1], c[2], alpha, tex);
     if (mode == 1) {
@@ -751,7 +751,7 @@ void gfx_draw_item_icon_alpha(u8 *self, u32 id, u32 x, u32 y, u32 w, s32 h_arg, 
             gfx_draw_sprite_scaled_rgba(self, x, y, (s16)w, h, 255, 255, 255, alpha, w16 < 21 ? 238 : 132);
         } else if (w16 > 20) {
             u8 *hunter = *(u8 **)(self + 0x530);
-            s8 k = func_0885CD18(D_08A62C54, hunter[0x4E9], U16(hunter, 0x4EA));
+            s8 k = equip_rarity(D_08A62C54, hunter[0x4E9], U16(hunter, 0x4EA));
             u8 m6, m3;
             int bad = 0;
 
@@ -774,7 +774,7 @@ void gfx_draw_item_icon_alpha(u8 *self, u32 id, u32 x, u32 y, u32 w, s32 h_arg, 
                 gfx_draw_sprite_scaled_color(self, x, y, w, h, 255, 0, 0, 133);
         }
     }
-    func_08832B98(self, 0);
+    gfx_set_filter(self, 0);
 }
 
 /* icon number icon (-1 = none) with the color col */
@@ -787,7 +787,7 @@ void gfx_draw_icon(u8 *self, s32 icon_arg, u32 col, u32 x, u32 y, u32 w, u32 h)
         return;
     c = D_0893AA5C + (col & 0xFF) * 4;
     gfx_draw_sprite_scaled_color(self, x, y, w, h, c[0], c[1], c[2],
-                                 func_088303B8(self, icon, (w & 0xFFFF) < 21));
+                                 item_icon_sprite(self, icon, (w & 0xFFFF) < 21));
 }
 
 extern const s16 D_08939854, D_08939856;   /* size of the cursor arrows */
@@ -831,7 +831,7 @@ void gfx_fill_rect_pulse(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 color)
 
 extern const char D_08938540[];   /* "%d/%d" */
 void func_08890E40(void *font, int v);
-void func_08832228(void *self, u32 x, u32 y, u32 w, u32 h, u32 alpha);
+void gfx_draw_window2(void *self, u32 x, u32 y, u32 w, u32 h, u32 alpha);
 
 /* builds the text box out from the description src (offset by dx, dy); with title != 0
  * leaves room for a title line */
@@ -899,7 +899,7 @@ void layout_draw(void *self, Layout *l, const char *text, u32 alpha)
 {
     switch (l->bb) {
     case 4:
-        func_08832228(self, (u16)l->x, (u16)l->y, (u16)l->w, (u16)l->h, alpha);
+        gfx_draw_window2(self, (u16)l->x, (u16)l->y, (u16)l->w, (u16)l->h, alpha);
         break;
     case 3:
     case 1:

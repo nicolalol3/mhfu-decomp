@@ -5,18 +5,18 @@
 
 extern void *D_08A62D8C;          /* sound manager */
 
-void func_08883988(void *snd, int a, int id, int b, int c, int d, int e, int f, int g);
-s32 func_08826734(void *self, u8 idx);
-int func_088268E0(void *self, u16 *out);
-void func_08826688(void *self);
+void sound_play(void *snd, int a, int id, int b, int c, int d, int e, int f, int g);
+s32 menu_slot_first(void *self, u8 idx);
+int menu_repeat_tick(void *self, u16 *out);
+void menu_page_reset(void *self);
 int menu_info_available(void *self);
-s32 func_08826F80(void *self, int a);
-void func_08826FCC(void *self, u32 a, int b);
+s32 menu_list_pages(void *self, int a);
+void menu_build_equip_lists(void *self, u32 a, int b);
 
 /* interface sound (0x11 = page, 0x17 = cursor, 9 = selection) */
 static inline void play_se(int id)
 {
-    func_08883988(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0);
+    sound_play(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0);
 }
 
 int menu_cursor_vertical(void *self, u8 *pos, u32 keys, u32 count);
@@ -288,7 +288,7 @@ int menu_open_item_list(void *self)
     U32(self, 0x5E8) |= 4;
     U32(self, 0x528) |= 0x100;
     U8(self, 0x5FE) = 1;
-    S16(self, 0x5FC) = (s16)func_08826734(self, U8(self, 0x586)) + 0x18;
+    S16(self, 0x5FC) = (s16)menu_slot_first(self, U8(self, 0x586)) + 0x18;
     U8(self, 0x5FF) = 0;
     U8(self, 0x1207) = 0;
     return 0;
@@ -302,11 +302,11 @@ int menu_open_use_list(void *self)
     if ((s8)func_088239FC(self) != 1)
         return -1;
     tmp = 0xFFFF;
-    if ((s8)func_088268E0(self, &tmp) == 0)
+    if ((s8)menu_repeat_tick(self, &tmp) == 0)
         return -1;
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && (s8)func_09A6E5A8((void *)U32(self, 0x530)) == 1)
         return -1;
-    func_08826688(self);
+    menu_page_reset(self);
     U32(self, 0x528) &= ~0x10;
     U32(self, 0x5E8) &= ~4;
     U32(self, 0x528) |= 0x200;
@@ -329,7 +329,7 @@ int menu_open_info(void *self)
 
 int menu_open_status(void *self)
 {
-    func_08826FCC(self, U32(self, 0x530), 0);
+    menu_build_equip_lists(self, U32(self, 0x530), 0);
     U8(self, 0x57F) = 0;
     U32(self, 0x5E8) &= ~4;
     return 0;
@@ -343,12 +343,12 @@ int menu_open_equipment(void *self)
     return 0;
 }
 
-s32 func_088291B4(void *self, int a, int b);
-void func_088262B0(void *self, int a, u32 keys);
-void func_088260D4(void *self, u32 keys);
-void func_0882619C(void *self, u32 keys);
+s32 menu_next_hunter(void *self, int a, int b);
+void menu_page_build(void *self, int a, u32 keys);
+void menu_select_hunter(void *self, u32 keys);
+void menu_page_input(void *self, u32 keys);
 s32 func_09A7BFA8(void *a);
-u32 func_088303E8(void *self, void *buf, int a, int b);
+u32 equip_mark_kind(void *self, void *buf, int a, int b);
 u8 *menu_get_equip_slot(void *self, u8 *out, u32 slot, u8 *hunter);
 int menu_info_available(void *self);
 
@@ -386,11 +386,11 @@ u32 menu_list_tabs_input(void *self, u32 keys)
             return keys;
         }
         if (U8(self, 0x57F) == 1) {
-            U8(self, 0x5D9) = (s8)func_088291B4(self, S8(self, 0x5D9), 0);
+            U8(self, 0x5D9) = (s8)menu_next_hunter(self, S8(self, 0x5D9), 0);
         } else if (U8(self, 0x57F) == 0) {
             U16(self, 0x5C0) = 0;
             U8(self, 0x5C2) = 8;
-            func_088262B0(self, 1, keys & 0xFFFF);
+            menu_page_build(self, 1, keys & 0xFFFF);
         }
         U16(self, 0x1208) = 0;
         U8(self, 0x57E)++;
@@ -401,9 +401,9 @@ u32 menu_list_tabs_input(void *self, u32 keys)
     if ((k & 0x2000) == 0) {
         U32(self, 0x5E8) &= ~4;
         if (U8(self, 0x57F) == 1)
-            func_088260D4(self, keys);
+            menu_select_hunter(self, keys);
         else if (U8(self, 0x57F) == 0)
-            func_0882619C(self, keys);
+            menu_page_input(self, keys);
     } else {
         U32(self, 0x5E8) |= 4;
         U8(self, 0x5FE) = 2;
@@ -427,7 +427,7 @@ u32 menu_info_input(void *self, u32 keys)
 /* hunter status tab: left/right changes page */
 u32 menu_status_input(void *self, u32 keys)
 {
-    s8 n = (s8)func_08826F80(self, 9);
+    s8 n = (s8)menu_list_pages(self, 9);
 
     if (keys & 0xA0) {
         if ((keys & 0x20) == 0) {
@@ -453,7 +453,7 @@ u32 menu_equipment_input(void *self, u32 keys)
 
     menu_cursor_vertical(self, (u8 *)self + 0x57F, keys, 6);
     if (menu_get_equip_slot(self, buf, U8(self, 0x57F), hunter) != NULL) {
-        U8(self, 0x583) = (u8)func_088303E8(self, buf, 0x100, 0);
+        U8(self, 0x583) = (u8)equip_mark_kind(self, buf, 0x100, 0);
         if (U8(self, 0x582) < U8(self, 0x583)) {
             n = U8(self, 0x583);
         } else {

@@ -26,15 +26,15 @@ typedef struct FileTex {
     u32 clutn;          /* 0x10 */
 } FileTex;
 
-void func_088125A4(void *bank, u32 i, BankTex *out);
+void vram_get_surface(void *bank, u32 i, BankTex *out);
 s32 func_08898898(void *a, u32 b);
-void func_08859848(void *dl, s32 file, u32 i, int a, int b, FileTex *out);
-u32 func_0885981C(void *dl, s32 v);
-u32 *func_088597FC(void *dl);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
-void func_0885980C(void *dl, u32 *end);
+void tmh_get_image(void *dl, s32 file, u32 i, int a, int b, FileTex *out);
+u32 pow2_log(void *dl, s32 v);
+u32 *dl_cur(void *dl);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
+void dl_set_cur(void *dl, u32 *end);
 u8 func_0885C83C(void *a, u8 type, u16 id);
-void func_0882C11C(void *self, u32 x, u32 y, s32 w, s32 h, u8 r, u8 g, u8 b, u8 a, int mode);
+void gfx_draw_sprite_scaled_rgba(void *self, u32 x, u32 y, s32 w, s32 h, u8 r, u8 g, u8 b, u8 a, int mode);
 u32 equip_rarity_color(void *self, u32 r_arg, u32 a_arg, u32 alt_arg);
 u16 equip_icon(void *self, u8 *eq, u32 which_arg);
 
@@ -65,16 +65,16 @@ void tex_select(u8 *self, u32 tex, u32 file)
         FileTex t;
         u32 lh;
 
-        func_08859848(D_08A62C40, func_08898898(D_09A0B540, file), tex & 0xFFF, 0, 0, &t);
-        lh = func_0885981C(D_08A62C40, t.h);
-        TEX_CMDS(w, t.fmt, t.addr, t.w, func_0885981C(D_08A62C40, t.w), lh, t.clut, t.clutn);
+        tmh_get_image(D_08A62C40, func_08898898(D_09A0B540, file), tex & 0xFFF, 0, 0, &t);
+        lh = pow2_log(D_08A62C40, t.h);
+        TEX_CMDS(w, t.fmt, t.addr, t.w, pow2_log(D_08A62C40, t.w), lh, t.clut, t.clutn);
     } else {
         BankTex t;
         u32 lh;
 
-        func_088125A4(D_089CBBE0, tex & 0xFF, &t);
-        lh = func_0885981C(D_08A62C40, t.h);
-        TEX_CMDS(w, t.fmt, t.addr, t.w, func_0885981C(D_08A62C40, t.w), lh, t.clut, t.clutn);
+        vram_get_surface(D_089CBBE0, tex & 0xFF, &t);
+        lh = pow2_log(D_08A62C40, t.h);
+        TEX_CMDS(w, t.fmt, t.addr, t.w, pow2_log(D_08A62C40, t.w), lh, t.clut, t.clutn);
     }
     dl = D_08A62C40;
     layer = self[0x534];
@@ -89,7 +89,7 @@ void tex_select(u8 *self, u32 tex, u32 file)
                 **(u32 **)(dl + 0x80198) = w[i];
                 U32(dl, 0x80198) += 4;
             }
-            func_088596C8(dl, (u32 *)cur, 12, layer);
+            dl_link(dl, (u32 *)cur, 12, layer);
         }
     }
 }
@@ -100,31 +100,31 @@ void tex_select(u8 *self, u32 tex, u32 file)
 /* selects the part of the texture of sprite spr starting at its (u, v) */
 void tex_select_sprite(u8 *self, const s16 *spr)
 {
-    u32 *p = func_088597FC(D_08A62C40);
+    u32 *p = dl_cur(D_08A62C40);
     u32 k, off, lh;
 
     if ((u16)spr[4] & 0x8000) {
         FileTex t;
 
-        func_08859848(D_08A62C40, func_08898898(D_09A0B540, (u16)spr[5]), (u16)spr[4] & 0xFFF, 0, 0, &t);
+        tmh_get_image(D_08A62C40, func_08898898(D_09A0B540, (u16)spr[5]), (u16)spr[4] & 0xFFF, 0, 0, &t);
         k = TEX_PER128(t.fmt);
         off = t.w * ((spr[1] / 8) * (128 / k)) + k * ((128 / k) * ((u32)(s32)spr[0] / k));
-        lh = func_0885981C(D_08A62C40, spr[3]);
-        TEX_CMDS(p, t.fmt, t.addr + off, t.w, func_0885981C(D_08A62C40, spr[2]), lh, t.clut, t.clutn);
+        lh = pow2_log(D_08A62C40, spr[3]);
+        TEX_CMDS(p, t.fmt, t.addr + off, t.w, pow2_log(D_08A62C40, spr[2]), lh, t.clut, t.clutn);
     } else {
         BankTex t;
 
-        func_088125A4(D_089CBBE0, (u16)spr[4] & 0xFF, &t);
+        vram_get_surface(D_089CBBE0, (u16)spr[4] & 0xFF, &t);
         k = TEX_PER128(t.fmt);
         off = t.w * ((spr[1] / 8) * (128 / k)) + k * ((128 / k) * ((u32)(s32)spr[0] / k));
-        lh = func_0885981C(D_08A62C40, spr[3]);
-        TEX_CMDS(p, t.fmt, t.addr + off, t.w, func_0885981C(D_08A62C40, spr[2]), lh, t.clut, t.clutn);
+        lh = pow2_log(D_08A62C40, spr[3]);
+        TEX_CMDS(p, t.fmt, t.addr + off, t.w, pow2_log(D_08A62C40, spr[2]), lh, t.clut, t.clutn);
     }
     p[9] = 0xCB000000;
     p[10] = 0x10000000;
     p[11] = 0x08000000;
-    func_088596C8(D_08A62C40, p, 12, self[0x534]);
-    func_0885980C(D_08A62C40, p + 12);
+    dl_link(D_08A62C40, p, 12, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 12);
 }
 
 /* list of texts (ids until -1) one under the other, with optional colors */
@@ -153,7 +153,7 @@ void equip_draw_icon_rarity(void *self, u32 type, u32 id, u32 x, u32 y, u32 w_ar
     eq[1] = type;
     U16(eq, 2) = id;
     c = equip_rarity_color(self, func_0885C83C(D_08A62C54, type, id), alpha, alt);
-    func_0882C11C(self, x, y, (s16)w, h, (u8)(c >> 16), (u8)(c >> 8), (u8)c, c >> 24,
+    gfx_draw_sprite_scaled_rgba(self, x, y, (s16)w, h, (u8)(c >> 16), (u8)(c >> 8), (u8)c, c >> 24,
                   equip_icon(self, eq, w < 24));
 }
 
@@ -164,7 +164,7 @@ void equip_draw_icon_color(void *self, u32 type, u32 id, u32 x, u32 y, const u8 
 
     eq[1] = type;
     U16(eq, 2) = id;
-    func_0882C11C(self, x, y, 16, 16, rgba[2], rgba[1], rgba[0], rgba[3], equip_icon(self, eq, 1));
+    gfx_draw_sprite_scaled_rgba(self, x, y, 16, 16, rgba[2], rgba[1], rgba[0], rgba[3], equip_icon(self, eq, 1));
 }
 
 #include "vfpu.h"
@@ -173,7 +173,7 @@ void equip_draw_icon_color(void *self, u32 type, u32 id, u32 x, u32 y, const u8 
 void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u32 b, u8 a)
 {
     u32 x = (u16)x_arg;
-    u32 *p = func_088597FC(D_08A62C40);
+    u32 *p = dl_cur(D_08A62C40);
     u32 c0, c1, ya, yb, mid, xe, pa, pb;
 
     c0 = ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
@@ -203,9 +203,9 @@ void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u
     p[17] = 0x04040004;
     p[18] = 0x10000000;
     p[19] = 0x08000000;
-    func_088596C8(D_08A62C40, p + 12, 8, self[0x534]);
-    func_0885980C(D_08A62C40, p + 20);
-    p = func_088597FC(D_08A62C40);
+    dl_link(D_08A62C40, p + 12, 8, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 20);
+    p = dl_cur(D_08A62C40);
     xe = (x + (w & 0xFFFF)) & 0xFFFF;
     p[0] = c1;
     p[1] = pa;
@@ -227,8 +227,8 @@ void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u
     p[17] = 0x04040004;
     p[18] = 0x10000000;
     p[19] = 0x08000000;
-    func_088596C8(D_08A62C40, p + 12, 8, self[0x534]);
-    func_0885980C(D_08A62C40, p + 20);
+    dl_link(D_08A62C40, p + 12, 8, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 20);
 }
 
 /* gradient with a pulsing alpha */
@@ -240,8 +240,8 @@ void gfx_fill_gradient_pulse(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g,
 }
 
 extern void *D_08A62D90;
-s32 func_088D72A4(void *hunter, u32 id, u32 n, int a);
-s32 func_0885B21C(void *a, u32 id);
+s32 hunter_add_item(void *hunter, u32 id, u32 n, int a);
+s32 item_combinable(void *a, u32 id);
 void func_088860A0(void *a, u32 id);
 u8 menu_msg_push(u8 *self, u32 id, u32 x, u32 y);
 
@@ -257,10 +257,10 @@ s32 menu_give_items(u8 *self, u8 *hunter, u32 id, s32 key_arg, u32 flags_arg, u3
         return -1;
     if (S16(self, 0x119E) > 0 && key != U16(self, 0x119C))
         return -1;
-    r = func_088D72A4(hunter, id, n, 0);
+    r = hunter_add_item(hunter, id, n, 0);
     S16(self, 0x590) = 0;
     if (r == 5) {
-        if (func_0885B21C(D_08A62C50, id) != -1) {
+        if (item_combinable(D_08A62C50, id) != -1) {
             if (flags & 1)
                 menu_msg_push(self, 0, 12, 0);
             return 5;
@@ -294,7 +294,7 @@ void gfx_draw_sprite_rgba(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, u32 a, s3
 void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id);
 void gfx_draw_sprite_scaled_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g, u32 b, s32 id);
 void func_08832B98(void *self, int on);
-void func_08898748(void *a, int b);
+void temp_free(void *a, int b);
 
 /* window with the second frame style (sprites 167..173, edges 437, 438) */
 void gfx_draw_window2(u8 *self, u32 x, u32 y, u32 w_arg, u32 h_arg, u32 alpha)
@@ -378,7 +378,7 @@ void gfx_draw_panel(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 c)
 void menu_free_data(u8 *self)
 {
     if (U32(self, 0x528) & 0x1000) {
-        func_08898748(D_09A0B540, 11);
+        temp_free(D_09A0B540, 11);
         U32(self, 0x528) &= ~0x1000;
     }
 }
@@ -417,36 +417,36 @@ void gfx_draw_corners(u8 *self, u32 x, u32 y, u32 c)
 /* stencil/clip state of the next sprites (0 normal, 1 masked) */
 void gfx_set_mask(u8 *self, int on)
 {
-    u32 *p = func_088597FC(D_08A62C40);
+    u32 *p = dl_cur(D_08A62C40);
 
     if (on == 0) {
         p[0] = 0x21000001;
         p[1] = 0xDF000032;
         p[2] = 0x10000000;
         p[3] = 0x08000000;
-        func_088596C8(D_08A62C40, p, 4, self[0x534]);
-        func_0885980C(D_08A62C40, p + 4);
+        dl_link(D_08A62C40, p, 4, self[0x534]);
+        dl_set_cur(D_08A62C40, p + 4);
     } else {
         p[0] = 0x21000001;
         p[1] = 0xDF0000A2;
         p[2] = 0xE1FFFFFF;
         p[3] = 0x10000000;
         p[4] = 0x08000000;
-        func_088596C8(D_08A62C40, p, 5, self[0x534]);
-        func_0885980C(D_08A62C40, p + 5);
+        dl_link(D_08A62C40, p, 5, self[0x534]);
+        dl_set_cur(D_08A62C40, p + 5);
     }
 }
 
 /* texture filtering of the next sprites (0 nearest, 1 linear) */
 void gfx_set_filter(u8 *self, int on)
 {
-    u32 *p = func_088597FC(D_08A62C40);
+    u32 *p = dl_cur(D_08A62C40);
 
     p[0] = on == 0 ? 0xC6000000 : 0xC6000101;
     p[1] = 0x10000000;
     p[2] = 0x08000000;
-    func_088596C8(D_08A62C40, p, 3, self[0x534]);
-    func_0885980C(D_08A62C40, p + 3);
+    dl_link(D_08A62C40, p, 3, self[0x534]);
+    dl_set_cur(D_08A62C40, p + 3);
 }
 
 /* button hint i (icon and text) */

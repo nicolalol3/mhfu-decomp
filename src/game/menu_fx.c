@@ -9,9 +9,9 @@ extern const s16 D_08938708, D_0893870A, D_0893870C, D_0893870E, D_08938710, D_0
 extern const s16 D_08938714, D_08938716;
 
 void func_08890E08(void *font, int v);
-void func_08832A9C(void *self, int on);
-void func_0882C11C(void *self, u16 x, u16 y, s32 w, s32 h, u8 r, u8 g, u8 b, u8 a, int mode);
-void func_0882CC9C(void *self, s16 *pts, int r, int g, int b, int a);
+void gfx_set_mask(void *self, int on);
+void gfx_draw_sprite_scaled_rgba(void *self, u16 x, u16 y, s32 w, s32 h, u8 r, u8 g, u8 b, u8 a, int mode);
+void gfx_draw_quad(void *self, s16 *pts, int r, int g, int b, int a);
 void menu_begin_draw(void *self);
 void fx_update_flash(void *self, u8 *e);
 void fx_update_star(void *self, u8 *e);
@@ -26,7 +26,7 @@ void fx_draw_all(u8 *self)
     self[0x534] = 12;
     func_08890E08(D_08A631A8, 3);
     menu_begin_draw(self);
-    func_08832A9C(self, 1);
+    gfx_set_mask(self, 1);
     for (i = 0; i < 6; i++, p += 0xC) {
         if (p[0x112C] == 1) {
             if (p[0x112D] == 2)
@@ -37,7 +37,7 @@ void fx_draw_all(u8 *self)
                 fx_update_flash(self, p + 0x112A);
         }
     }
-    func_08832A9C(self, 0);
+    gfx_set_mask(self, 0);
 }
 
 /* free effect slot (NULL if none) */
@@ -87,7 +87,7 @@ void fx_update_flash(void *self, u8 *e)
     default:
         return;
     }
-    func_0882C11C(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (D_089386F8 >> 1), e[9], D_089386F8,
+    gfx_draw_sprite_scaled_rgba(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (D_089386F8 >> 1), e[9], D_089386F8,
                   128, 32, 204, e[10], 129);
 }
 
@@ -107,7 +107,7 @@ static void fx_diamond(void *self, u8 *e)
     pts[5] = y + h;
     pts[6] = x + h;
     pts[7] = y;
-    func_0882CC9C(self, pts, 240, 240, 128, 127);
+    gfx_draw_quad(self, pts, 240, 240, 128, 127);
 }
 
 /* sparkle: square that fades out with a shrinking diamond */
@@ -124,7 +124,7 @@ void fx_update_star(void *self, u8 *e)
             return;
         }
         e[10] -= (u8)D_08938700;
-        func_0882C11C(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (e[9] >> 1), (s16)e[9], (s16)e[9],
+        gfx_draw_sprite_scaled_rgba(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (e[9] >> 1), (s16)e[9], (s16)e[9],
                       240, 240, 128, e[10], 129);
         fx_diamond(self, e);
         if (D_08938706 < e[11])
@@ -162,16 +162,16 @@ void fx_update_ring(void *self, u8 *e)
             return;
         }
         e[10] -= (u8)D_0893870E;
-        func_0882C11C(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (e[9] >> 1), (s16)e[9], (s16)e[9],
+        gfx_draw_sprite_scaled_rgba(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (e[9] >> 1), (s16)e[9], (s16)e[9],
                       (u8)D_08938716, (u8)D_08938716, (u8)(D_08938716 - 128), e[10], 129);
         e[11] += (u8)D_08938712;
-        func_08832A9C(self, 0);
-        func_0882C11C(self, S16(e, 4) - (e[11] >> 1), S16(e, 6) - (e[11] >> 1), (s16)e[11], (s16)e[11],
+        gfx_set_mask(self, 0);
+        gfx_draw_sprite_scaled_rgba(self, S16(e, 4) - (e[11] >> 1), S16(e, 6) - (e[11] >> 1), (s16)e[11], (s16)e[11],
                       (u8)D_08938714, (u8)D_08938714, (u8)D_08938714, e[10], 128);
-        func_08832A9C(self, 1);
+        gfx_set_mask(self, 1);
         return;
     case 1:
-        func_0882C11C(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (e[9] >> 1), (s16)e[9], (s16)e[9],
+        gfx_draw_sprite_scaled_rgba(self, S16(e, 4) - (e[9] >> 1), S16(e, 6) - (e[9] >> 1), (s16)e[9], (s16)e[9],
                       (u8)D_08938716, (u8)D_08938716, (u8)(D_08938716 - 128), e[10], 129);
         e[0] = (s8)e[0] + 1;
         e[9] += (u8)D_0893870A;

@@ -10,18 +10,18 @@ extern const char *const D_0893AF70;
 u8 func_088D7AD8(void *hunter, u8 a, int b);
 void func_088D8000(void *hunter);
 void func_088D893C(void *hunter);
-s32 func_08872D74(void *a, s32 i);
-s32 func_08872DC4(void *a, s32 i);
-u32 func_088564F8(void *game);
-s32 func_0886A30C(void *a, int b);
-s32 func_0886E578(void *a, u32 id, u16 i);
-s32 func_0886F78C(void *a);
+s32 quest_goal_kind(void *a, s32 i);
+s32 quest_goal_target(void *a, s32 i);
+u32 game_map_id(void *game);
+s32 quest_state(void *a, int b);
+s32 quest_goal_count(void *a, u32 id, u16 i);
+s32 quest_points(void *a);
 s32 func_0882A8B8(void *self, s32 i);
-u8 *func_0883B3D4(void *self, s32 i);
+u8 *hud_other_player(void *self, s32 i);
 void func_088912BC(void *font, int x, int y, const char *s);
-s16 func_088D7904(void *hunter);
-void func_0886C8AC(void *a, u32 b);
-u8 func_08872F0C(void *a);
+s16 hunter_deliver(void *hunter);
+void quest_send_item(void *a, u32 b);
+u8 quest_deliveries_done(void *a);
 void func_088966C0(void *self, int v);
 s32 menu_slot_first(void *self, u32 v);
 s32 menu_pouch_cursor(void *self, u8 *hunter);
@@ -32,7 +32,7 @@ s32 menu_other_ready(void *self);
 void menu_pouch_compact(void *self, u32 box_arg)
 {
     u8 box = box_arg;
-    u8 *hunter = (u8 *)func_088DCEBC(D_09A4F0C4, D_089CC438[0x28]);
+    u8 *hunter = (u8 *)player_get(D_09A4F0C4, D_089CC438[0x28]);
     s16 *list;
     s16 *p;
     u16 sel = 0, a = 0, b = 0;
@@ -169,7 +169,7 @@ u8 menu_get_mode(u8 *self)
 
         self[0x584] = 1;
         for (i = 0; i < 2; i++) {
-            if (func_08872D74(D_08A62C7C, i) == 3) {
+            if (quest_goal_kind(D_08A62C7C, i) == 3) {
                 self[0x5E6] |= 2;
                 break;
             }
@@ -198,15 +198,15 @@ s32 menu_other_ready(void *self)
     s32 i, a, b;
 
     for (i = 0; ; ) {
-        a = func_08872D74(D_08A62C7C, i);
+        a = quest_goal_kind(D_08A62C7C, i);
         if (a == 2 || a == 3) {
-            b = func_08872DC4(D_08A62C7C, i);
+            b = quest_goal_target(D_08A62C7C, i);
             if (b == 2)
                 break;
-            b = func_08872DC4(D_08A62C7C, i);
+            b = quest_goal_target(D_08A62C7C, i);
             if (b == 0x24)
                 break;
-            b = func_08872DC4(D_08A62C7C, i);
+            b = quest_goal_target(D_08A62C7C, i);
             if (b == 0x47)
                 break;
         }
@@ -249,17 +249,17 @@ int menu_item_for_quest(void *self, u32 id)
     {
         u16 q = *(u16 *)(D_089CC438 + 0x6AF0E);
 
-        if (func_088564F8(D_089CC438) != q)
+        if (game_map_id(D_089CC438) != q)
             return 0;
     }
-    if (func_0886A30C(D_08A62C7C, 1) != 0)
+    if (quest_state(D_08A62C7C, 1) != 0)
         return 0;
     for (i = 0; (s32)i < 2; i++) {
-        r = func_0886E578(D_08A62C7C, id, i & 0xFFFF);
+        r = quest_goal_count(D_08A62C7C, id, i & 0xFFFF);
         if (r >= 0) {
             if ((*(u32 *)((u8 *)D_08A62C7C + 0x28) & 0x10) == 0)
                 return 1;
-            if ((id & 0xFFFF) != 0x3A0 || func_0886F78C(D_08A62C7C) > 1999)
+            if ((id & 0xFFFF) != 0x3A0 || quest_points(D_08A62C7C) > 1999)
                 return 1;
         }
     }
@@ -310,10 +310,10 @@ void menu_draw_give(u8 *self, int alt)
             col[i] = 0;
             c = func_0882A8B8(self, i);
             if (c == 0) {
-                name[i] = (const char *)func_0883B3D4(self, i) + 8;
+                name[i] = (const char *)hud_other_player(self, i) + 8;
             } else if (c == 1) {
                 col[i] = 10;
-                name[i] = (const char *)func_0883B3D4(self, i) + 8;
+                name[i] = (const char *)hud_other_player(self, i) + 8;
             } else {
                 name[i] = NULL;
             }
@@ -342,20 +342,20 @@ void menu_draw_give(u8 *self, int alt)
 /* gives the selected item to player p */
 void menu_give_item(u8 *self, u32 p)
 {
-    if (func_088D7904(*(void **)(self + 0x530)) == 0)
+    if (hunter_deliver(*(void **)(self + 0x530)) == 0)
         return;
-    func_0886C8AC(D_08A62C7C, p);
+    quest_send_item(D_08A62C7C, p);
     self[0x1207] = 1;
-    if (func_08872F0C(D_08A62C7C) == 1)
+    if (quest_deliveries_done(D_08A62C7C) == 1)
         func_088966C0(self, 15);
 }
 
 extern void *D_08A62C40;          /* display list manager */
 extern const s16 D_089391A8[][6];  /* menu sprites: s16 u, v, w, h, u16 texture[2] */
-void func_08848D30(void *self);
-void func_0883BA38(void *self, u32 a);
-void func_088314A0(void *self, u16 a, u16 b);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
+void hud_pause_open(void *self);
+void hud_grid_input(void *self, u32 a);
+void tex_select(void *self, u16 a, u16 b);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
 
 /* 1 if the menu accepts input now (for the player of hunter, when given) */
 int menu_input_ready(u8 *self, u8 *hunter)
@@ -370,7 +370,7 @@ int menu_input_ready(u8 *self, u8 *hunter)
 /* state of player i: 3 absent, 1 in state 5, 2 in state 0, 0 otherwise */
 int menu_player_state(void *self, s32 i)
 {
-    u8 *p = func_0883B3D4(self, i);
+    u8 *p = hud_other_player(self, i);
 
     if (p == NULL)
         return 3;
@@ -403,8 +403,8 @@ s32 menu_open_give(u8 *self)
 void menu_close(u8 *self, u32 a)
 {
     if ((U8(*(u8 **)(self + 0x530), 0x1E0) != 0) == 1)
-        func_08848D30(self);
-    func_0883BA38(self, a);
+        hud_pause_open(self);
+    hud_grid_input(self, a);
 }
 
 /* draws the menu sprite id at (x, y) */
@@ -418,7 +418,7 @@ void menu_draw_sprite(u8 *self, u32 x, u32 y, s32 id)
     u8 layer;
     int i;
 
-    func_088314A0(self, t[4], t[5]);
+    tex_select(self, t[4], t[5]);
     dl = D_08A62C40;
     w[6] = 0x1E000001;
     w[8] = 0x50000001;
@@ -446,5 +446,5 @@ void menu_draw_sprite(u8 *self, u32 x, u32 y, s32 id)
         **(u32 **)(dl + 0x80198) = w[i];
         U32(dl, 0x80198) += 4;
     }
-    func_088596C8(dl, (u32 *)(cur + 24), 9, layer);
+    dl_link(dl, (u32 *)(cur + 24), 9, layer);
 }

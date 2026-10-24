@@ -4,10 +4,10 @@
 
 /* FILE functions at their original addresses: the FILEs store these addresses, as
  * in the game (the original then jumps to the C version, where there is one). */
-extern int func_0880E978(void *cookie, char *buf, int n);        /* __sread */
-extern int func_0880EA08(void *cookie, const char *buf, int n);  /* __swrite */
+extern int __sread(void *cookie, char *buf, int n);        /* __sread */
+extern int __swrite(void *cookie, const char *buf, int n);  /* __swrite */
 extern int func_0880EA8C(void *cookie, int off, int whence);     /* __sseek (not yet in C) */
-extern int func_0880EB20(void *cookie);                          /* __sclose */
+extern int __sclose(void *cookie);                          /* __sclose */
 extern void func_0880A8C8(struct _reent *r);                     /* _cleanup_r */
 
 /* Writes the buffer content of fp to disk; fp == NULL: all open files. */
@@ -52,10 +52,10 @@ void std(FILE *ptr, int flags, int file, struct _reent *data)
     ptr->_bf._size = 0;
     ptr->_lbfsize = 0;
     ptr->_cookie = ptr;
-    ptr->_read = func_0880E978;
-    ptr->_write = func_0880EA08;
+    ptr->_read = __sread;
+    ptr->_write = __swrite;
     ptr->_seek = func_0880EA8C;
-    ptr->_close = func_0880EB20;
+    ptr->_close = __sclose;
 }
 
 /* allocates a new block of n FILEs (zeroed) */

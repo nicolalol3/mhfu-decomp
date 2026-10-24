@@ -6,13 +6,12 @@ extern u8 *D_08A62C40;            /* display list manager */
 extern void *D_08A62D8C;          /* sound */
 extern u8 **D_09A4F060;
 extern u16 *D_09CE470C[][2];
-u32 func_088900C4(void *a, int b);
+u32 game_rand(void *a, int b);
 const u8 *kitchen_default(void *g, s32 i);
-#define func_08857D6C kitchen_default
 void felyne_create(u8 *g, u8 *e, s32 mode);
-u32 *func_088597FC(void *dl);
-void func_088596C8(void *dl, u32 *p, int n, u8 layer);
-void func_0885980C(void *dl, u32 *end);
+u32 *dl_cur(void *dl);
+void dl_link(void *dl, u32 *p, int n, u8 layer);
+void dl_set_cur(void *dl, u32 *end);
 void func_08882F10(void *snd, int a);
 void func_08885798(void *snd, int a, int b);
 void func_08885644(void *snd, int a, int b);
@@ -30,7 +29,7 @@ int game_test_flag(u8 *g, s32 i);
                 **(u32 **)((dl) + 0x80198) = (w)[i_];                               \
                 U32(dl, 0x80198) += 4;                                              \
             }                                                                       \
-            func_088596C8(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
+            dl_link(dl, (u32 *)(cur_ + (nh) * 4), nc, layer);                \
         }                                                                           \
     } while (0)
 
@@ -47,7 +46,7 @@ void kitchen_init(u8 *g)
         e[2] = 0;
         e[3] = 1;
         e[6] = i;
-        p = func_08857D6C(D_089CC438, i);
+        p = kitchen_default(D_089CC438, i);
         e[7] = p[0];
         e[0xA] = p[3];
         e[8] = p[1];
@@ -81,7 +80,7 @@ void save_draw_black(u8 *g)
 
     if ((u8)save_in_progress(g) != 1)
         return;
-    p = func_088597FC(D_08A62C40);
+    p = dl_cur(D_08A62C40);
     p[0] = 0x23000000;
     p[1] = 0xDE000000;
     p[2] = 0x21000001;
@@ -90,8 +89,8 @@ void save_draw_black(u8 *g)
     p[5] = 0xDBFF0003;
     p[6] = 0x10000000;
     p[7] = 0x08000000;
-    func_088596C8(D_08A62C40, p, 8, 9);
-    func_0885980C(D_08A62C40, p + 8);
+    dl_link(D_08A62C40, p, 8, 9);
+    dl_set_cur(D_08A62C40, p + 8);
     dl = D_08A62C40;
     v[0] = 0xA0000000;
     v[1] = 0;
@@ -193,12 +192,12 @@ s32 pouch_room_or_full(u8 *g, u32 id_arg)
 void kitchen_roll_daily(u8 *g)
 {
     if ((U32(g, 0x6ADF8) & 0x1000) == 0) {
-        g[0x44BD] = ((u16)func_088900C4(D_08A631A0, 1) & 3) + 1;
+        g[0x44BD] = ((u16)game_rand(D_08A631A0, 1) & 3) + 1;
     } else if ((u8)game_test_flag(g, 0x22) == 0) {
         game_set_flag(g, 0x22);
         g[0x44BD] = 0;
     } else {
-        g[0x44BD] = (u16)func_088900C4(D_08A631A0, 1) % 5;
+        g[0x44BD] = (u16)game_rand(D_08A631A0, 1) % 5;
     }
 }
 
@@ -498,7 +497,7 @@ void village_reset_visitors(u8 *g)
 
 void village_random_visitor(u8 *g)
 {
-    if (((u16)func_088900C4(D_08A631A0, 1) & 1) != 0) {
+    if (((u16)game_rand(D_08A631A0, 1) & 1) != 0) {
         game_clear_flag(g, 7);
         game_set_flag(g, 0x5D);
     } else {
@@ -511,7 +510,7 @@ void village_random_visitor(u8 *g)
 /* 1 in 8: the rare visitor comes */
 int village_rare_visitor(u8 *g)
 {
-    if (((u16)func_088900C4(D_08A631A0, 1) & 7) == 0) {
+    if (((u16)game_rand(D_08A631A0, 1) & 7) == 0) {
         game_set_flag(g, 0x30);
         game_clear_flag(g, 7);
         game_clear_flag(g, 0x5D);

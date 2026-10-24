@@ -8,7 +8,6 @@ extern u8 *D_0899BF40[];
 extern const u16 D_0899C0A8[];       /* ids of the progress flags (end: 0xEA60) */
 
 u32 game_group_count_total(u8 *g, u32 id);
-#define func_08850520 game_group_count_total
 
 u8 *game_state_dtor(u8 *g, s32 flag)
 {
@@ -216,17 +215,15 @@ void game_update_record_min(u8 *g, u32 i, u32 v)
 /* 1 if the counter a of the item list is at least n */
 int game_has_at_least(void *g, u32 a, u32 n)
 {
-    return (u16)func_08850520(g, a) >= (u16)n;
+    return (u16)game_group_count_total(g, a) >= (u16)n;
 }
 
 extern const f32 D_0899C760[];      /* base size of each monster */
 extern void *D_09CFB798;
 void func_09C19080(void *a, int b);
-s32 func_088572B0(void *g, u32 a);
+s32 flag_id_index(void *g, u32 a);
 s32 game_box_size(void *g);
-#define func_08850EC4 game_box_size
 int game_slot_equipped(u8 *g, u32 i);
-#define func_08850C9C game_slot_equipped
 
 u32 game_best_record_max(u8 *g, u32 id, u8 *which);
 u32 game_best_record_min(u8 *g, u32 id, u8 *which);
@@ -360,7 +357,7 @@ int game_test_flag2(u8 *g, s32 i)
 
 void game_clear_flag3(u8 *g, u32 a)
 {
-    s32 i = func_088572B0(g, a);
+    s32 i = flag_id_index(g, a);
 
     U32(g, 0x6ADF0 + (i >> 5) * 4) &= ~(1 << (i & 0x1F));
 }
@@ -368,7 +365,7 @@ void game_clear_flag3(u8 *g, u32 a)
 /* slots of 0xC bytes at g+0x548 */
 u32 game_free_slot(u8 *g)
 {
-    s16 n = func_08850EC4(g);
+    s16 n = game_box_size(g);
     s16 i;
 
     for (i = 0; i < n; i++) {
@@ -385,7 +382,7 @@ u32 game_alloc_slot(u8 *g, u32 kind_arg, u32 a, u32 b)
 
     if (kind >= 7)
         return 0xFFFF;
-    n = func_08850EC4(g);
+    n = game_box_size(g);
     for (i = 0; i < n; i++) {
         u8 *s = g + 0x4A0 + i * 0xC;
 
@@ -408,7 +405,7 @@ int game_free_slot_at(u8 *g, u32 i_arg)
     u16 i = i_arg;
     u8 *s;
 
-    if ((u8)func_08850C9C(g, i) != 0)
+    if ((u8)game_slot_equipped(g, i) != 0)
         return 0;
     s = g + 0x4A0 + i * 0xC;
     s[0xA8] = 0;
@@ -422,7 +419,7 @@ int game_free_slot_at(u8 *g, u32 i_arg)
 }
 
 extern const u8 D_08963258[], D_08967678[], D_0896F850[], D_0896B818[], D_08973838[];  /* armor tables (0x28 bytes each) */
-s32 func_0885C5CC(void *a, u32 id);
+s32 item_seen(void *a, u32 id);
 
 int game_slot_is(u8 *g, u32 i_arg, s32 k1, s32 k2);
 
@@ -518,7 +515,7 @@ s32 game_box_pages(void *g)
     u16 id;
 
     for (id = 0x33D; id < 0x33F; id++) {
-        if ((u8)func_0885C5CC(D_08A62C50, id) == 1)
+        if ((u8)item_seen(D_08A62C50, id) == 1)
             n++;
     }
     return n;
@@ -565,9 +562,9 @@ void game_update_time(u8 *g)
 
 extern u8 *D_089CBBE4;            /* camera */
 extern u8 *D_089CBFFC;            /* render lists */
-void func_08812A08(void *cam);
+void camera_init(void *cam);
 void rl_begin_frame(u8 *self);
-u16 *func_08869880(void *q);
+u16 *quest_sub_data(void *q);
 
 /* start of a quest: resets the state, the camera and the render lists */
 void game_quest_start(u8 *g)
@@ -578,7 +575,7 @@ void game_quest_start(u8 *g)
     g[0xD] = 0;
     U16(g, 0x6AF12) = 1;
     U32(g, 0x6AF14) &= ~1;
-    func_08812A08(D_089CBBE4);
+    camera_init(D_089CBBE4);
     rl_begin_frame(D_089CBFFC);
 }
 
@@ -590,7 +587,7 @@ void game_fill_supply_box(u8 *g)
 
     for (i = 0; i < 0x40; i++)
         U16(g, 0x390 + i * 2) = 0;
-    s = func_08869880(D_08A62C7C);
+    s = quest_sub_data(D_08A62C7C);
     if (s[0] != 0) {
         for (i = 0;;) {
             U16(g, 0x390 + i * 4) = s[0];
@@ -616,7 +613,7 @@ extern const s8 D_0899BE20[14];   /* default options */
 extern s32 D_09A1DB50;
 extern void *D_08A62D8C;          /* sound */
 extern const u32 D_0899C49C[], D_0899C514;
-u32 func_088900C4(void *a, int b);
+u32 game_rand(void *a, int b);
 void func_088902A8(void *a);
 void func_08880760(void *snd, int v);
 void func_08880864(void *snd, int v);
@@ -628,11 +625,11 @@ s32 game_dpad_value(void *g, u32 a, u32 b)
 {
     u16 k;
 
-    func_088900C4(D_08A631A0, 1);
-    func_088900C4(D_08A631A0, 1);
-    func_088900C4(D_08A631A0, 1);
+    game_rand(D_08A631A0, 1);
+    game_rand(D_08A631A0, 1);
+    game_rand(D_08A631A0, 1);
     if ((D_08A62C68 & 0xF0) == 0)
-        k = (u16)func_088900C4(D_08A631A0, 1) & 3;
+        k = (u16)game_rand(D_08A631A0, 1) & 3;
     else if (D_08A62C68 & 0x10)
         k = 0;
     else if (D_08A62C68 & 0x40)
