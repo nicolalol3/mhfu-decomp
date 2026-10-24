@@ -48,6 +48,39 @@ static inline f32 vfpu_sqrtf(f32 x)
     return r;
 }
 
+/* distance between the points a and b (x, y, z), as vsub.t + vdot.t + vsqrt.s */
+static inline f32 vfpu_dist3(const f32 *a, const f32 *b)
+{
+    f32 r;
+    __asm__ volatile("lv.s S000, 0(%1)\n"
+                     "lv.s S001, 4(%1)\n"
+                     "lv.s S002, 8(%1)\n"
+                     "lv.s S010, 0(%2)\n"
+                     "lv.s S011, 4(%2)\n"
+                     "lv.s S012, 8(%2)\n"
+                     "vsub.t C000, C000, C010\n"
+                     "vdot.t S010, C000, C000\n"
+                     "vsqrt.s S010, S010\n"
+                     "mfv %0, S010" : "=r"(r) : "r"(a), "r"(b) : "memory");
+    return r;
+}
+
+/* squared distance between a and b (vsub.t + vdot.t) */
+static inline f32 vfpu_dist3_sq(const f32 *a, const f32 *b)
+{
+    f32 r;
+    __asm__ volatile("lv.s S000, 0(%1)\n"
+                     "lv.s S001, 4(%1)\n"
+                     "lv.s S002, 8(%1)\n"
+                     "lv.s S010, 0(%2)\n"
+                     "lv.s S011, 4(%2)\n"
+                     "lv.s S012, 8(%2)\n"
+                     "vsub.t C000, C000, C010\n"
+                     "vdot.t S010, C000, C000\n"
+                     "mfv %0, S010" : "=r"(r) : "r"(a), "r"(b) : "memory");
+    return r;
+}
+
 /* square root with the FPU instruction */
 static inline f32 fpu_sqrtf(f32 x)
 {
