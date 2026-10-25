@@ -3,18 +3,42 @@
  * (byte table + XOR with a small pseudo-random generator seeded by the sector),
  * checked with SHA-1 ("sha1Thread") and copied to their destination ("transferThread").
  * (Guessed names.)
- *
- * Fields of the loader (p):
- *   0x0004 + i * 0x20  queue of 128 requests (Request)
- *   0x1004 / 0x1008    index of the request being read / first free request
- *   0x100C             state of the reading thread
- *   0x1010             file descriptor of DATA.BIN
- *   0x2AC0 + id * 4    first sector of each file in DATA.BIN
- *   0x9300             read buffer (0x20000 bytes)
- *   0x2931C            semaphore of the file access, 0x29340 current position in DATA.BIN
- *   0x29348 + id * 4   patch file number (0xFFFF = none) and sector in the patch file
- *   0x2FB4C            SHA-1 of the last block, 0x2FBD4 / 0x2FBD8 generator state */
+ */
 #include "menu.h"
+
+enum {     /* fields of the loader (p) */
+    LD_QUEUE = 0x4,             /* 128 requests of 0x20 bytes */
+    LD_CUR = 0x1004,            /* u32 request being read */
+    LD_FREE = 0x1008,           /* u32 first free request */
+    LD_STATE = 0x100C,          /* u32 state of the reading thread */
+    LD_FD = 0x1010,             /* u32 file descriptor of DATA.BIN */
+    LD_X1014 = 0x1014,          /* u8 */
+    LD_PATCH_BASE = 0x1018,     /* u32 number in the name of the patch files */
+    LD_PATH = 0x101C,           /* char[] path of the patch file */
+    LD_PATCH_OPEN = 0x111C,     /* u8 */
+    LD_PATCH_ID = 0x111E,       /* u16 file read from the patch */
+    LD_PATCH_TABLE = 0x1140,    /* table of the patch files (0x1968 bytes) */
+    LD_SECTORS = 0x2AC0,        /* u32 first sector of each file in DATA.BIN */
+    LD_BUF = 0x9300,            /* read buffer (0x20000 bytes) */
+    LD_SEMA = 0x2931C,          /* u32 semaphore of the file access */
+    LD_POS = 0x29340,           /* u32 current position in DATA.BIN */
+    LD_THREAD = 0x29344,        /* u32 reading thread */
+    LD_PATCH = 0x29348,         /* {u16 patch file, u16 sector} for each file (0xFFFF: none) */
+    LD_SHA1 = 0x2FB4C,          /* u8[20] SHA-1 of the last block */
+    LD_SHA1_CTX = 0x2FB60,      /* SHA-1 state */
+    LD_SHA1_EVENT = 0x2FBC0,    /* u32 */
+    LD_SHA1_THREAD = 0x2FBC4,   /* u32 */
+    LD_SHA1_REQ = 0x2FBC8,      /* u32 request to check */
+    LD_CHECK_HASH = 0x2FBCC,    /* u8 SHA-1 checks enabled */
+    LD_XFER_POS = 0x2FBD0,      /* u32 */
+    LD_RNG_A = 0x2FBD4,         /* u32 state of the decryption generator */
+    LD_RNG_B = 0x2FBD8,         /* u32 */
+    LD_ERR_MODE = 0x2FBDC,      /* u8 errors are reported */
+    LD_ERROR = 0x2FBE0,         /* u32 error message to show (0: none) */
+    LD_X2FBE4 = 0x2FBE4,        /* u32 */
+    LD_XFER_EVENT = 0x2FBE8,    /* u32 */
+    LD_XFER_THREAD = 0x2FBEC,   /* u32 transfer thread */
+};
 
 /* system functions (imported by the EBOOT) */
 int sceUmdActivate(int unit, const char *drive);
@@ -72,7 +96,21 @@ void func_08903C64(void *ctx, void *out);
 void func_08903E60(void *ctx);
 void func_089040A0(const void *data, u32 size, void *out);
 
-#define REQ(p, i) ((p) + 4 + (i) * 0x20)
+#define REQ(p, i) ((p) + LD_QUEUE + (i) * 0x20)
+enum {     /* fields of a request (0x20 bytes) */
+    RQ_BUSY = 0x0,              /* u16 1 while in the queue */
+    RQ_FILE = 0x2,              /* u16 file id */
+    RQ_DST = 0x4,               /* u32 destination */
+    RQ_SIZE = 0x8,              /* u32 bytes of this block */
+    RQ_OFFSET = 0xC,            /* u32 offset in the file */
+    RQ_TOTAL = 0x10,            /* u32 size of the whole file */
+    RQ_DONE = 0x14,             /* u32 where to signal the end */
+    RQ_MODE = 0x18,             /* u8 */
+    RQ_FIRST = 0x19,            /* u8 first block of the file */
+    RQ_CHECK = 0x1B,            /* u8 */
+    RQ_HASH = 0x1C,             /* u8 check the SHA-1 */
+};
+
 /* request: u16 used (0), u16 file id (2), u32 destination (4), u32 size (8),
  * u32 offset in the file (0xC), u32 total size (0x10), u32 *done (0x14),
  * u8 mode (0x18), first block (0x19), last block (0x1A), decrypt (0x1B), hash (0x1C) */
@@ -107,46 +145,46 @@ void fl_init(u8 *p)
     for (;;) {
         s32 fd = sceIoOpen(fl_data_path(p), 1, 0);
 
-        U32(p, 0x1010) = fd;
+        U32(p, LD_FD) = fd;
         if (fd >= 0)
             break;
         sceKernelDelayThreadCB(10000);
     }
-    sceKernelDcacheInvalidateRange(p + 0x2AC0, 0x6840);
-    while (sceIoRead(U32(p, 0x1010), p + 0x2AC0, 0x6808) < 0)
+    sceKernelDcacheInvalidateRange(p + LD_SECTORS, 0x6840);
+    while (sceIoRead(U32(p, LD_FD), p + LD_SECTORS, 0x6808) < 0)
         sceKernelDelayThreadCB(10000);
-    sceKernelDcacheWritebackRange(p + 0x2AC0, 0x6840);
+    sceKernelDcacheWritebackRange(p + LD_SECTORS, 0x6840);
     fl_set_seed(p, 0);
-    fl_decrypt(p, p + 0x2AC0, 0x6808, 0);
-    sceKernelDcacheInvalidateRange(p + 0x1140, 0x1980);
-    while (sceIoRead(U32(p, 0x1010), p + 0x1140, 0x1968) < 0)
+    fl_decrypt(p, p + LD_SECTORS, 0x6808, 0);
+    sceKernelDcacheInvalidateRange(p + LD_PATCH_TABLE, 0x1980);
+    while (sceIoRead(U32(p, LD_FD), p + LD_PATCH_TABLE, 0x1968) < 0)
         sceKernelDelayThreadCB(10000);
-    sceKernelDcacheWritebackRange(p + 0x1140, 0x1980);
-    fl_decrypt(p, p + 0x1140, 0x1968, 0x6808);
+    sceKernelDcacheWritebackRange(p + LD_PATCH_TABLE, 0x1980);
+    fl_decrypt(p, p + LD_PATCH_TABLE, 0x1968, 0x6808);
     while (sceIoGetstat(fl_data_path(p), st) < 0)
         sceKernelDelayThreadCB(10000);
-    U32(p, 0x1018) = st[0x10];
+    U32(p, LD_PATCH_BASE) = st[0x10];
     fl_build_patch_table(p);
-    p[0x1014] = 3;
+    p[LD_X1014] = 3;
     func_088B85CC(p);
-    p[0x111C] = 0;
-    U32(p, 0x29344) = sceKernelCreateThread(D_0899A120, fl_loader_thread, 0x30, 0x1000, 0, NULL);
+    p[LD_PATCH_OPEN] = 0;
+    U32(p, LD_THREAD) = sceKernelCreateThread(D_0899A120, fl_loader_thread, 0x30, 0x1000, 0, NULL);
     arg = p;
-    sceKernelStartThread(U32(p, 0x29344), 4, &arg);
-    U32(p, 0x2FBC0) = sceKernelCreateEventFlag(D_0899A130, 0x200, 0, NULL);
-    U32(p, 0x2FBC4) = sceKernelCreateThread(D_0899A140, fl_sha1_thread, 0x31, 0x1000, 0, NULL);
+    sceKernelStartThread(U32(p, LD_THREAD), 4, &arg);
+    U32(p, LD_SHA1_EVENT) = sceKernelCreateEventFlag(D_0899A130, 0x200, 0, NULL);
+    U32(p, LD_SHA1_THREAD) = sceKernelCreateThread(D_0899A140, fl_sha1_thread, 0x31, 0x1000, 0, NULL);
     arg = p;
-    sceKernelStartThread(U32(p, 0x2FBC4), 4, &arg);
-    *(u32 *)(g_sys + 0xF7F030) = U32(p, 0x2FBC4);
+    sceKernelStartThread(U32(p, LD_SHA1_THREAD), 4, &arg);
+    *(u32 *)(g_sys + 0xF7F030) = U32(p, LD_SHA1_THREAD);
     g_sys[0xF7F034] = 1;
-    U32(p, 0x2FBE8) = sceKernelCreateEventFlag(D_0899A14C, 0x200, 0, NULL);
-    U32(p, 0x2FBEC) = sceKernelCreateThread(D_0899A160, D_0884E678, 0x13, 0x1000, 0, NULL);
+    U32(p, LD_XFER_EVENT) = sceKernelCreateEventFlag(D_0899A14C, 0x200, 0, NULL);
+    U32(p, LD_XFER_THREAD) = sceKernelCreateThread(D_0899A160, D_0884E678, 0x13, 0x1000, 0, NULL);
     arg = p;
-    sceKernelStartThread(U32(p, 0x2FBEC), 4, &arg);
-    p[0x2FBCC] = 1;
-    p[0x2FBDC] = 1;
-    U32(p, 0x2FBE0) = 0;
-    U32(p, 0x2FBE4) = 0;
+    sceKernelStartThread(U32(p, LD_XFER_THREAD), 4, &arg);
+    p[LD_CHECK_HASH] = 1;
+    p[LD_ERR_MODE] = 1;
+    U32(p, LD_ERROR) = 0;
+    U32(p, LD_X2FBE4) = 0;
 }
 
 /* wakes the thread ev (transfer or SHA-1) and waits until it is done */
@@ -164,7 +202,7 @@ static void fl_request_done(u8 *p)
 
     func_088B85F8(p);
     sceKernelResumeDispatchThread(st);
-    sceKernelSignalSema(U32(p, 0x2931C), 1);
+    sceKernelSignalSema(U32(p, LD_SEMA), 1);
 }
 
 /* thread "fakeRofsLoader": executes the queued requests one block at a time */
@@ -173,28 +211,28 @@ void fl_loader_thread(u32 args, void *argp)
     u8 *p = *(u8 **)argp;
 
     for (;;) {
-        u8 *e = REQ(p, U32(p, 0x1004));
+        u8 *e = REQ(p, U32(p, LD_CUR));
         s32 n, size;
 
-        if (U16(e, 0) == 0) {
+        if (U16(e, RQ_BUSY) == 0) {
             sceKernelSleepThread();
             continue;
         }
-        switch (U32(p, 0x100C)) {
+        switch (U32(p, LD_STATE)) {
         case 0:
-            sceKernelWaitSema(U32(p, 0x2931C), 1, NULL);
-            U32(p, 0x100C) = (S8(g_game, 0x6ADDE) != 0) ? 1 : 7;
+            sceKernelWaitSema(U32(p, LD_SEMA), 1, NULL);
+            U32(p, LD_STATE) = (S8(g_game, 0x6ADDE) != 0) ? 1 : 7;
             continue;
         case 1: {
             /* patch file on the Memory Stick */
             char path[64];
-            u16 id = U16(e, 2);
-            u16 num = U16(p, 0x29348 + id * 4);
+            u16 id = U16(e, RQ_FILE);
+            u16 num = U16(p, LD_PATCH + id * 4);
             s32 fd, tries = 30;
             s32 r;
 
             if (num == 0xFFFF) {
-                U32(p, 0x100C) = 7;
+                U32(p, LD_STATE) = 7;
                 continue;
             }
             sprintf(path, D_0899A174, num);
@@ -207,30 +245,30 @@ void fl_loader_thread(u32 args, void *argp)
                     break;
             }
             if (fd < 0) {
-                U32(p, 0x100C) = 7;
+                U32(p, LD_STATE) = 7;
                 fl_report_error(p, fd);
                 continue;
             }
-            r = sceIoLseek(fd, (s32)(U32(e, 0xC) + (U16(p, 0x2934A + U16(e, 2) * 4) << 11)), 0);
+            r = sceIoLseek(fd, (s32)(U32(e, RQ_OFFSET) + (U16(p, 0x2934A + U16(e, RQ_FILE) * 4) << 11)), 0);
             if (r < 0) {
                 sceIoClose(fd);
-                U32(p, 0x100C) = 7;
+                U32(p, LD_STATE) = 7;
                 fl_report_error(p, r);
                 continue;
             }
             n = fl_read_block(p, fd, e);
-            if (n == (s32)U32(e, 8)) {
-                U32(p, 0x2FBC8) = (u32)e;
-                if (fl_in_user_ram(p, U32(e, 4) + U32(e, 0xC), U32(e, 8)) == 0)
+            if (n == (s32)U32(e, RQ_SIZE)) {
+                U32(p, LD_SHA1_REQ) = (u32)e;
+                if (fl_in_user_ram(p, U32(e, RQ_DST) + U32(e, RQ_OFFSET), U32(e, RQ_SIZE)) == 0)
                     fl_copy_block(p, e);
                 else if (fl_must_copy(p, e))
                     fl_run_thread(p, 0x2FBE8);
                 if (fl_must_copy(p, e)) {
                     fl_run_thread(p, 0x2FBC0);
-                    if (e[0x1C] != 0 && e[0x1A] != 0
-                        && memcmp(p + 0x2FB4C, D_08979804 + U16(e, 2) * 0x14, 0x14) != 0) {
+                    if (e[RQ_HASH] != 0 && e[0x1A] != 0
+                        && memcmp(p + LD_SHA1, D_08979804 + U16(e, RQ_FILE) * 0x14, 0x14) != 0) {
                         sceIoClose(fd);
-                        U32(p, 0x100C) = 7;
+                        U32(p, LD_STATE) = 7;
                         fl_report_error(p, n);
                         fl_requeue(p, e);
                         continue;
@@ -242,23 +280,23 @@ void fl_loader_thread(u32 args, void *argp)
                     continue;
                 }
             }
-            U32(p, 0x100C) = 7;
+            U32(p, LD_STATE) = 7;
             fl_report_error(p, n);
             sceIoClose(fd);
             continue;
         }
         case 7: {
             /* seek to the file in DATA.BIN */
-            u32 pos = U32(p, 0x2AC0 + U16(e, 2) * 4) << 11;
+            u32 pos = U32(p, LD_SECTORS + U16(e, RQ_FILE) * 4) << 11;
 
-            if (U32(p, 0x29340) != pos) {
-                if (sceIoLseek(U32(p, 0x1010), (s32)(U32(e, 0xC) + pos), 0) < 0) {
+            if (U32(p, LD_POS) != pos) {
+                if (sceIoLseek(U32(p, LD_FD), (s32)(U32(e, RQ_OFFSET) + pos), 0) < 0) {
                     sceKernelDelayThreadCB(10000);
                     continue;
                 }
-                U32(p, 0x29340) = U32(e, 0xC) + (U32(p, 0x2AC0 + U16(e, 2) * 4) << 11);
+                U32(p, LD_POS) = U32(e, RQ_OFFSET) + (U32(p, LD_SECTORS + U16(e, RQ_FILE) * 4) << 11);
             }
-            U32(p, 0x100C) = 10;
+            U32(p, LD_STATE) = 10;
         }
             /* fall through */
         case 10:
@@ -266,33 +304,33 @@ void fl_loader_thread(u32 args, void *argp)
                 sceKernelDelayThreadCB(10000);
                 continue;
             }
-            U32(p, 0x100C) = 8;
+            U32(p, LD_STATE) = 8;
             /* fall through */
         case 8:
             /* read a block from DATA.BIN */
-            n = fl_read_block(p, U32(p, 0x1010), e);
-            size = U32(e, 8);
+            n = fl_read_block(p, U32(p, LD_FD), e);
+            size = U32(e, RQ_SIZE);
             if (n != size) {
                 sceKernelDelayThreadCB(10000);
                 continue;
             }
             if (size < 0)
-                size = VCALL(p, 0x18)(p, U16(e, 2));
+                size = VCALL(p, 0x18)(p, U16(e, RQ_FILE));
             if (n != size) {
-                U32(p, 0x100C) = 7;
+                U32(p, LD_STATE) = 7;
                 sceKernelDelayThreadCB(10000);
                 continue;
             }
-            U32(p, 0x2FBC8) = (u32)e;
-            U32(p, 0x29340) += size;
-            if (fl_in_user_ram(p, U32(e, 4) + U32(e, 0xC), U32(e, 8)) == 0)
+            U32(p, LD_SHA1_REQ) = (u32)e;
+            U32(p, LD_POS) += size;
+            if (fl_in_user_ram(p, U32(e, RQ_DST) + U32(e, RQ_OFFSET), U32(e, RQ_SIZE)) == 0)
                 fl_copy_block(p, e);
             else
                 fl_run_thread(p, 0x2FBE8);
             if (fl_must_copy(p, e))
                 fl_run_thread(p, 0x2FBC0);
-            if (fl_must_copy(p, e) == 0 && U32(e, 0x14) != 0)
-                *(u32 *)U32(e, 0x14) = 1;
+            if (fl_must_copy(p, e) == 0 && U32(e, RQ_DONE) != 0)
+                *(u32 *)U32(e, RQ_DONE) = 1;
             fl_request_done(p);
             continue;
         }
@@ -307,21 +345,21 @@ void fl_requeue(u8 *p, u8 *e)
 
     for (i = 0; i < 8; i++)
         c[i] = U32(e, i * 4);
-    U16(e, 0) = 0;
+    U16(e, RQ_BUSY) = 0;
     n = (s32)(c[4] + 0x1FFFF) / 0x20000;
-    U32(p, 0x1004) = (U32(p, 0x1004) - (n - 1)) & 0x7F;
-    U32(p, 0x1008) = U32(p, 0x1004);
+    U32(p, LD_CUR) = (U32(p, LD_CUR) - (n - 1)) & 0x7F;
+    U32(p, LD_FREE) = U32(p, LD_CUR);
     (*(void (**)(void *, u32, u32, u32, u32, u32, u32))(*(u8 **)p + 0x34))(p, c[0] >> 16, c[1], c[4],
                                                                           c[6] & 0xFF, c[5], 0);
-    if (U16(REQ(p, U32(p, 0x1008)), 0) != 0) {
+    if (U16(REQ(p, U32(p, LD_FREE)), 0) != 0) {
         for (i = 0;;) {
             i++;
-            U32(p, 0x1008) = (U32(p, 0x1008) + 1) & 0x7F;
+            U32(p, LD_FREE) = (U32(p, LD_FREE) + 1) & 0x7F;
             if (i >= 0x7F) {
-                U32(p, 0x1008) = (U32(p, 0x1004) - 1) & 0x7F;
+                U32(p, LD_FREE) = (U32(p, LD_CUR) - 1) & 0x7F;
                 return;
             }
-            if (U16(REQ(p, U32(p, 0x1008)), 0) == 0)
+            if (U16(REQ(p, U32(p, LD_FREE)), 0) == 0)
                 return;
         }
     }
@@ -336,33 +374,33 @@ void fl_sha1_thread(u32 args, void *argp)
     u8 *p = *(u8 **)argp;
 
     for (;;) {
-        sceKernelWaitEventFlag(U32(p, 0x2FBC0), 1, 0, NULL, NULL);
-        if (fl_must_copy(p, (u8 *)U32(p, 0x2FBC8))) {
-            if (((u8 *)U32(p, 0x2FBC8))[0x1B] != 0)
-                fl_decrypt_block(p, (u8 *)U32(p, 0x2FBC8));
-            if (((u8 *)U32(p, 0x2FBC8))[0x1C] != 0)
-                fl_hash_block(p, (u8 *)U32(p, 0x2FBC8));
+        sceKernelWaitEventFlag(U32(p, LD_SHA1_EVENT), 1, 0, NULL, NULL);
+        if (fl_must_copy(p, (u8 *)U32(p, LD_SHA1_REQ))) {
+            if (((u8 *)U32(p, LD_SHA1_REQ))[0x1B] != 0)
+                fl_decrypt_block(p, (u8 *)U32(p, LD_SHA1_REQ));
+            if (((u8 *)U32(p, LD_SHA1_REQ))[0x1C] != 0)
+                fl_hash_block(p, (u8 *)U32(p, LD_SHA1_REQ));
         }
-        sceKernelClearEventFlag(U32(p, 0x2FBC0), ~1);
-        sceKernelSetEventFlag(U32(p, 0x2FBC0), 0x10);
+        sceKernelClearEventFlag(U32(p, LD_SHA1_EVENT), ~1);
+        sceKernelSetEventFlag(U32(p, LD_SHA1_EVENT), 0x10);
     }
 }
 
 /* reads the block of the request in the read buffer */
 s32 fl_read_block(u8 *p, s32 fd, u8 *e)
 {
-    sceKernelDcacheInvalidateRange(p + 0x9300, 0x20000);
-    return sceIoRead(fd, p + 0x9300, U32(e, 8));
+    sceKernelDcacheInvalidateRange(p + LD_BUF, 0x20000);
+    return sceIoRead(fd, p + LD_BUF, U32(e, RQ_SIZE));
 }
 
 /* copies the read buffer to the destination (or marks the request as done) */
 void fl_copy_block(u8 *p, u8 *e)
 {
     if (fl_must_copy(p, e) == 0) {
-        if (U32(e, 0x14) != 0)
-            *(u32 *)U32(e, 0x14) = 1;
+        if (U32(e, RQ_DONE) != 0)
+            *(u32 *)U32(e, RQ_DONE) = 1;
     } else {
-        memcpy((void *)(U32(e, 4) + U32(e, 0xC)), p + 0x9300, U32(e, 8));
+        memcpy((void *)(U32(e, RQ_DST) + U32(e, RQ_OFFSET)), p + LD_BUF, U32(e, RQ_SIZE));
         sceKernelDcacheWritebackAll();
     }
 }
@@ -372,7 +410,7 @@ int fl_must_copy(u8 *p, u8 *e)
 {
     if (g_monster_models[0x214] != 0)
         return 1;
-    return fl_in_user_ram(p, U32(e, 4) + U32(e, 0xC), U32(e, 8)) == 0;
+    return fl_in_user_ram(p, U32(e, RQ_DST) + U32(e, RQ_OFFSET), U32(e, RQ_SIZE)) == 0;
 }
 
 int fl_in_user_ram(u8 *p, u32 addr, s32 size)
@@ -383,30 +421,30 @@ int fl_in_user_ram(u8 *p, u32 addr, s32 size)
 /* SHA-1 of the destination block (whole file over several blocks) */
 void fl_hash_block(u8 *p, u8 *e)
 {
-    u8 *dst = (u8 *)(U32(e, 4) + U32(e, 0xC));
+    u8 *dst = (u8 *)(U32(e, RQ_DST) + U32(e, RQ_OFFSET));
 
-    if (e[0x19] != 0 && e[0x1A] != 0) {
-        func_089040A0(dst, U32(e, 8), p + 0x2FB4C);
-    } else if (e[0x19] != 0) {
-        func_08903E60(p + 0x2FB60);
-        func_08903A94(p + 0x2FB60, dst, U32(e, 8));
+    if (e[RQ_FIRST] != 0 && e[0x1A] != 0) {
+        func_089040A0(dst, U32(e, RQ_SIZE), p + LD_SHA1);
+    } else if (e[RQ_FIRST] != 0) {
+        func_08903E60(p + LD_SHA1_CTX);
+        func_08903A94(p + LD_SHA1_CTX, dst, U32(e, RQ_SIZE));
     } else if (e[0x1A] == 0) {
-        func_08903A94(p + 0x2FB60, dst, U32(e, 8));
+        func_08903A94(p + LD_SHA1_CTX, dst, U32(e, RQ_SIZE));
     } else {
-        func_08903A94(p + 0x2FB60, dst, U32(e, 8));
-        func_08903C64(p + 0x2FB60, p + 0x2FB4C);
+        func_08903A94(p + LD_SHA1_CTX, dst, U32(e, RQ_SIZE));
+        func_08903C64(p + LD_SHA1_CTX, p + LD_SHA1);
     }
 }
 
 /* decrypts the destination block (the generator is seeded at the first block) */
 void fl_decrypt_block(u8 *p, u8 *e)
 {
-    u32 off = U32(e, 0xC) + (U32(p, 0x2AC0 + U16(e, 2) * 4) << 11);
-    u8 *dst = (u8 *)(U32(e, 4) + U32(e, 0xC));
+    u32 off = U32(e, RQ_OFFSET) + (U32(p, LD_SECTORS + U16(e, RQ_FILE) * 4) << 11);
+    u8 *dst = (u8 *)(U32(e, RQ_DST) + U32(e, RQ_OFFSET));
 
-    if (e[0x19] != 0)
+    if (e[RQ_FIRST] != 0)
         fl_set_seed(p, off >> 11);
-    fl_decrypt(p, dst, U32(e, 8), off);
+    fl_decrypt(p, dst, U32(e, RQ_SIZE), off);
 }
 
 u32 fl_rand(u8 *p);
@@ -430,22 +468,22 @@ void fl_watchdog(u8 *p)
 {
     u8 *arg;
 
-    if (sceKernelPollEventFlag(U32(p, 0x2FBE8), 1, 0, NULL) == 0) {
-        sceKernelTerminateThread(U32(p, 0x2FBEC));
-        sceKernelClearEventFlag(U32(p, 0x2FBE8), ~1);
-        sceKernelSetEventFlag(U32(p, 0x2FBE8), 0x10);
+    if (sceKernelPollEventFlag(U32(p, LD_XFER_EVENT), 1, 0, NULL) == 0) {
+        sceKernelTerminateThread(U32(p, LD_XFER_THREAD));
+        sceKernelClearEventFlag(U32(p, LD_XFER_EVENT), ~1);
+        sceKernelSetEventFlag(U32(p, LD_XFER_EVENT), 0x10);
         arg = p;
-        sceKernelStartThread(U32(p, 0x2FBEC), 4, &arg);
+        sceKernelStartThread(U32(p, LD_XFER_THREAD), 4, &arg);
     }
-    if (sceKernelPollEventFlag(U32(p, 0x2FBC0), 1, 0, NULL) == 0) {
-        u8 *e = (u8 *)U32(p, 0x2FBC8);
+    if (sceKernelPollEventFlag(U32(p, LD_SHA1_EVENT), 1, 0, NULL) == 0) {
+        u8 *e = (u8 *)U32(p, LD_SHA1_REQ);
 
-        if (fl_in_user_ram(p, U32(e, 4) + U32(e, 0xC), U32(e, 8)) != 0) {
-            sceKernelTerminateThread(U32(p, 0x2FBC4));
-            sceKernelClearEventFlag(U32(p, 0x2FBC0), ~1);
-            sceKernelSetEventFlag(U32(p, 0x2FBC0), 0x10);
+        if (fl_in_user_ram(p, U32(e, RQ_DST) + U32(e, RQ_OFFSET), U32(e, RQ_SIZE)) != 0) {
+            sceKernelTerminateThread(U32(p, LD_SHA1_THREAD));
+            sceKernelClearEventFlag(U32(p, LD_SHA1_EVENT), ~1);
+            sceKernelSetEventFlag(U32(p, LD_SHA1_EVENT), 0x10);
             arg = p;
-            sceKernelStartThread(U32(p, 0x2FBC4), 4, &arg);
+            sceKernelStartThread(U32(p, LD_SHA1_THREAD), 4, &arg);
         }
     }
 }
@@ -453,20 +491,20 @@ void fl_watchdog(u8 *p)
 /* seed of the generator (two 16-bit halves, never 0) */
 void fl_set_seed(u8 *p, u32 seed)
 {
-    U32(p, 0x2FBD4) = seed & 0xFFFF;
-    U32(p, 0x2FBD8) = seed >> 16;
-    if (U32(p, 0x2FBD4) == 0)
-        U32(p, 0x2FBD4) = 0x7F8D;
-    if (U32(p, 0x2FBD8) == 0)
-        U32(p, 0x2FBD8) = 0x2345;
+    U32(p, LD_RNG_A) = seed & 0xFFFF;
+    U32(p, LD_RNG_B) = seed >> 16;
+    if (U32(p, LD_RNG_A) == 0)
+        U32(p, LD_RNG_A) = 0x7F8D;
+    if (U32(p, LD_RNG_B) == 0)
+        U32(p, LD_RNG_B) = 0x2345;
 }
 
 /* pseudo-random generator: two multiplicative generators modulo 0xFFF1 and 0xFFD9 */
 u32 fl_rand(u8 *p)
 {
-    U32(p, 0x2FBD4) = (U32(p, 0x2FBD4) * 0x7F8D) % 0xFFF1;
-    U32(p, 0x2FBD8) = (U32(p, 0x2FBD8) * 0x2345) % 0xFFD9;
-    return (U32(p, 0x2FBD8) << 16) + U32(p, 0x2FBD4);
+    U32(p, LD_RNG_A) = (U32(p, LD_RNG_A) * 0x7F8D) % 0xFFF1;
+    U32(p, LD_RNG_B) = (U32(p, LD_RNG_B) * 0x2345) % 0xFFD9;
+    return (U32(p, LD_RNG_B) << 16) + U32(p, LD_RNG_A);
 }
 
 /* reads (synchronously) the whole file id, or size bytes of it, decrypted */
@@ -474,18 +512,18 @@ s32 fl_read_file(u8 *p, u32 id, u8 *buf, s32 size)
 {
     s32 pos, n;
 
-    sceKernelWaitSema(U32(p, 0x2931C), 1, NULL);
-    pos = U32(p, 0x2AC0 + (id & 0xFFFF) * 4) << 11;
-    while ((s32)sceIoLseek(U32(p, 0x1010), pos, 0) != pos)
+    sceKernelWaitSema(U32(p, LD_SEMA), 1, NULL);
+    pos = U32(p, LD_SECTORS + (id & 0xFFFF) * 4) << 11;
+    while ((s32)sceIoLseek(U32(p, LD_FD), pos, 0) != pos)
         sceKernelDelayThreadCB(10000);
     n = VCALL(p, 0x18)(p, id);
     if (size != -1)
         n = size;
-    while (sceIoRead(U32(p, 0x1010), buf, n) != n)
+    while (sceIoRead(U32(p, LD_FD), buf, n) != n)
         sceKernelDelayThreadCB(10000);
     fl_set_seed(p, pos / 0x800);
     fl_decrypt(p, buf, n, 0);
-    sceKernelSignalSema(U32(p, 0x2931C), 1);
+    sceKernelSignalSema(U32(p, LD_SEMA), 1);
     return n;
 }
 
@@ -500,37 +538,37 @@ int fl_queue_file(u8 *p, u32 id, u32 dst, s32 size, u32 mode, u32 done, u32 wake
     if (size == -1)
         size = VCALL(p, 0x18)(p, id);
     left = size;
-    if (p[0x2FBCC] != 0 && (u16)game_rand(g_sys, 1) % 100 < 5)
+    if (p[LD_CHECK_HASH] != 0 && (u16)game_rand(g_sys, 1) % 100 < 5)
         hash = 1;
     for (;;) {
-        u8 *e = REQ(p, U32(p, 0x1008));
+        u8 *e = REQ(p, U32(p, LD_FREE));
 
-        U16(e, 0) = 1;
-        U32(e, 0xC) = off;
-        U16(e, 2) = id;
-        U32(e, 4) = dst;
-        e[0x18] = mode;
-        U32(e, 0x14) = done;
-        e[0x19] = first;
-        e[0x1B] = p[0x2FBCC];
-        e[0x1C] = hash;
-        U32(e, 0x10) = size;
+        U16(e, RQ_BUSY) = 1;
+        U32(e, RQ_OFFSET) = off;
+        U16(e, RQ_FILE) = id;
+        U32(e, RQ_DST) = dst;
+        e[RQ_MODE] = mode;
+        U32(e, RQ_DONE) = done;
+        e[RQ_FIRST] = first;
+        e[RQ_CHECK] = p[LD_CHECK_HASH];
+        e[RQ_HASH] = hash;
+        U32(e, RQ_TOTAL) = size;
         if (left < 0x20001) {
-            U32(e, 8) = left;
-            U32(p, 0x1008) = (U32(p, 0x1008) + 1) & 0x7F;
+            U32(e, RQ_SIZE) = left;
+            U32(p, LD_FREE) = (U32(p, LD_FREE) + 1) & 0x7F;
             e[0x1A] = 1;
             break;
         }
-        U32(e, 8) = 0x20000;
+        U32(e, RQ_SIZE) = 0x20000;
         off += 0x20000;
         e[0x1A] = 0;
         left -= 0x20000;
         first = 0;
-        U32(p, 0x1008) = (U32(p, 0x1008) + 1) & 0x7F;
+        U32(p, LD_FREE) = (U32(p, LD_FREE) + 1) & 0x7F;
     }
     sceKernelResumeDispatchThread(st);
     if (wake != 0)
-        sceKernelWakeupThread(U32(p, 0x29344));
+        sceKernelWakeupThread(U32(p, LD_THREAD));
     return 1;
 }
 
@@ -540,13 +578,13 @@ void fl_open_file(u8 *p, u32 id_arg)
     u16 id = id_arg;
     s32 pos;
 
-    p[0x111C] = 1;
-    U16(p, 0x111E) = id;
-    pos = U32(p, 0x2AC0 + id * 4) << 11;
-    while ((s32)sceIoLseek(U32(p, 0x1010), pos, 0) != pos)
+    p[LD_PATCH_OPEN] = 1;
+    U16(p, LD_PATCH_ID) = id;
+    pos = U32(p, LD_SECTORS + id * 4) << 11;
+    while ((s32)sceIoLseek(U32(p, LD_FD), pos, 0) != pos)
         sceKernelDelayThreadCB(10000);
-    pos = U32(p, 0x2AC0 + id * 4) << 11;
-    U32(p, 0x2FBD0) = pos;
+    pos = U32(p, LD_SECTORS + id * 4) << 11;
+    U32(p, LD_XFER_POS) = pos;
     fl_set_seed(p, pos / 0x800);
 }
 
@@ -555,19 +593,19 @@ void fl_read(u8 *p, void *buf, s32 n)
 {
     while ((sceUmdGetDriveStat() & 0x20) == 0)
         sceKernelDelayThreadCB(10000);
-    while (sceIoRead(U32(p, 0x1010), buf, n) != n)
+    while (sceIoRead(U32(p, LD_FD), buf, n) != n)
         sceKernelDelayThreadCB(10000);
-    U32(p, 0x2FBD0) += n;
+    U32(p, LD_XFER_POS) += n;
 }
 
 /* direct reading: seek to the offset off of the open file */
 void fl_seek(u8 *p, s32 off)
 {
-    s32 pos = off + (U32(p, 0x2AC0 + U16(p, 0x111E) * 4) << 11);
+    s32 pos = off + (U32(p, LD_SECTORS + U16(p, LD_PATCH_ID) * 4) << 11);
 
-    while ((s32)sceIoLseek(U32(p, 0x1010), pos, 0) != pos)
+    while ((s32)sceIoLseek(U32(p, LD_FD), pos, 0) != pos)
         sceKernelDelayThreadCB(10000);
-    U32(p, 0x2FBD0) = pos;
+    U32(p, LD_XFER_POS) = pos;
 }
 
 /* loads and starts the module (PRX) stored as the file id of DATA.BIN at the address dst */
@@ -584,9 +622,9 @@ s32 fl_load_module(u8 *p, u32 id, u32 dst)
     *(u32 *)(opt + 4) = dst;
     *(u32 *)(opt + 8) = dst;
     opt[0x10] = 0;
-    sector = U32(p, 0x2AC0 + (id & 0xFFFF) * 4);
-    sprintf((char *)(p + 0x101C), D_0899A19C, U32(p, 0x1018) + sector, VCALL(p, 0x18)(p, id));
-    while ((fd = sceIoOpen((char *)(p + 0x101C), 1, 0)) < 0)
+    sector = U32(p, LD_SECTORS + (id & 0xFFFF) * 4);
+    sprintf((char *)(p + LD_PATH), D_0899A19C, U32(p, LD_PATCH_BASE) + sector, VCALL(p, 0x18)(p, id));
+    while ((fd = sceIoOpen((char *)(p + LD_PATH), 1, 0)) < 0)
         sceKernelDelayThreadCB(10000);
     while ((mod = sceKernelLoadModuleByID(fd, 0, opt)) < 0)
         sceKernelDelayThreadCB(10000);
@@ -604,7 +642,7 @@ int fl_file_patched(u8 *p, u32 id)
 /* places the patched files in the patch files of the Memory Stick (0x370000 bytes each) */
 void fl_build_patch_table(u8 *p)
 {
-    u16 *t = (u16 *)(p + 0x29348);
+    u16 *t = (u16 *)(p + LD_PATCH);
     u16 num = 0;
     u32 acc = 0;
     u32 i;
@@ -633,21 +671,21 @@ void fl_build_patch_table(u8 *p)
 /* state of the loader: 1 if an error is pending, else the state of the reader */
 s32 fl_busy_a(u8 *p)
 {
-    if (p[0x2FBDC] != 0 && U32(p, 0x2FBE0) != 0)
+    if (p[LD_ERR_MODE] != 0 && U32(p, LD_ERROR) != 0)
         return 1;
     return func_088B8624(p);
 }
 
 s32 fl_busy_b(u8 *p)
 {
-    if (p[0x2FBDC] != 0 && U32(p, 0x2FBE0) != 0)
+    if (p[LD_ERR_MODE] != 0 && U32(p, LD_ERROR) != 0)
         return 1;
     return func_088B863C(p);
 }
 
 s32 fl_busy_c(u8 *p)
 {
-    if (p[0x2FBDC] != 0 && U32(p, 0x2FBE0) != 0)
+    if (p[LD_ERR_MODE] != 0 && U32(p, LD_ERROR) != 0)
         return 1;
     return func_088B8688(p);
 }
@@ -676,27 +714,27 @@ void fl_set_error(u8 *p, s32 err)
     u32 code;
 
     if (err == (s32)0x80020321) {
-        if (p[0x2FBDC] != 0)
+        if (p[LD_ERR_MODE] != 0)
             code = 1;
         else
             code = online ? 9 : 5;
     } else if (err == (s32)0x80010002) {
-        if (p[0x2FBDC] != 0)
+        if (p[LD_ERR_MODE] != 0)
             code = 2;
         else
             code = online ? 10 : 6;
     } else if (err < 0 || D_09A1FDDC[0xD] != 0) {
-        if (p[0x2FBDC] != 0)
+        if (p[LD_ERR_MODE] != 0)
             code = 4;
         else
             code = online ? 12 : 8;
     } else {
-        if (p[0x2FBDC] != 0)
+        if (p[LD_ERR_MODE] != 0)
             code = 3;
         else
             code = online ? 11 : 7;
     }
-    U32(p, 0x2FBE0) = code;
+    U32(p, LD_ERROR) = code;
     g_game[0x6ADDE] = 0;
 }
 
