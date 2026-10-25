@@ -9,7 +9,7 @@
 #undef menu_input_ready
 #undef menu_draw_sprite
 
-extern u8 *D_09A0B544;            /* player data (overlay) */
+extern u8 *g_net_players;            /* player data (overlay) */
 extern const u8 D_0899D19A[];
 extern const u8 D_089386C0[], D_089386D4[];
 extern const char *const D_0893AF70;
@@ -25,11 +25,11 @@ s32 quest_goal_count(void *a, u32 id, u16 i);
 s32 quest_points(void *a);
 s32 func_0882A8B8(void *self, s32 i);
 u8 *hud_other_player(void *self, s32 i);
-void func_088912BC(void *font, int x, int y, const char *s);
+void font_puts_at(void *font, int x, int y, const char *s);
 s16 hunter_deliver(void *hunter);
 void quest_send_item(void *a, u32 b);
 u8 quest_deliveries_done(void *a);
-void func_088966C0(void *self, int v);
+void help_popup(void *self, int v);
 s32 menu_slot_first(void *self, u32 v);
 s32 menu_pouch_cursor(void *self, u8 *hunter);
 s32 menu_other_ready(void *self);
@@ -39,17 +39,17 @@ s32 menu_other_ready(void *self);
 void menu_pouch_compact(void *self, u32 box_arg)
 {
     u8 box = box_arg;
-    u8 *hunter = (u8 *)player_get(D_09A4F0C4, D_089CC438[0x28]);
+    u8 *hunter = (u8 *)player_get(g_players, g_game[0x28]);
     s16 *list;
     s16 *p;
     u16 sel = 0, a = 0, b = 0;
     s32 i, rem, n;
 
     if (box == 0)
-        list = (s16 *)pouch_slot(D_089CC438, 0);
+        list = (s16 *)pouch_slot(g_game, 0);
     else
-        list = (s16 *)(D_089CC438 + 0x43C8);
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && (*(u32 *)(D_089CC438 + 0x6AF14) & 8) == 0) {
+        list = (s16 *)(g_game + 0x43C8);
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0 && (*(u32 *)(g_game + 0x6AF14) & 8) == 0) {
         u8 k1, k2;
 
         if (menu_pouch_cursor(self, hunter) < 0)
@@ -60,13 +60,13 @@ void menu_pouch_compact(void *self, u32 box_arg)
         func_088D8000(hunter);
         U8(hunter, 0x67C) = k1;
         U8(hunter, 0x5F6) = k2;
-        sel = *pouch_slot(D_089CC438, U16(hunter, 0x648));
+        sel = *pouch_slot(g_game, U16(hunter, 0x648));
         if (U8(hunter, 0x686) == 0xFF)
             a = 0;
         else
-            a = *pouch_slot(D_089CC438, U8(hunter, 0x686));
+            a = *pouch_slot(g_game, U8(hunter, 0x686));
         if (U8(hunter, 0x5F6) != 0xFF)
-            b = *pouch_slot(D_089CC438, U8(hunter, 0x5F6));
+            b = *pouch_slot(g_game, U8(hunter, 0x5F6));
     }
     rem = 24;
     n = 0;
@@ -95,20 +95,20 @@ void menu_pouch_compact(void *self, u32 box_arg)
         }
     }
     item_pairs_sort(list, n);
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && (*(u32 *)(D_089CC438 + 0x6AF14) & 8) == 0) {
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0 && (*(u32 *)(g_game + 0x6AF14) & 8) == 0) {
         u16 *s;
         u32 j;
 
         if (box != 0)
             return;
-        s = pouch_slot(D_089CC438, 0);
+        s = pouch_slot(g_game, 0);
         for (j = 0; j < 24; j++, s += 2) {
             if (*s == sel) {
                 U16(hunter, 0x648) = j;
                 break;
             }
         }
-        s = pouch_slot(D_089CC438, 0);
+        s = pouch_slot(g_game, 0);
         for (j = 0; j < 24; j++, s += 2) {
             if (*s == a) {
                 U16(hunter, 0x686) = j & 0xFF;
@@ -117,7 +117,7 @@ void menu_pouch_compact(void *self, u32 box_arg)
         }
         if (U8(hunter, 0x5F6) == 0xFF)
             return;
-        s = pouch_slot(D_089CC438, 0);
+        s = pouch_slot(g_game, 0);
         for (j = 0; j < 24; j++, s += 2) {
             if (*s == b) {
                 U8(hunter, 0x5F6) = j;
@@ -135,11 +135,11 @@ s32 menu_pouch_cursor(void *self, u8 *hunter)
     u16 i;
     u16 n;
 
-    if (*pouch_slot(D_089CC438, U16(hunter, 0x648)) != 0)
+    if (*pouch_slot(g_game, U16(hunter, 0x648)) != 0)
         return U16(hunter, 0x648);
     i = U16(hunter, 0x648);
     for (n = 24; n > 0; n--) {
-        if (*pouch_slot(D_089CC438, i) != 0) {
+        if (*pouch_slot(g_game, i) != 0) {
             U16(hunter, 0x648) = i;
             return i;
         }
@@ -156,19 +156,19 @@ u8 menu_get_mode(u8 *self)
     u32 f;
 
     self[0x5E6] = 0;
-    f = *(u32 *)((u8 *)D_08A62C7C + 0x28);
+    f = *(u32 *)((u8 *)g_quest + 0x28);
     if (f & 0x40000) {
-        if (D_089CC438[0x6AF10] == 12)
+        if (g_game[0x6AF10] == 12)
             self[0x584] = 4;
-        else if (D_089CC438[0x6AF10] == 1)
+        else if (g_game[0x6AF10] == 1)
             self[0x584] = 3;
         else
             self[0x584] = 6;
     } else if (f & 4) {
         self[0x584] = 0;
-        if (*(u32 *)((u8 *)D_08A62C7C + 0x28) & 0x200000)
+        if (*(u32 *)((u8 *)g_quest + 0x28) & 0x200000)
             self[0x5E6] |= 1;
-        if ((*(u32 *)((u8 *)D_08A62C7C + 0x28) & 0x400000) == 0)
+        if ((*(u32 *)((u8 *)g_quest + 0x28) & 0x400000) == 0)
             return self[0x584];
         self[0x5E6] |= 4;
     } else if (f & 1) {
@@ -176,7 +176,7 @@ u8 menu_get_mode(u8 *self)
 
         self[0x584] = 1;
         for (i = 0; i < 2; i++) {
-            if (quest_goal_kind(D_08A62C7C, i) == 3) {
+            if (quest_goal_kind(g_quest, i) == 3) {
                 self[0x5E6] |= 2;
                 break;
             }
@@ -205,15 +205,15 @@ s32 menu_other_ready(void *self)
     s32 i, a, b;
 
     for (i = 0; ; ) {
-        a = quest_goal_kind(D_08A62C7C, i);
+        a = quest_goal_kind(g_quest, i);
         if (a == 2 || a == 3) {
-            b = quest_goal_target(D_08A62C7C, i);
+            b = quest_goal_target(g_quest, i);
             if (b == 2)
                 break;
-            b = quest_goal_target(D_08A62C7C, i);
+            b = quest_goal_target(g_quest, i);
             if (b == 0x24)
                 break;
-            b = quest_goal_target(D_08A62C7C, i);
+            b = quest_goal_target(g_quest, i);
             if (b == 0x47)
                 break;
         }
@@ -226,23 +226,23 @@ s32 menu_other_ready(void *self)
 /* data of the current quest */
 u8 *menu_quest_data(void *self)
 {
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0)
-        return *(u8 **)((u8 *)D_08A62C7C + 0x68);
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0)
+        return *(u8 **)((u8 *)g_quest + 0x68);
     return (u8 *)0x09B03F40;
 }
 
 /* 1 if the selected item can be given to another player */
 int menu_item_giftable(u8 *self)
 {
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0)
+    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
         return 0;
     if (D_0899D19A[(s16)menu_slot_first(self, self[0x586]) * 0x18] >= 3)
         return 0;
     if ((s8)D_0899D19B[(s16)menu_slot_first(self, self[0x586]) * 0x18] == -1)
         return 0;
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0)
         return U8(*(u8 **)(self + 0x530), 0x1E0) == 0;
-    return *(s16 *)(D_089CC438 + 0x6AF0E) == 0x55;
+    return *(s16 *)(g_game + 0x6AF0E) == 0x55;
 }
 
 /* 1 if item id is needed by the current quest (delivery item) */
@@ -251,22 +251,22 @@ int menu_item_for_quest(void *self, u32 id)
     u32 i;
     s32 r;
 
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) != 0)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) != 0)
         return 0;
     {
-        u16 q = *(u16 *)(D_089CC438 + 0x6AF0E);
+        u16 q = *(u16 *)(g_game + 0x6AF0E);
 
-        if (game_map_id(D_089CC438) != q)
+        if (game_map_id(g_game) != q)
             return 0;
     }
-    if (quest_state(D_08A62C7C, 1) != 0)
+    if (quest_state(g_quest, 1) != 0)
         return 0;
     for (i = 0; (s32)i < 2; i++) {
-        r = quest_goal_count(D_08A62C7C, id, i & 0xFFFF);
+        r = quest_goal_count(g_quest, id, i & 0xFFFF);
         if (r >= 0) {
-            if ((*(u32 *)((u8 *)D_08A62C7C + 0x28) & 0x10) == 0)
+            if ((*(u32 *)((u8 *)g_quest + 0x28) & 0x10) == 0)
                 return 1;
-            if ((id & 0xFFFF) != 0x3A0 || quest_points(D_08A62C7C) > 1999)
+            if ((id & 0xFFFF) != 0x3A0 || quest_points(g_quest) > 1999)
                 return 1;
         }
     }
@@ -293,16 +293,16 @@ void menu_draw_give(u8 *self, int alt)
         layout_build(&l, D_089386C0, 0, 0, 0);
     else
         layout_build(&l, D_089386D4, 0, 0, 0);
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0) {
-        me = D_089CC438[0x28];
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0) {
+        me = g_game[0x28];
         k = 0;
         for (i = 0; i < 4; i++) {
             if (me == (u32)i)
                 continue;
-            if (D_089CC438[(i & 0xFF) * 0x8C + 0x30] == 0)
+            if (g_game[(i & 0xFF) * 0x8C + 0x30] == 0)
                 name[k] = NULL;
             else
-                name[k] = (const char *)(D_09A0B544 + (i & 0xFF) * 200 + 0xBC8);
+                name[k] = (const char *)(g_net_players + (i & 0xFF) * 200 + 0xBC8);
             col[k] = 0;
             k++;
         }
@@ -331,16 +331,16 @@ void menu_draw_give(u8 *self, int alt)
     k = S8(self, 0x587);
     if ((s32)me < k)
         k--;
-    func_0882F580(self, &l, 0, k, 0xFF, 0);
+    layout_draw_box(self, &l, 0, k, 0xFF, 0);
     y = l.ty;
     for (i = 0; i < (u16)l.e; i++) {
-        func_08890E38(D_08A631A8, col[i]);
+        font_set_color(g_font, col[i]);
         if (name[i] == NULL) {
-            func_08890DE8(D_08A631A8, 14, 14);
-            func_08891474(D_08A631A8, l.tx, y, D_0893AF70);
+            font_set_size(g_font, 14, 14);
+            font_printf_at(g_font, l.tx, y, D_0893AF70);
         } else {
-            func_08890DE8(D_08A631A8, 16, 14);
-            func_088912BC(D_08A631A8, l.tx, y, name[i]);
+            font_set_size(g_font, 16, 14);
+            font_puts_at(g_font, l.tx, y, name[i]);
         }
         y += l.lh;
     }
@@ -351,10 +351,10 @@ void menu_give_item(u8 *self, u32 p)
 {
     if (hunter_deliver(*(void **)(self + 0x530)) == 0)
         return;
-    quest_send_item(D_08A62C7C, p);
+    quest_send_item(g_quest, p);
     self[0x1207] = 1;
-    if (quest_deliveries_done(D_08A62C7C) == 1)
-        func_088966C0(self, 15);
+    if (quest_deliveries_done(g_quest) == 1)
+        help_popup(self, 15);
 }
 
 extern void *D_08A62C40;          /* display list manager */
@@ -367,7 +367,7 @@ void dl_link(void *dl, u32 *p, int n, u8 layer);
 /* 1 if the menu accepts input now (for the player of hunter, when given) */
 int menu_input_ready(u8 *self, u8 *hunter)
 {
-    if (hunter != NULL && U16(hunter, 0x1E6) != D_089CC438[0x28])
+    if (hunter != NULL && U16(hunter, 0x1E6) != g_game[0x28])
         return 0;
     if (self[0x52F] != 0)
         return 0;
@@ -391,12 +391,12 @@ int menu_player_state(void *self, s32 i)
 /* opens the "give item" sub-menu (-1 if not possible) */
 s32 menu_open_give(u8 *self)
 {
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0) {
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0) {
         if (U8(*(u8 **)(self + 0x530), 0x1E0) != 0)
             return -1;
         self[0x57E] = 0;
     } else {
-        if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0)
+        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
             return -1;
         self[0x57E] = 0;
     }

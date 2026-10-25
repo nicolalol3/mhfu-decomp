@@ -8,11 +8,11 @@
 #define MGR(o) ((u32 *)(self + 0x80000))
 
 extern void *D_08A62C5C;           /* the manager */
-extern void **D_09A4F060;
+extern void **g_area;
 extern void *D_089CBFFC;           /* render lists */
-extern void **D_089CC434;          /* file loader (C++ object) */
-extern void *D_09A0B540;
-extern void *D_089CBBE0;           /* VRAM manager */
+extern void **g_loader;          /* file loader (C++ object) */
+extern void *g_heap;
+extern void *g_vram;           /* VRAM manager */
 extern const s32 D_089A6060[];
 extern const u16 D_09A67EA0[];
 extern const s16 D_089B650C[][6], D_089B6524[][6], D_089B653C[];
@@ -21,7 +21,7 @@ extern u8 D_089BAB08[];            /* vtable of the bone objects */
 typedef s32 (*LdFunc0)(void *);
 typedef s32 (*LdFunc1)(void *, u32);
 typedef s32 (*LdFunc5)(void *, u32, void *, s32, s32, s32);
-#define LDCALL(type, off) ((type)((void **)*D_089CC434)[(off) / 4])
+#define LDCALL(type, off) ((type)((void **)*g_loader)[(off) / 4])
 
 void heap_init(u32 *h, u32 *base, u32 size);
 void *heap_alloc(u32 *h, u32 size, u32 align);
@@ -43,7 +43,7 @@ s32 func_088CC4A8(void *a);
 u8 *func_088CC478(void *a);
 void rl_add_model(void *rl, int layer, void *obj, int b);
 s32 func_088D6388(u32 a, u32 b, u32 c, u32 d, u32 e);
-u8 *func_088B89B0(u32 file, int i);
+u8 *data_table_entry(u32 file, int i);
 s32 func_088623DC(void *a, void *b, void *c, void *d);
 void func_088640F8(f32 x, f32 y, f32 z, u8 *a, int b);
 void func_0886005C(u8 *bone, u8 *src);
@@ -60,7 +60,7 @@ void objmgr_build_bones(f32 x, f32 y, f32 z, u8 *a, u32 *hdr, u8 *buf);
 /* picks the light (palette) of the object from the area data, by distance */
 void obj_pick_light(u8 *o)
 {
-    void **st = (void **)*D_09A4F060;
+    void **st = (void **)*g_area;
     s32 base;
     u8 *t, *e;
     u32 b, i1, i2;
@@ -128,7 +128,7 @@ u8 *objmgr_dtor(u8 *self, s32 flag)
     if (self != NULL) {
         D_08A62C5C = NULL;
         if ((s16)flag > 0)
-            func_0890BFA4(self);
+            op_delete(self);
     }
     return self;
 }
@@ -193,11 +193,11 @@ void objmgr_setup2(u8 *self, const u8 *t)
 void objmgr_pool1_init(u8 *self, s32 size, u32 vsize)
 {
     U32(self, 0x80228) = size;
-    U32(self, 0x80230) = temp_alloc(D_09A0B540, 2, size);
+    U32(self, 0x80230) = temp_alloc(g_heap, 2, size);
     U32(self, 0x8022C) = 0;
     U32(self, 0x80234) = vsize;
-    vram_create_buffer(D_089CBBE0, 7, vsize, 0xFFFFFFFF);
-    U32(self, 0x8023C) = vram_surface_addr(D_089CBBE0, 7);
+    vram_create_buffer(g_vram, 7, vsize, 0xFFFFFFFF);
+    U32(self, 0x8023C) = vram_surface_addr(g_vram, 7);
     U32(self, 0x80238) = 0;
 }
 
@@ -228,22 +228,22 @@ void objmgr_pool2_init(u8 *self, s32 size, u32 vsize)
 {
     if (size > 0) {
         U32(self, 0x80240) = size;
-        U32(self, 0x80248) = temp_alloc(D_09A0B540, 3, size);
+        U32(self, 0x80248) = temp_alloc(g_heap, 3, size);
         U32(self, 0x80244) = 0;
     }
     U32(self, 0x8024C) = vsize;
-    vram_create_buffer(D_089CBBE0, 8, vsize, 0xFFFFFFFF);
-    U32(self, 0x80254) = vram_surface_addr(D_089CBBE0, 8);
+    vram_create_buffer(g_vram, 8, vsize, 0xFFFFFFFF);
+    U32(self, 0x80254) = vram_surface_addr(g_vram, 8);
     U32(self, 0x80250) = 0;
 }
 
 void objmgr_pool1_free(u8 *self)
 {
-    temp_free(D_09A0B540, 2);
+    temp_free(g_heap, 2);
     U32(self, 0x80230) = 0;
     U32(self, 0x80228) = 0;
     U32(self, 0x8022C) = 0;
-    vram_free_surface(D_089CBBE0, 7);
+    vram_free_surface(g_vram, 7);
     U32(self, 0x8023C) = 0;
     U32(self, 0x80234) = 0;
     U32(self, 0x80238) = 0;
@@ -251,11 +251,11 @@ void objmgr_pool1_free(u8 *self)
 
 void objmgr_pool2_free(u8 *self)
 {
-    temp_free(D_09A0B540, 3);
+    temp_free(g_heap, 3);
     U32(self, 0x80248) = 0;
     U32(self, 0x80240) = 0;
     U32(self, 0x80244) = 0;
-    vram_free_surface(D_089CBBE0, 8);
+    vram_free_surface(g_vram, 8);
     U32(self, 0x80254) = 0;
     U32(self, 0x8024C) = 0;
     U32(self, 0x80250) = 0;
@@ -312,7 +312,7 @@ void objmgr_move_group(u8 *self, u32 a, u32 b)
     u32 d = (u8)(a << 3), s = (u8)(b << 3);
     int i;
 
-    temp_alloc(D_09A0B540, 0x19, 0x41000);
+    temp_alloc(g_heap, 0x19, 0x41000);
     for (i = 0; i < 8; i++) {
         if (U16(self, 0x80408 + s * 2) != 0xFFFF) {
             memcpy((void *)U32(self, 0x80258 + d * 4), (void *)U32(self, 0x80258 + s * 4),
@@ -325,7 +325,7 @@ void objmgr_move_group(u8 *self, u32 a, u32 b)
         d = (u8)(d + 1);
         s = (u8)(s + 1);
     }
-    temp_free(D_09A0B540, 0x19);
+    temp_free(g_heap, 0x19);
 }
 
 /* loading state machine of a slot: 1 when the file is in memory */
@@ -343,7 +343,7 @@ s32 objmgr_load(u8 *self, u32 id, u32 slot)
     case 3:
         return 1;
     case 0:
-        size = LDCALL(LdFunc1, 0x18)(D_089CC434, id);
+        size = LDCALL(LdFunc1, 0x18)(g_loader, id);
         if (*(s32 *)(e + 4) == -1) {
             if (e[0] == 2)
                 U32(self, 0x80258 + slot * 4) = objmgr_alloc2(self, size);
@@ -354,12 +354,12 @@ s32 objmgr_load(u8 *self, u32 id, u32 slot)
         (*st)++;
         return 0;
     case 1:
-        if (LDCALL(LdFunc5, 0x34)(D_089CC434, id, (void *)U32(self, 0x80258 + slot * 4), -1, 0, 0) == 0)
+        if (LDCALL(LdFunc5, 0x34)(g_loader, id, (void *)U32(self, 0x80258 + slot * 4), -1, 0, 0) == 0)
             return 0;
         *st = 2;
         /* fall through */
     case 2:
-        if ((u8)LDCALL(LdFunc0, 0x38)(D_089CC434) != 0)
+        if ((u8)LDCALL(LdFunc0, 0x38)(g_loader) != 0)
             return 0;
         *st = 3;
         U16(self, 0x80408 + slot * 2) = id;
@@ -447,12 +447,12 @@ static void *model_data(u8 *self, u8 *m, u32 slot, u32 a, u32 b)
 int objmgr_build_object(u8 *self, u8 *obj, u32 group)
 {
     u32 *file = (u32 *)(self + 0x80258 + (u8)((u8)group * 8) * 4);
-    u8 *m = func_088B89B0(*file, 0);
+    u8 *m = data_table_entry(*file, 0);
     void *buf;
 
     build_mesh(self, obj + 0x50, m);
-    build_bones(self, obj + 0x50, obj + 0x80, (u32 *)func_088B89B0(*file, 1));
-    m = func_088B89B0(*file, 2);
+    build_bones(self, obj + 0x50, obj + 0x80, (u32 *)data_table_entry(*file, 1));
+    m = data_table_entry(*file, 2);
     buf = heap_alloc(MGR(self), U32(m, 8) << 5, 0x10);
     texset_build((u32 *)(obj + 0x70), (u32)buf, (const char *)m, 0);
     return 1;
@@ -511,12 +511,12 @@ void objmgr_build_bones(f32 x, f32 y, f32 z, u8 *a, u32 *hdr, u8 *buf)
 void objmgr_build_object2(u8 *self, u8 *obj, u32 group)
 {
     u32 *file = (u32 *)(self + 0x80258 + (u8)((u8)group + 8) * 4);
-    u8 *m = func_088B89B0(*file, 0);
+    u8 *m = data_table_entry(*file, 0);
     void *buf;
 
     build_mesh(self, obj + 0x50, m);
-    build_bones(self, obj + 0x50, obj + 0x80, (u32 *)func_088B89B0(*file, 1));
-    m = func_088B89B0(*file, 2);
+    build_bones(self, obj + 0x50, obj + 0x80, (u32 *)data_table_entry(*file, 1));
+    m = data_table_entry(*file, 2);
     buf = heap_alloc(MGR(self), 0x40, 0x10);
     texset_build((u32 *)(obj + 0x70), (u32)buf, (const char *)m, 0);
     texset_build((u32 *)(obj + 0x70), (u32)buf, (const char *)U32(self, 0x80274), 1);
@@ -525,12 +525,12 @@ void objmgr_build_object2(u8 *self, u8 *obj, u32 group)
 /* weapon model of the hunter (slot 14) */
 void objmgr_build_weapon(u8 *self, u8 *obj)
 {
-    u8 *m = func_088B89B0(U32(self, 0x80290), 0);
+    u8 *m = data_table_entry(U32(self, 0x80290), 0);
     void *buf;
 
     build_mesh(self, obj + 0xF60, m);
-    build_bones(self, obj + 0xF60, obj + 0xF80, (u32 *)func_088B89B0(U32(self, 0x80290), 1));
-    m = func_088B89B0(U32(self, 0x80290), 2);
+    build_bones(self, obj + 0xF60, obj + 0xF80, (u32 *)data_table_entry(U32(self, 0x80290), 1));
+    m = data_table_entry(U32(self, 0x80290), 2);
     buf = heap_alloc(MGR(self), U32(m, 8) << 5, 0x10);
     texset_build((u32 *)(obj + 0x10C0), (u32)buf, (const char *)m, 0);
 }
@@ -561,15 +561,15 @@ int objmgr_build_hunter_part(u8 *self, u8 *obj, u32 group, u32 i)
     i &= 0xFF;
     slot = (u8)(i + group * 8);
     file = (u32 *)(self + 0x80258 + slot * 4);
-    m = func_088B89B0(*file, 0);
+    m = data_table_entry(*file, 0);
     {
         u16 n = U16(m, 0x1C);
         buf = heap_alloc(MGR(self), mdl_count_1e(m) * 0x10 + n * 8, 0x10);
     }
     data = model_data(self, m, slot, group, i);
     func_088623DC(PART_MESH(obj, i), buf, m, data);
-    build_bones(self, PART_MESH(obj, i), PART_ANIM(obj, i), (u32 *)func_088B89B0(*file, 1));
-    m = func_088B89B0(*file, 2);
+    build_bones(self, PART_MESH(obj, i), PART_ANIM(obj, i), (u32 *)data_table_entry(*file, 1));
+    m = data_table_entry(*file, 2);
     buf = heap_alloc(MGR(self), 0x40, 0x10);
     texset_build((u32 *)PART_TEX(obj, i), (u32)buf, (const char *)m, 0);
     texset_build((u32 *)PART_TEX(obj, i), (u32)buf, (const char *)U32(self, 0x80274 + group * 0x20), 1);
@@ -581,7 +581,7 @@ int objmgr_build_hunter_weapon(u8 *self, u8 *obj, u32 group)
 {
     u32 slot = (u8)((u8)group * 8 + 6);
     u32 *file = (u32 *)(self + 0x80258 + slot * 4);
-    u8 *m = func_088B89B0(*file, 0);
+    u8 *m = data_table_entry(*file, 0);
     u32 *b;
     void *buf, *data;
 
@@ -593,11 +593,11 @@ int objmgr_build_hunter_weapon(u8 *self, u8 *obj, u32 group)
     }
     data = model_data(self, m, slot, group, 6);
     func_088623DC(obj + 0xF60, buf, m, data);
-    b = (u32 *)func_088B89B0(*file, 1);
+    b = (u32 *)data_table_entry(*file, 1);
     if (b == NULL)
         return 0;
     build_bones(self, obj + 0xF60, obj + 0xF80, b);
-    m = func_088B89B0(*file, 2);
+    m = data_table_entry(*file, 2);
     if (m == NULL)
         return 0;
     buf = heap_alloc(MGR(self), U32(m, 8) << 5, 0x10);
@@ -688,7 +688,7 @@ void objmgr_free_with_vram(u8 *self, u8 *obj)
     if (U32(obj, 0x58) != 0) {
         heap_free(MGR(self), (u8 *)U32(obj, 0x58));
         if (obj[0x1E8] == 0)
-            vram_free_surface(D_089CBBE0, 0x29);
+            vram_free_surface(g_vram, 0x29);
     }
     if (U32(obj, 0x190) != 0)
         heap_free(MGR(self), (u8 *)U32(obj, 0x190));

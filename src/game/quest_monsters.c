@@ -1,10 +1,10 @@
-/* Quest (D_08A62C7C): items given by the quest, items delivered by the hunters, gathering
- * points of the area (20 GatherSpot after the area object D_09A4F060) and the monsters
+/* Quest (g_quest): items given by the quest, items delivered by the hunters, gathering
+ * points of the area (20 GatherSpot after the area object g_area) and the monsters
  * placed by the quest file. (Guessed names.) */
 #include "quest.h"
 #undef pouch_slot
 
-extern u8 *D_09A4F060;             /* area: +4 = gathering points */
+extern u8 *g_area;             /* area: +4 = gathering points */
 extern s8 D_08A62C9C[20];          /* active gathering points, in order of creation */
 extern u8 D_08A62C80[];            /* min / max monster size for each size rank */
 extern const s8 D_089A77BC[8];
@@ -12,9 +12,9 @@ extern const u8 *D_089A8148[];
 extern const u8 D_089A8164[32];
 extern const u8 D_09BB89B0[][0x1D0];   /* monster data */
 extern const u32 D_09CD7EB0[];
-extern u8 *D_09C121B0;
-extern void *D_09A1DAEC;
-extern u8 *D_08A62CB4;
+extern u8 *g_monsters;
+extern void *g_net;
+extern u8 *g_result;
 
 u8 menu_msg_push(u8 *self, u32 id, u32 x, u32 y);
 u8 hunter_felyne_skill(u32 h, int a);
@@ -26,7 +26,7 @@ void func_09C6F4B8(f32 scale, f32 *pos, int a);
 void func_09AD7C88(u8 *a, s32 b);
 s32 game_flag_10(u8 *g);
 
-#define SPOT(i)     ((GatherSpot *)(D_09A4F060 + 4) + (i))
+#define SPOT(i)     ((GatherSpot *)(g_area + 4) + (i))
 #define SPOT_LIST   D_08A62C9C
 #define IS_PLAYER(h) (U16(h, E_SLOT) == G_MY_SLOT)
 #define DELIVERED_ID(h, i)  U16(h, E_DELIVERED + (i) * 4)
@@ -48,28 +48,28 @@ void quest_give_items(Quest *self, u8 *h)
 
     if (self->items_new == 0) {
         if (IS_PLAYER(h))
-            menu_msg_push(D_089CBBEC, 0, 0, 0);
+            menu_msg_push(g_menu, 0, 0, 0);
         return;
     }
-    k = D_089A77BC[game_rand(D_08A631A0, 0) & 0xFFFF & 7];
+    k = D_089A77BC[game_rand(g_sys, 0) & 0xFFFF & 7];
     if (hunter_felyne_skill((u32)h, 3) == 1)
         k = 0;
     if (k == 2) {
         if (IS_PLAYER(h))
-            menu_msg_push(D_089CBBEC, 0, 0, 0);
+            menu_msg_push(g_menu, 0, 0, 0);
     } else if (k == 1) {
         r = hunter_add_item(h, 0xF6, 1, 0) & 0xFFFF;
         if (r == 3) {
             if (IS_PLAYER(h))
-                menu_msg_push(D_089CBBEC, 1, 3, 0xF6);
+                menu_msg_push(g_menu, 1, 3, 0xF6);
             if (IS_PLAYER(h))
-                menu_msg_push(D_089CBBEC, 0, 0, 0);
+                menu_msg_push(g_menu, 0, 0, 0);
         } else if (r == 2 || r == 1 || r == 0) {
             if (IS_PLAYER(h))
-                menu_msg_push(D_089CBBEC, 1, 0, 0xF6);
+                menu_msg_push(g_menu, 1, 0, 0xF6);
         } else {
             if (IS_PLAYER(h))
-                menu_msg_push(D_089CBBEC, 0, 0, 0);
+                menu_msg_push(g_menu, 0, 0, 0);
         }
     } else {
         for (i = 0, e = self->items; i < 5; i++, e++) {
@@ -78,16 +78,16 @@ void quest_give_items(Quest *self, u8 *h)
             r = hunter_add_item(h, e->id, e->count, 0) & 0xFFFF;
             if (r == 3) {
                 if (IS_PLAYER(h))
-                    menu_msg_push(D_089CBBEC, 1, 3, (s16)e->id);
+                    menu_msg_push(g_menu, 1, 3, (s16)e->id);
                 given = 1;
             } else if (r == 2 || r == 1 || r == 0) {
                 if (IS_PLAYER(h))
-                    menu_msg_push(D_089CBBEC, 1, 0, (s16)e->id);
+                    menu_msg_push(g_menu, 1, 0, (s16)e->id);
                 given = 1;
             }
         }
         if (!given && IS_PLAYER(h))
-            menu_msg_push(D_089CBBEC, 0, 0, 0);
+            menu_msg_push(g_menu, 0, 0, 0);
     }
     self->items_new = 0;
     for (i = 0; i < 5; i++) {
@@ -145,7 +145,7 @@ s32 quest_hunter_item_get(Quest *self, u32 id, s32 who)
 
     if (who == 0) {
         for (p = 0; p < 4; p++) {
-            h = (u8 *)player_get(D_09A4F0C4, p);
+            h = (u8 *)player_get(g_players, p);
             if (h == NULL)
                 continue;
             for (i = 0; i < 4; i++)
@@ -155,9 +155,9 @@ s32 quest_hunter_item_get(Quest *self, u32 id, s32 who)
         return sum;
     }
     if (who == 1)
-        h = (u8 *)player_get(D_09A4F0C4, G_MY_SLOT);
+        h = (u8 *)player_get(g_players, G_MY_SLOT);
     else
-        h = (u8 *)((u32 (*)(void *, s32))player_get)(D_09A4F0C4, who - 2);
+        h = (u8 *)((u32 (*)(void *, s32))player_get)(g_players, who - 2);
     for (i = 0; i < 4; i++)
         if (DELIVERED_ID(h, i) == (id & 0xFFFF))
             return DELIVERED_N(h, i);
@@ -172,8 +172,8 @@ void quest_send_item(Quest *self, u32 id)
     ev.type = 9;
     ev.zero = 0;
     ev.arg[1] = quest_hunter_item_get(self, id, 1);
-    net_send(D_09A1DAEC, 6, &ev);
-    menu_msg_push(D_089CBBEC, 1, 8, (s16)id);
+    net_send(g_net, 6, &ev);
+    menu_msg_push(g_menu, 1, 8, (s16)id);
 }
 
 /* delivery goals: the hunter h puts the items of the pouch in the delivery box */
@@ -196,10 +196,10 @@ u32 quest_check_deliver(Quest *self, u8 *h)
         for (s = 0; s < 0x18; s++) {
             u16 id = g->target;
 
-            if (id != *pouch_slot(D_089CC438, s))
+            if (id != *pouch_slot(g_game, s))
                 continue;
-            p = pouch_slot(D_089CC438, s);
-            q = pouch_slot(D_089CC438, s);
+            p = pouch_slot(g_game, s);
+            q = pouch_slot(g_game, s);
             if ((hunter_deliver(h, p[0], (s16)q[1]) & 0xFFFF) != 0) {
                 r = 1;
                 quest_send_item(self, g->target);
@@ -288,13 +288,13 @@ s32 spots_add(Quest *self, GatherSpot *src, f32 *pos)
         e->timer = src->timer;
         if (e->kind == 2) {
             /* skills that give more gatherings */
-            h = player_get(D_09A4F0C4, G_MY_SLOT);
+            h = player_get(g_players, G_MY_SLOT);
             if (hunter_has_skill(h, 0xB0) != 0)
                 e->left++;
             extra = 0;
             if (hunter_felyne_skill(h, 1) != 0)
-                extra = (game_rand(D_08A631A0, 0) & 0xFFFF & 1) == 0;
-            if (hunter_felyne_skill(h, 2) != 0 && (game_rand(D_08A631A0, 0) & 0xFFFF & 3) == 0)
+                extra = (game_rand(g_sys, 0) & 0xFFFF & 1) == 0;
+            if (hunter_felyne_skill(h, 2) != 0 && (game_rand(g_sys, 0) & 0xFFFF & 3) == 0)
                 extra = 1;
             if (extra)
                 e->left++;
@@ -403,7 +403,7 @@ void spots_area_change(Quest *self)
     u8 *p;
 
     for (i = 0; i < 20; i++) {
-        p = (i >= 0 && i < 20) ? (u8 *)U32(D_09C121B0, 0x1220 + i * 4) : NULL;
+        p = (i >= 0 && i < 20) ? (u8 *)U32(g_monsters, 0x1220 + i * 4) : NULL;
         if (p != NULL && *(s8 *)(p + 0x630) != -1)
             func_09AD7C88(p, *(s8 *)(p + 0x630));
     }
@@ -554,8 +554,8 @@ void quest_init_main_monsters(Quest *self, QuestGroup *l, s32 *counter)
             quest_monster_init(self, m, counter);
             quest_wave_add(self, i, m);
             i++;
-            if ((u8)monster_is_large(self, m->kind) == 1 && game_flag_10(D_089CC438) == 0 &&
-                quest_monster_unlocked((Quest *)D_08A62CB4, G_QUEST_ID) == 1)
+            if ((u8)monster_is_large(self, m->kind) == 1 && game_flag_10(g_game) == 0 &&
+                quest_monster_unlocked((Quest *)g_result, G_QUEST_ID) == 1)
                 m->size = self->file->size_base * (s32)(quest_random_size(self) & 0xFFFF) / 100;
             else
                 m->size = 100;

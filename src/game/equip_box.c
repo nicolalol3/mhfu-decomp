@@ -7,7 +7,7 @@
 #undef menu_reset_messages
 
 extern u8 *D_08A62C40;            /* display list manager */
-extern void *D_08A62C54;          /* equipment data */
+extern void *g_equip_data;          /* equipment data */
 extern const u8 D_08930BDC[62][14];   /* emblems: u8 -, u, v, id, ... */
 extern const s16 D_08938758[][4];  /* sizes of the name boxes: w, h */
 extern const u16 D_089AC8E4;
@@ -116,11 +116,11 @@ int equip_draw_name_box(u8 *self, u8 *a, u32 x, u32 y, u32 flags, u8 *b, s32 idx
         col = 10;
         b = NULL;
     }
-    func_08890DE8(D_08A631A8, 14, 14);
+    font_set_size(g_font, 14, 14);
     if (a != NULL && U16(a, 2) >= 1501) {
-        func_08890E38(D_08A631A8, col);
-        func_08891474(D_08A631A8, (s16)((s16)x + 42), (s16)((s16)y + 8), D_08938478,
-                      text_menu(D_089CC438, D_089AC8E4));
+        font_set_color(g_font, col);
+        font_printf_at(g_font, (s16)((s16)x + 42), (s16)((s16)y + 8), fmt_s,
+                      text_menu(g_game, D_089AC8E4));
         return 0;
     }
     if ((flags & 0x80) == 0) {
@@ -148,7 +148,7 @@ u16 equip_icon(void *self, u8 *eq, u32 which_arg)
     if (U16(eq, 2) >= 1501)
         return which != 0 ? 225 : 113;
     if ((u32)(eq[1] - 5) < 2)
-        return D_0893AE80[which][equip_rarity(D_08A62C54, eq[1], U16(eq, 2))];
+        return D_0893AE80[which][equip_rarity(g_equip_data, eq[1], U16(eq, 2))];
     return D_0893AEAC[which][eq[1]];
 }
 
@@ -228,11 +228,11 @@ u32 equip_mark_one(void *self, u8 *a, u32 flags, u8 *b)
             return 6;
         return b[1] == 6 ? 8 : 6;
     }
-    if (deco_count(D_08A62C54, a) != 0) {
+    if (deco_count(g_equip_data, a) != 0) {
         deco = 1;
     } else if (b == NULL) {
         goto kind;
-    } else if (S16(b, 2) != 0 && deco_count(D_08A62C54, b) != 0) {
+    } else if (S16(b, 2) != 0 && deco_count(g_equip_data, b) != 0) {
         deco = 1;
     }
 kind:

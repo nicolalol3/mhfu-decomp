@@ -1,4 +1,4 @@
-/* The current quest (object D_08A62C7C, 0x8A8 bytes) and the format of the quest files.
+/* The current quest (object g_quest, 0x8A8 bytes) and the format of the quest files.
  * Shared by src/game/quest*.c. (Guessed names: the unknown fields keep their offset.) */
 #ifndef QUEST_H
 #define QUEST_H
@@ -7,7 +7,7 @@
 #undef quest_time
 #undef quest_text
 
-/* ---- quest file (loaded at D_08A5C440; all the offsets are relative to its start) ---- */
+/* ---- quest file (loaded at g_quest_file; all the offsets are relative to its start) ---- */
 
 typedef struct QuestCmd {       /* command of the quest script (QC_*) */
     s16 op;
@@ -108,7 +108,7 @@ typedef struct QuestRewardRule { /* rule of the rewards: cond and list of {weigh
     u32 list;                   /* offset */
 } QuestRewardRule;
 
-/* gathering point (20 of them after the area object D_09A4F060) */
+/* gathering point (20 of them after the area object g_area) */
 typedef struct GatherSpot {
     f32 pos[3];
     f32 radius;
@@ -287,9 +287,9 @@ QCHECK(Quest, gathered, 0x828);
 QCHECK(Quest, time_msg, 0x8A4);
 _Static_assert(sizeof(Quest) == 0x8A8, "Quest");
 
-extern u8 D_08A5C440[];
-#define QUEST       ((Quest *)D_08A62C7C)
-#define QFILE       ((QuestFile *)D_08A5C440)   /* the loaded quest file */
+extern u8 g_quest_file[];
+#define QUEST       ((Quest *)g_quest)
+#define QFILE       ((QuestFile *)g_quest_file)   /* the loaded quest file */
 #define QOFF(q, off) ((u8 *)((u32)(off) + (u32)(q)->base))   /* offset in the file -> pointer */
 
 /* QuestGoal.flags */

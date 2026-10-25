@@ -8,7 +8,7 @@
 #undef item_pairs_sort
 #undef combo_rate_class
 
-extern void *D_09A4F0C4;
+extern void *g_players;
 extern const u8 D_089A47D0[];     /* combinations: s16 a, s16 b(=result), ..., 10 bytes each */
 extern const u8 D_089A4E88[];     /* per item: count, first combination */
 extern const u8 D_089A5B50[];
@@ -19,11 +19,11 @@ void hunter_add_item(void *hunter, u16 id, int a, int b);
 int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag);
 s32 game_box_size(void *g);
 
-#define BOX(i) (D_089CC438 + 0x4A0 + 0x2F88 + (i) * 4)
+#define BOX(i) (g_game + 0x4A0 + 0x2F88 + (i) * 4)
 
 static void *own_hunter(void)
 {
-    return (void *)player_get(D_09A4F0C4, D_089CC438[0x28]);
+    return (void *)player_get(g_players, g_game[0x28]);
 }
 
 /* the combination of the items a and b (mode -1: without tool, 0: possible now, 1: any) */
@@ -66,7 +66,7 @@ int combo_known(void *p, u8 *e, u32 flags, u32 x)
 {
     if ((flags & 1) == 0 && (u8)gather_has_tool(p, own_hunter(), e, x) != 1)
         return 0;
-    return (D_089CC438[0x446C + (e[6] >> 3)] & (1 << (e[6] & 7))) != 0;
+    return (g_game[0x446C + (e[6] >> 3)] & (1 << (e[6] & 7))) != 0;
 }
 
 int combo_known_ab(void *p, s32 a, s32 b)
@@ -75,7 +75,7 @@ int combo_known_ab(void *p, s32 a, s32 b)
 
     if (e == NULL)
         return 0;
-    return (D_089CC438[0x446C + (e[6] >> 3)] & (1 << (e[6] & 7))) != 0;
+    return (g_game[0x446C + (e[6] >> 3)] & (1 << (e[6] & 7))) != 0;
 }
 
 s32 combo_rate(void *p, s32 a, s32 b, s32 mode);
@@ -91,7 +91,7 @@ s32 combo_do(void *p, u8 *out, void *hunter, u32 a, u32 b, s32 mode)
     if (e == NULL)
         return -1;
     rate = combo_rate(p, a, b, mode);
-    if ((s32)((u16)game_rand(D_08A631A0, 1) % 100) < rate) {
+    if ((s32)((u16)game_rand(g_sys, 1) % 100) < rate) {
         res = S16(e, 2);
         if ((u8)hunter_has_skill(hunter, 0x9F) == 1) {
             *out = D_089A5B50[e[5]];
@@ -100,7 +100,7 @@ s32 combo_do(void *p, u8 *out, void *hunter, u32 a, u32 b, s32 mode)
             s32 r;
 
             *out = t[0];
-            r = (u16)game_rand(D_08A631A0, 1) % 100;
+            r = (u16)game_rand(g_sys, 1) % 100;
             for (t++; *t <= r; t++) {
                 (*out)++;
                 r -= *t;
@@ -126,7 +126,7 @@ s32 box_remove(void *p, u32 id_arg, s32 n_arg)
 
     if (n < 0 || id == 0 || D_0899D19B[id * 0x18] == 0xFF)
         return 0;
-    count = game_box_size(D_089CC438);
+    count = game_box_size(g_game);
     for (i = 0; i < count; i++) {
         u8 *b = BOX(i);
 
@@ -156,7 +156,7 @@ s32 box_remove_from(void *p, u32 id_arg, s32 n_arg, u32 slot_arg)
 
     if (n < 0 || id == 0 || D_0899D19B[id * 0x18] == 0xFF)
         return 0;
-    count = game_box_size(D_089CC438);
+    count = game_box_size(g_game);
     if (slot == 0xFFFF) {
         for (i = count - 1; i >= 0; i--) {
             u8 *b = BOX(i);
@@ -204,7 +204,7 @@ u32 box_find(void *p, u32 id_arg)
 
     if (id == 0xFFFF)
         return 0xFFFF;
-    for (i = 0; (s32)i < (s16)game_box_size(D_089CC438); i++) {
+    for (i = 0; (s32)i < (s16)game_box_size(g_game); i++) {
         if (U16(BOX(i), 0) == id && S16(BOX(i), 2) > 0)
             return i & 0xFFFF;
     }
@@ -225,7 +225,7 @@ extern const u8 D_089A5B58[], D_089A5B6C[];
 extern const u16 D_089A5B60[5];
 extern const s16 D_089A5864[][2];  /* pairs of items of the combination list */
 extern const u8 D_0899D198[];
-s32 func_088D6AC8_(void *hunter, int skill) __asm__("func_088D6AC8");
+s32 func_088D6AC8_(void *hunter, int skill) __asm__("hunter_skill_value");
 s32 hunter_felyne_skill(void *hunter, int id);
 s32 pouch_count(u8 *g, u32 id_arg);
 u32 box_find(void *p, u32 id_arg);
@@ -273,16 +273,16 @@ s32 combo_rate_of(void *p, u8 *e, s32 mode)
         r += 5;
     if (mode == 0) {
         for (i = 0; i < 5; i++) {
-            if (pouch_count(D_089CC438, D_089A5B60[i]) == 0)
+            if (pouch_count(g_game, D_089A5B60[i]) == 0)
                 break;
         }
         r += D_089A5B6C[i];
     }
     if (mode == 1) {
         for (i = 0; i < 5; i++) {
-            int has = pouch_count(D_089CC438, D_089A5B60[i]) != 0;
+            int has = pouch_count(g_game, D_089A5B60[i]) != 0;
 
-            if ((U32(D_089CC438, 0x6AF14) & 1) != 0 && (u16)box_find(p, D_089A5B60[i]) != 0xFFFF)
+            if ((U32(g_game, 0x6AF14) & 1) != 0 && (u16)box_find(p, D_089A5B60[i]) != 0xFFFF)
                 has = 1;
             if (!has)
                 break;
@@ -297,7 +297,7 @@ s32 combo_rate_of(void *p, u8 *e, s32 mode)
 /* marks the combination e as known */
 void combo_set_known(void *p, u8 *e)
 {
-    D_089CC438[0x446C + (e[6] >> 3)] |= 1 << (e[6] & 7);
+    g_game[0x446C + (e[6] >> 3)] |= 1 << (e[6] & 7);
 }
 
 u8 combo_amount(void *p, u8 *e)
@@ -343,7 +343,7 @@ u8 *combo_next(void *p, u8 *idx, s32 dir_arg, s16 *a, s16 *b, u32 flags)
 s32 box_count_first(void *p, u32 id_arg)
 {
     u16 id = id_arg;
-    s16 count = game_box_size(D_089CC438);
+    s16 count = game_box_size(g_game);
     s32 i;
 
     for (i = 0; i < count; i++) {
@@ -360,7 +360,7 @@ s32 box_count_first(void *p, u32 id_arg)
 s32 box_count(void *p, u32 id_arg)
 {
     u16 id = id_arg;
-    s16 count = game_box_size(D_089CC438);
+    s16 count = game_box_size(g_game);
     s32 i, n = 0;
 
     for (i = 0; i < count; i++) {
@@ -382,7 +382,7 @@ s32 box_room(void *p, u32 id_arg)
 
     if (id == 0 || D_0899D19B[id * 0x18] == 0xFF)
         return 0;
-    count = game_box_size(D_089CC438);
+    count = game_box_size(g_game);
     for (i = 0; i < count; i++) {
         if (U16(BOX(i), 0) == id)
             n += 99 - S16(BOX(i), 2);
@@ -401,12 +401,12 @@ s32 box_room2(void *p, u32 id_arg)
 
     if (id == 0)
         return -1;
-    count = (s16)game_box_size(D_089CC438);
+    count = (s16)game_box_size(g_game);
     max = D_0899D19B[id * 0x18];
     if (max != 0xFF)
         max = 99;
     room = max;
-    for (b = D_089CC438 + 0x3428; count > 0; count--, b += 4) {
+    for (b = g_game + 0x3428; count > 0; count--, b += 4) {
         if (U16(b, 0) == 0)
             return max;
         if (U16(b, 0) == id && max != 0xFF) {
@@ -421,17 +421,17 @@ s32 box_room2(void *p, u32 id_arg)
 /* item data of the pouch slot i */
 const u8 *pouch_item_data(void *p, s32 i)
 {
-    return D_0899D198 + pouch_slot(D_089CC438, i)[0] * 0x18;
+    return D_0899D198 + pouch_slot(g_game, i)[0] * 0x18;
 }
 
 void item_set_seen(void *p, u32 id)
 {
-    game_set_flag_6a7b4(D_089CC438 + 0x4A0, id);
+    game_set_flag_6a7b4(g_game + 0x4A0, id);
 }
 
 int item_seen(void *p, u32 id)
 {
-    return game_test_flag_6a7b4(D_089CC438 + 0x4A0, id);
+    return game_test_flag_6a7b4(g_game + 0x4A0, id);
 }
 
 extern void *D_08A62C50;
@@ -519,19 +519,19 @@ const char *equip_name(void *p, u32 k, u32 id)
 {
     switch ((u8)k) {
     case 0:
-        return text_table15(D_089CC438, id);
+        return text_table15(g_game, id);
     case 1:
-        return text_table7(D_089CC438, id);
+        return text_table7(g_game, id);
     case 2:
-        return text_table9(D_089CC438, id);
+        return text_table9(g_game, id);
     case 3:
-        return text_table11(D_089CC438, id);
+        return text_table11(g_game, id);
     case 4:
-        return text_table13(D_089CC438, id);
+        return text_table13(g_game, id);
     case 5:
-        return text_table3(D_089CC438, id);
+        return text_table3(g_game, id);
     case 6:
-        return text_table5(D_089CC438, id);
+        return text_table5(g_game, id);
     }
     return NULL;
 }
@@ -770,7 +770,7 @@ s32 recipe_check(void *p, u32 kind_arg, s32 idx_arg, s32 mode)
         if (!(a + b < n))
             ok |= 1 << i;
     }
-    if (r[1] == 2 && (u8)village_min_rank(D_089CC438, 0xE) == 0)
+    if (r[1] == 2 && (u8)village_min_rank(g_game, 0xE) == 0)
         return 0;
     if (ok == 0xF)
         return 2;
@@ -782,12 +782,12 @@ s32 recipe_check(void *p, u32 kind_arg, s32 idx_arg, s32 mode)
 /* upgrade flags of the weapons of the box (slots of 0xC bytes at g+0x548) */
 int slot_is_weapon(void *p, s32 i)
 {
-    return D_089CC438[0x549 + (s16)i * 0xC] == 6;
+    return g_game[0x549 + (s16)i * 0xC] == 6;
 }
 
 u32 slot_flag(void *p, s32 i, u32 mask)
 {
-    u8 *g = D_089CC438 + 0x4A0;
+    u8 *g = g_game + 0x4A0;
 
     if ((u8)slot_is_weapon(p, i) == 0)
         return 0xFF;
@@ -796,7 +796,7 @@ u32 slot_flag(void *p, s32 i, u32 mask)
 
 u32 slot_level(void *p, s32 i)
 {
-    u8 *g = D_089CC438;
+    u8 *g = g_game;
 
     if ((u8)slot_is_weapon(p, i) == 0)
         return 0;
@@ -805,7 +805,7 @@ u32 slot_level(void *p, s32 i)
 
 void slot_level_up(void *p, s32 i)
 {
-    u8 *s = D_089CC438 + 0x4A0;
+    u8 *s = g_game + 0x4A0;
     u16 v, l;
 
     if ((u8)slot_is_weapon(p, i) == 0)
@@ -819,7 +819,7 @@ void slot_level_up(void *p, s32 i)
 
 void slot_set_flag10(void *p, s32 i, s32 clear)
 {
-    u8 *s = D_089CC438 + 0x4A0;
+    u8 *s = g_game + 0x4A0;
 
     if ((u8)slot_is_weapon(p, i) == 0)
         return;
@@ -834,7 +834,7 @@ void slot_set_flag10(void *p, s32 i, s32 clear)
 
 void slot_set_flag20(void *p, s32 i, s32 clear)
 {
-    u8 *s = D_089CC438 + 0x4A0;
+    u8 *s = g_game + 0x4A0;
 
     if ((u8)slot_is_weapon(p, i) == 0)
         return;
@@ -850,7 +850,7 @@ void slot_set_flag20(void *p, s32 i, s32 clear)
 
 void slot_set_flag40(void *p, s32 i, s32 clear)
 {
-    u8 *s = D_089CC438 + 0x4A0;
+    u8 *s = g_game + 0x4A0;
 
     if ((u8)slot_is_weapon(p, i) == 0)
         return;
@@ -868,7 +868,7 @@ u32 armor_max_level(void *p, u8 *e);
 
 void slot_set_flag80(void *p, s32 i, s32 clear)
 {
-    u8 *s = D_089CC438 + 0x4A0;
+    u8 *s = g_game + 0x4A0;
 
     if ((u8)slot_is_weapon(p, i) == 0)
         return;
@@ -1007,7 +1007,7 @@ s8 equip_slots(void *p, u8 *e)
     return D_08978474[k][U16(e, 2) * 0x28 + 0x12];
 }
 
-extern void *D_08A62C54;
+extern void *g_equip_data;
 extern const u8 D_08960BA0[], D_08959FD0[];
 extern const f32 D_08979720[][2];
 u32 armor_upgrade_cost(void *p, u8 *e);
@@ -1051,7 +1051,7 @@ u32 weapon_sell_price(void *p, u8 *e)
 
     if (id == 0)
         return 0;
-    r = equip_rarity(D_08A62C54, e[1], id);
+    r = equip_rarity(g_equip_data, e[1], id);
     if (r == 1 || r == 5) {
         s32 lv = U16(e, 4) & 0xF, i;
 
@@ -1099,7 +1099,7 @@ u32 armor_max_level(void *p, u8 *e)
         if (m < a[i])
             m = a[i];
     }
-    if ((u8)village_min_rank(D_089CC438, 0xE) == 1 && m < a[0x1A])
+    if ((u8)village_min_rank(g_game, 0xE) == 1 && m < a[0x1A])
         m = a[0x1A];
     if (m != 0)
         m--;
@@ -1131,7 +1131,7 @@ s32 armor_upgrade_class(void *p, u8 *e)
         return 3;
     if (l < a[0x18])
         return 4;
-    if ((u8)village_min_rank(D_089CC438, 0xE) == 0)
+    if ((u8)village_min_rank(g_game, 0xE) == 0)
         return 5;
     if (l < a[0x19])
         return 5;

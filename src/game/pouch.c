@@ -6,8 +6,8 @@
 #undef friend_marked
 
 extern u8 *D_08A62C40;            /* display list manager */
-extern void *D_08A62D8C;          /* sound */
-extern u8 **D_09A4F060;
+extern void *g_sound;          /* sound */
+extern u8 **g_area;
 extern u16 *D_09CE470C[][2];
 u32 game_rand(void *a, int b);
 const u8 *kitchen_default(void *g, s32 i);
@@ -49,7 +49,7 @@ void kitchen_init(u8 *g)
         e[2] = 0;
         e[3] = 1;
         e[6] = i;
-        p = kitchen_default(D_089CC438, i);
+        p = kitchen_default(g_game, i);
         e[7] = p[0];
         e[0xA] = p[3];
         e[8] = p[1];
@@ -69,7 +69,7 @@ u16 game_map_id(u8 *g)
         return 0x54;
     if (U16(g, 0x6AF0E) == 0xC5)
         return 0x7F;
-    return *D_09CE470C[*(s32 *)((u8 *)D_09A4F060 + 0x284)][0];
+    return *D_09CE470C[*(s32 *)((u8 *)g_area + 0x284)][0];
 }
 
 int save_in_progress(u8 *g);
@@ -118,20 +118,20 @@ int save_in_progress(u8 *g)
 /* starts saving (off-line only) */
 void save_start(u8 *g)
 {
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0) {
+    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) != 0) {
         g[0x6AF1A] = 0;
         return;
     }
     g[0x6AF1A] = 1;
-    func_08882F10(D_08A62D8C, 1);
-    func_08885798(D_08A62D8C, 4, 0);
+    func_08882F10(g_sound, 1);
+    func_08885798(g_sound, 4, 0);
 }
 
 void save_end(u8 *g)
 {
     g[0x6AF1A] = 4;
-    func_08882F10(D_08A62D8C, 0);
-    func_08885644(D_08A62D8C, 4, 0);
+    func_08882F10(g_sound, 0);
+    func_08885644(g_sound, 4, 0);
 }
 
 /* slot i of the pouch (item, number) */
@@ -183,7 +183,7 @@ s32 pouch_room_or_full(u8 *g, u32 id_arg)
                 return 0xFF;
             return (s16)(D_0899D19B[id * 0x18] - pouch_slot(g, i)[1]);
         }
-        if (pouch_slot(D_089CC438, i)[0] == 0)
+        if (pouch_slot(g_game, i)[0] == 0)
             empty++;
     }
     if (empty == 0)
@@ -195,12 +195,12 @@ s32 pouch_room_or_full(u8 *g, u32 id_arg)
 void kitchen_roll_daily(u8 *g)
 {
     if ((U32(g, 0x6ADF8) & 0x1000) == 0) {
-        g[0x44BD] = ((u16)game_rand(D_08A631A0, 1) & 3) + 1;
+        g[0x44BD] = ((u16)game_rand(g_sys, 1) & 3) + 1;
     } else if ((u8)game_test_flag(g, 0x22) == 0) {
         game_set_flag(g, 0x22);
         g[0x44BD] = 0;
     } else {
-        g[0x44BD] = (u16)game_rand(D_08A631A0, 1) % 5;
+        g[0x44BD] = (u16)game_rand(g_sys, 1) % 5;
     }
 }
 
@@ -274,7 +274,7 @@ int party_has_kitchen_skill(u8 *p, u32 k_arg)
     u8 k = k_arg;
     int i, j;
 
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0)
+    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
         return has_kitchen_skill(p, k_arg);
     for (i = 0; i < 6; i++, p += 0x8C) {
         if (p[0x30] == 0)
@@ -294,7 +294,7 @@ int memcmp(const void *a, const void *b, size_t n);
 /* 1 if the quest is still going (not ended, failed or abandoned) */
 int quest_running(void)
 {
-    u32 f = U32(D_089CC438, 0x6AF14);
+    u32 f = U32(g_game, 0x6AF14);
 
     if (f & 1)
         return 0;
@@ -500,7 +500,7 @@ void village_reset_visitors(u8 *g)
 
 void village_random_visitor(u8 *g)
 {
-    if (((u16)game_rand(D_08A631A0, 1) & 1) != 0) {
+    if (((u16)game_rand(g_sys, 1) & 1) != 0) {
         game_clear_flag(g, 7);
         game_set_flag(g, 0x5D);
     } else {
@@ -513,7 +513,7 @@ void village_random_visitor(u8 *g)
 /* 1 in 8: the rare visitor comes */
 int village_rare_visitor(u8 *g)
 {
-    if (((u16)game_rand(D_08A631A0, 1) & 7) == 0) {
+    if (((u16)game_rand(g_sys, 1) & 7) == 0) {
         game_set_flag(g, 0x30);
         game_clear_flag(g, 7);
         game_clear_flag(g, 0x5D);

@@ -1,7 +1,7 @@
 /* Hunter log: the last 10 events (0x88 bytes each at g+0x67D98). (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62C54;
+extern void *g_equip_data;
 extern const s16 D_0899CCFC[20];
 void *memcpy(void *d, const void *s, size_t n);
 s32 equip_rarity(void *a, u32 b, u32 c);
@@ -59,18 +59,18 @@ int log_replace(u8 *g, u8 *e)
 void log_count_hunt(void *unused, u8 *m)
 {
     u8 e[0x88];
-    u8 k = equip_rarity(D_08A62C54, m[1], U16(m, 2));
-    u32 *p = (u32 *)(D_089CC438 + 0x6AD7C + k * 4);
+    u8 k = equip_rarity(g_equip_data, m[1], U16(m, 2));
+    u32 *p = (u32 *)(g_game + 0x6AD7C + k * 4);
 
     if (*p == 0xFFFFFFFF)
         return;
     *p = *p + 1;
-    if (U32(D_089CC438, 0x6AD7C + k * 4) % 10 != 0)
+    if (U32(g_game, 0x6AD7C + k * 4) % 10 != 0)
         return;
-    log_entry_init(D_089CC438, e, 5, 0);
+    log_entry_init(g_game, e, 5, 0);
     U32(e, 0xC) = k;
-    U32(e, 0x18) = U32(D_089CC438, 0x6AD7C + k * 4);
-    log_push(D_089CC438, e);
+    U32(e, 0x18) = U32(g_game, 0x6AD7C + k * 4);
+    log_push(g_game, e);
 }
 
 /* keeps in the quest data the best of the ids of the list D_0899CCFC */
@@ -85,7 +85,7 @@ void quest_update_best(u8 *g, s32 id_arg)
         return;
     if (D_0899CCFC[0] != 0) {
         for (l = D_0899CCFC; *l != 0; l++, cur++) {
-            if (S16(D_08A62C7C, 0x682) == *l)
+            if (S16(g_quest, 0x682) == *l)
                 break;
         }
     }
@@ -99,5 +99,5 @@ void quest_update_best(u8 *g, s32 id_arg)
         better = n < cur;
     }
     if (better)
-        S16(D_08A62C7C, 0x682) = id;
+        S16(g_quest, 0x682) = id;
 }

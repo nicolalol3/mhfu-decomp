@@ -3,7 +3,7 @@
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62D8C;          /* sound manager */
+extern void *g_sound;          /* sound manager */
 
 void sound_play(void *snd, int a, int id, int b, int c, int d, int e, int f, int g);
 s32 menu_slot_first(void *self, u8 idx);
@@ -16,7 +16,7 @@ void menu_build_equip_lists(void *self, u32 a, int b);
 /* interface sound (0x11 = page, 0x17 = cursor, 9 = selection) */
 static inline void play_se(int id)
 {
-    sound_play(D_08A62D8C, 0, id, 0, 0, 0, 0, 0, 0);
+    sound_play(g_sound, 0, id, 0, 0, 0, 0, 0, 0);
 }
 
 int menu_cursor_vertical(void *self, u8 *pos, u32 keys, u32 count);
@@ -81,7 +81,7 @@ u16 menu_cursor_items(void *self, u8 *pos, u32 keys)
     u16 id;
 
     menu_cursor_pages(self, pos, keys, 24);
-    id = *pouch_slot(D_089CC438, *pos);
+    id = *pouch_slot(g_game, *pos);
     S16(self, 0x5FC) = id + 0x18;
     menu_item_toggle_sub(self, id, (keys & 0xFFFF) & 0x8000);
     return id;
@@ -279,8 +279,8 @@ int menu_open_item_list(void *self)
     U8(self, 0x589) = 0;
     U8(self, 0x588) = 0;
     U8(self, 0x587) = 0;
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0) {
-        if (S8(self, 0x587) == D_089CC438[0x28])
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0) {
+        if (S8(self, 0x587) == g_game[0x28])
             U8(self, 0x587)++;
     }
     f = U32(self, 0x528);
@@ -304,7 +304,7 @@ int menu_open_use_list(void *self)
     tmp = 0xFFFF;
     if ((s8)menu_repeat_tick(self, &tmp) == 0)
         return -1;
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && (s8)func_09A6E5A8((void *)U32(self, 0x530)) == 1)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0 && (s8)func_09A6E5A8((void *)U32(self, 0x530)) == 1)
         return -1;
     menu_page_reset(self);
     U32(self, 0x528) &= ~0x10;
@@ -318,11 +318,11 @@ int menu_open_use_list(void *self)
 
 int menu_open_info(void *self)
 {
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0)
         menu_get_mode(self);
     menu_info_available(self);
     U8(self, 0x57F) = 0;
-    U8(self, 0x581) = (*(u32 *)(D_089CC438 + 0x6AF14) & 1) ? 3 : 4;
+    U8(self, 0x581) = (*(u32 *)(g_game + 0x6AF14) & 1) ? 3 : 4;
     U32(self, 0x5E8) &= ~4;
     return 0;
 }
@@ -468,7 +468,7 @@ u32 menu_equipment_input(void *self, u32 keys)
 /* is the info tab available? (sets flag 0x40) */
 int menu_info_available(void *self)
 {
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) && (s8)func_09A7BFA8(D_09B22D70) == 0) {
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) && (s8)func_09A7BFA8(D_09B22D70) == 0) {
         U32(self, 0x528) &= ~0x40;
         return 0;
     }

@@ -8,8 +8,8 @@ extern void *D_089CC01C;
 extern u8 *D_089CBFFC;
 extern u32 *D_089CC000;           /* current GE command pointer */
 
-s32 func_0890C3D8(f32 *v);
-void func_08897298(void *p);
+s32 vec3_nonzero(f32 *v);
+void stub_nop(void *p);
 s32 func_088901E0(void *a);
 void func_088901F8(void *a, int b, int c);
 void func_08890144(void *a, int b, int c);
@@ -24,7 +24,7 @@ u32 *pos_obj_ctor(u32 *o)
     v[0] = D_0893B7A4[0];
     v[1] = D_0893B7A4[1];
     v[2] = D_0893B7A4[2];
-    if (func_0890C3D8(v) != 0) {
+    if (vec3_nonzero(v) != 0) {
         ((f32 *)o)[1] = v[0];
         ((f32 *)o)[2] = v[1];
         ((f32 *)o)[3] = v[2];
@@ -40,7 +40,7 @@ u32 *pos_obj_base_dtor(u32 *o, s32 flag)
     if (o != NULL) {
         o[0] = (u32)D_089BAB98;
         if ((s16)flag > 0)
-            func_08897298(o);
+            stub_nop(o);
     }
     return o;
 }
@@ -51,7 +51,7 @@ u32 *pos_obj_dtor(u32 *o, s32 flag)
         o[0] = (u32)D_089BAA6C;
         o[0] = (u32)D_089BAB98;
         if ((s16)flag > 0)
-            func_08897298(o);
+            stub_nop(o);
     }
     return o;
 }
@@ -60,15 +60,15 @@ u32 *pos_obj_dtor(u32 *o, s32 flag)
 void pos_obj_update(u32 *o)
 {
     if (o[7] == 1) {
-        if (func_088901E0(D_08A631A0) == 0) {
+        if (func_088901E0(g_sys) == 0) {
             f32 v[3];
 
-            func_088901F8(D_08A631A0, 0x41, 1);
+            func_088901F8(g_sys, 0x41, 1);
             o[7] = 0;
             v[0] = D_0893B7B0[0];
             v[1] = D_0893B7B0[1];
             v[2] = D_0893B7B0[2];
-            if (func_0890C3D8(v) != 0) {
+            if (vec3_nonzero(v) != 0) {
                 ((f32 *)o)[1] = v[0];
                 ((f32 *)o)[2] = v[1];
                 ((f32 *)o)[3] = v[2];
@@ -76,7 +76,7 @@ void pos_obj_update(u32 *o)
         }
     } else if (o[7] == 0) {
         func_0884D754(D_089CC01C, 1, 0, 1);
-        func_08890144(D_08A631A0, 0x41, 1);
+        func_08890144(g_sys, 0x41, 1);
         o[7]++;
     }
 }
@@ -117,7 +117,7 @@ u8 *list_mgr_dtor(u8 *p, s32 flag)
     if (p != NULL) {
         D_089CBFFC = NULL;
         if ((s16)flag > 0)
-            func_0890BFA4(p);
+            op_delete(p);
     }
     return p;
 }
@@ -135,7 +135,7 @@ u32 *pos_obj2_ctor(u32 *o)
     v[0] = D_0893B800[0];
     v[1] = D_0893B800[1];
     v[2] = D_0893B800[2];
-    if (func_0890C3D8(v) != 0) {
+    if (vec3_nonzero(v) != 0) {
         ((f32 *)o)[1] = v[0];
         ((f32 *)o)[2] = v[1];
         ((f32 *)o)[3] = v[2];
@@ -152,7 +152,7 @@ u32 *pos_obj2_dtor(u32 *o, s32 flag)
         o[0] = (u32)D_089BAA80;
         o[0] = (u32)D_089BAB98;
         if ((s16)flag > 0)
-            func_08897298(o);
+            stub_nop(o);
     }
     return o;
 }
@@ -160,17 +160,17 @@ u32 *pos_obj2_dtor(u32 *o, s32 flag)
 void pos_obj2_update(u32 *o)
 {
     if (o[7] == 1) {
-        if (func_088901E0(D_08A631A0) == 0) {
+        if (func_088901E0(g_sys) == 0) {
             f32 v[3];
 
-            func_088901F8(D_08A631A0, 0x40, 1);
+            func_088901F8(g_sys, 0x40, 1);
             func_0884D790(D_089CC01C, 0x10, 0);
             ((u8 *)o)[0x90] = 0;
             o[7] = 0;
             v[0] = D_0893B80C[0];
             v[1] = D_0893B80C[1];
             v[2] = D_0893B80C[2];
-            if (func_0890C3D8(v) != 0) {
+            if (vec3_nonzero(v) != 0) {
                 ((f32 *)o)[1] = v[0];
                 ((f32 *)o)[2] = v[1];
                 ((f32 *)o)[3] = v[2];
@@ -179,7 +179,7 @@ void pos_obj2_update(u32 *o)
         }
     } else if (o[7] == 0) {
         func_0884D754(D_089CC01C, 1, 0, 1);
-        func_08890144(D_08A631A0, 0x40, 1);
+        func_08890144(g_sys, 0x40, 1);
         o[7]++;
     }
 }
@@ -202,7 +202,7 @@ void pos_obj_reset(u8 *o)
     v[0] = D_089797F8[0];
     v[1] = D_089797F8[1];
     v[2] = D_089797F8[2];
-    if (func_0890C3D8(v) != 0) {
+    if (vec3_nonzero(v) != 0) {
         F32(o, 4) = v[0];
         F32(o, 8) = v[1];
         F32(o, 0xC) = v[2];
@@ -252,7 +252,7 @@ u32 *fade_dtor(u32 *o, s32 flag)
         D_089CC01C = NULL;
         o[0] = (u32)D_089BAB98;
         if ((s16)flag > 0)
-            func_08897298(o);
+            stub_nop(o);
     }
     return o;
 }

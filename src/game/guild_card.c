@@ -48,7 +48,7 @@ void guild_card_update(u8 *g)
         v = game_best_record_min(g, D_0899CB60[i * 2], &which);
         U16(c, 0x678AE) = (u32)(10.0f * (0.05f + game_size_percent(g, which, v)));
         c[0x678A8] = (c[0x678A8] & 0xE7) | (crown_bits(v, D_08930BDC[D_0899CBA0[i]]) << 3);
-        if (game_test_bit62(D_089CC438, D_0899CBA0[i]) != 0)
+        if (game_test_bit62(g_game, D_0899CBA0[i]) != 0)
             c[0x678A8] = (c[0x678A8] & 0xFE) | 1;
     }
     g[0x677EF] = g[0x44BC];

@@ -11,18 +11,18 @@
 #define S8(p, off)  (*(s8 *)((u8 *)(p) + (off)))
 
 /* global game data */
-extern u8 *D_089CC438;            /* general game state */
-extern void *D_09A4F0C4;
-extern void *D_089CBBEC;          /* menu instance */
-extern void *D_08A62C7C;
-extern void *D_08A631A8;          /* on-screen text writer */
-extern u8 *D_08A631A0;
+extern u8 *g_game;            /* general game state */
+extern void *g_players;
+extern void *g_menu;          /* menu instance */
+extern void *g_quest;
+extern void *g_font;          /* on-screen text writer */
+extern u8 *g_sys;
 extern void *D_08A62C50;
 extern const u32 D_08938A7C[];
 extern const f32 D_0893887C[][2];
 extern const u16 D_089AC834[];    /* IDs of the menu texts */
 extern const u16 D_089AC588[];
-extern const char D_08938478[];   /* "%s" */
+extern const char fmt_s[];   /* "%s" */
 extern const char D_08938540[];   /* formato "%d/%d" */
 extern const char D_08938548[];
 extern const s8 D_0893AF2C[];
@@ -44,7 +44,7 @@ extern u8 D_0893847C[], D_08938490[], D_089384CC[], D_089384E0[];
 
 void func_0890BEC0(void *arr, void *ctor, void *dtor, int size, int count);
 void func_0890BE54(void *arr, void *dtor, int size, int count);
-void func_0890BFA4(void *p);
+void op_delete(void *p);
 void *memset(void *p, int c, size_t n);
 void func_08832838(void *self);
 #define menu_free_data func_08832838
@@ -65,22 +65,22 @@ u16 *func_08856884(void *game, int idx);
 #define pouch_slot func_08856884
 int func_08829A48(void *self, u16 id);
 #define menu_item_for_quest func_08829A48
-void func_0882F580(void *self, void *layout, int a, int b, int alpha, int c);
+void layout_draw_box(void *self, void *layout, int a, int b, int alpha, int c);
 void func_08832E34(void *self, int x, int y, int a, int b, int c);
 #define gfx_draw_count_box func_08832E34
 void func_0882F9A8(void *self, const void *layout, int a, int b, int alpha, int c);
 #define layout_draw_from func_0882F9A8
 void func_08829B58(void *self, int a);
 #define menu_draw_give func_08829B58
-void func_08890DE8(void *font, int w, int h);
-void func_08890E38(void *font, int color);
+void font_set_size(void *font, int w, int h);
+void font_set_color(void *font, int color);
 const char *func_0885151C(void *game, u16 id);
 #define text_menu func_0885151C
 const char *func_08851528(void *game, u32 id);
 #define text_item_name func_08851528
-void func_088920A8(void *font, int x, int y, const char *fmt, ...);
-void func_08891474(void *font, int x, int y, const char *fmt, ...);
-void func_088915B0(void *font, int x, int y, int color, const char *fmt, ...);
+void font_draw_at(void *font, int x, int y, const char *fmt, ...);
+void font_printf_at(void *font, int x, int y, const char *fmt, ...);
+void font_printf_at_color(void *font, int x, int y, int color, const char *fmt, ...);
 void menu_draw_item_list(void *self, int sel, u32 color, u32 flags, int d);
 void func_0882F4A4(void *self, int x, int y, int w, int h, u32 flags);
 #define gfx_fill_rect_pulse func_0882F4A4
@@ -101,7 +101,7 @@ s32 func_08828F3C(void *self, u16 *entry);
 u32 func_088568AC(void *game, s16 id);
 #define pouch_count func_088568AC
 
-#define LANG (*(s32 *)(D_08A631A0 + 0xF7A574))   /* lingua corrente (0..6) */
+#define LANG (*(s32 *)(g_sys + 0xF7A574))   /* lingua corrente (0..6) */
 
 /* other menu functions and data (src/game/menu_draw.c) */
 typedef struct Layout {     /* text box (0x28 bytes) */
@@ -141,7 +141,7 @@ void menu_draw_equipment(void *self, u8 *hunter, int col);
 u8 *menu_get_equip_slot(void *self, u8 *out, u32 slot, u8 *hunter);
 void func_08830078(void *self, u32 a, int b, int c, int d, int e, int f);
 #define equip_draw_name_box func_08830078
-int func_08890E48(void *font, const char *s);
+int font_char_count(void *font, const char *s);
 void func_0882A9DC(void *self, u16 x, u16 y, int id);
 #define menu_draw_sprite func_0882A9DC
 void func_0882FB38(void *self, void *layout, u16 a, u16 b, int c, int d);
@@ -150,7 +150,7 @@ const char *func_0886BEA4(void *a, int i);
 #define quest_text func_0886BEA4
 void func_0882D6F0(void *self, u16 x, u16 y, u16 w, int a, int r, int g, int b);
 #define gfx_fill_rect func_0882D6F0
-void func_08890DFC(void *font, int x, int y);
+void font_set_pos(void *font, int x, int y);
 u8 *func_088298E4(void *self);
 #define menu_quest_data func_088298E4
 void menu_draw_stars(void *self, int a);
@@ -177,8 +177,8 @@ void func_0882E2C0(void *self, u16 id, int x, int y, int w, int h, int a, int al
 #define gfx_draw_item_icon_alpha func_0882E2C0
 s32 func_088303A0(void *self, u8 v);
 #define equip_rarity_text_color func_088303A0
-void func_08892004(void *font, const char *fmt, ...);
-void func_0889134C(void *font, const char *fmt, ...);
+void font_draw(void *font, const char *fmt, ...);
+void font_printf(void *font, const char *fmt, ...);
 const char *func_08851534(void *game, u32 id);
 #define text_item_info func_08851534
 void func_0885C5DC(s16 *list, int count);

@@ -23,8 +23,8 @@ void camera_load_area_limits(void *cam);
 void func_08812BD0(void *cam);
 u32 player_get(void *a, u8 b);
 int entity_in_area(void *obj);
-extern void *D_09A4F0C4;
-extern u8 *D_089CC438;
+extern void *g_players;
+extern u8 *g_game;
 
 static inline f32 fsqrt(f32 x)
 {
@@ -83,7 +83,7 @@ void camera_reset_state(void *cam)
     U8(cam, 0xB3C) = 1;
     camera_reset_projection(cam);
     U32(cam, 0xB10) = 0;
-    U32(cam, 0xA84) = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    U32(cam, 0xA84) = player_get(g_players, g_game[0x28]);
     U8(cam, 0xB00) = 0;
     U8(cam, 0xAE0) = 0;
     U8(cam, 0xAC0) = 0;
@@ -226,14 +226,14 @@ void camera_set_mode2(void *cam)
 
 void camera_set_mode1(void *cam)
 {
-    if (D_089CC438[0x6AF10] != 12)
+    if (g_game[0x6AF10] != 12)
         camera_set_mode(cam, 1, 0, 0);
 }
 
 /* camera mode according to the current zone */
 void camera_mode_for_area(void *cam)
 {
-    s16 area = *(s16 *)(D_089CC438 + 0x6AF0E);
+    s16 area = *(s16 *)(g_game + 0x6AF0E);
     u8 mode;
 
     if (area == 0xb0)
@@ -291,14 +291,14 @@ int camera_is_special_cutscene(void *cam)
 
 int camera_cutscene_timer(void *cam)
 {
-    if (D_089CC438[0x422] == 0)
+    if (g_game[0x422] == 0)
         return -1;
     return S16(cam, 0x964);
 }
 
 int camera_blocks_input(void *cam)
 {
-    if (D_089CC438[0x422] != 1 && U8(cam, 0xA0A) == 0) {
+    if (g_game[0x422] != 1 && U8(cam, 0xA0A) == 0) {
         switch (U8(cam, 0x9BE)) {
         case 3: case 4: case 5:
         case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18:
@@ -351,7 +351,7 @@ void mat_look_at(f32 *m, const f32 *eye, const f32 *target, const f32 *up);
 void camera_build_frustum(void *cam);
 void camera_default_area(void *cam);
 int game_quest_locked(void *a, int b);
-extern s32 D_08A62C68, D_08A62C6C;
+extern s32 D_08A62C68, g_pad_pressed;
 extern u16 D_08A62C78, D_08A62C7A;
 
 /* Inverse of a 4x4 rotation+scale+translation matrix (orthogonal rows). */
@@ -459,10 +459,10 @@ void camera_load_area_limits(void *cam)
 /* reads the stick/buttons that move the camera */
 void camera_read_input(void *cam)
 {
-    if (game_quest_locked(D_089CC438, 1) != 1) {
+    if (game_quest_locked(g_game, 1) != 1) {
         if (((u8 *)U32(cam, 0xA84))[0x552] == 0) {
             S16(cam, 0xA70) = (s16)D_08A62C68;
-            S16(cam, 0xA72) = (s16)D_08A62C6C;
+            S16(cam, 0xA72) = (s16)g_pad_pressed;
             S16(cam, 0xA76) = D_08A62C78;
             S16(cam, 0xA78) = D_08A62C7A;
             return;

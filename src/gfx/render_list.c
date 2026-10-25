@@ -4,10 +4,10 @@
 #include "menu.h"
 
 extern u8 *D_08A62C40;            /* display list manager */
-extern u8 *D_089CBBE4;            /* camera / viewport */
-extern void *D_089CBBE0;          /* VRAM manager */
+extern u8 *g_camera;            /* camera / viewport */
+extern void *g_vram;          /* VRAM manager */
 extern u32 *D_089CC000;           /* current GE command pointer */
-extern u8 **D_09A4F060;
+extern u8 **g_area;
 extern const s8 D_0893B7BC[20];   /* number of lists of each layer */
 extern const u32 D_0893B7D0[][4];
 
@@ -45,7 +45,7 @@ void rl_begin_frame(u8 *self)
     rl_clear(self);
     if (rl_open(self, 1) == 0)
         return;
-    cam = D_089CBBE4;
+    cam = g_camera;
     GE((U32(cam, 0xDA0) >> 8) | 0x42000000);
     GE((U32(cam, 0xDA4) >> 8) | 0x43000000);
     GE((U32(cam, 0xDA8) >> 8) | 0x44000000);
@@ -159,7 +159,7 @@ void rl_draw_all(u8 *self)
             GE(0x3D000000);
             GE(0x3D000000);
             GE(0x3D000000);
-            cam = D_089CBBE4;
+            cam = g_camera;
             GE(0x3E000000);
             for (i = 0; i < 16; i++)
                 GE((U32(cam, 0xC00 + i * 4) >> 8) | 0x3F000000);
@@ -170,9 +170,9 @@ void rl_draw_all(u8 *self)
             for (; o != NULL; o = (u32 *)o[2])
                 (*(void (**)(void *))(o[0] + 0xC))(o);
         }
-        if (layer == 8 && U16(D_089CC438, 0x6AF0E) != 0 && *D_09A4F060 != NULL
-            && (*D_09A4F060)[0x3D4] == 1)
-            func_088CACD4(*D_09A4F060);
+        if (layer == 8 && U16(g_game, 0x6AF0E) != 0 && *g_area != NULL
+            && (*g_area)[0x3D4] == 1)
+            func_088CACD4(*g_area);
         rl_close(self);
     }
     if (self[0x214] == 1) {
@@ -187,7 +187,7 @@ void rl_draw_copy(u8 *self)
     u32 s[6];
     u32 c[12];
 
-    vram_get_surface(D_089CBBE0, (U32(D_08A62C40, 4) ^ 1) & 0xFF, s);
+    vram_get_surface(g_vram, (U32(D_08A62C40, 4) ^ 1) & 0xFF, s);
     c[0] = 0xCC000000;
     c[1] = (s[2] & 0xFFFFFF) | 0xB2000000;
     c[2] = ((s[2] & 0xFF000000) >> 8) | 0xB3000100;
@@ -327,7 +327,7 @@ void rl_add_model(u8 *self, u32 layer, u8 *o, u32 flag)
         v[1] = F32(o, 0x204) + 0.5f * (r * F32(*(u8 **)(o + 0x50), 0x14));
         v[2] = F32(o, 0x208);
         v[3] = 0.0f;
-        if ((u8)camera_sphere_visible(r * F32(*(u8 **)(o + 0x50), 0xC), D_089CBBE4, v) == 0)
+        if ((u8)camera_sphere_visible(r * F32(*(u8 **)(o + 0x50), 0xC), g_camera, v) == 0)
             return;
     }
     if (o[0x230] != 0xFF && (layer & 0xFF) == 5)
@@ -341,7 +341,7 @@ void rl_add_object(u8 *self, u32 layer, u8 *o, u32 flag)
 {
     U32(o, 4) &= ~2;
     if ((flag & 0xFF) == 0
-        && (u8)camera_sphere_visible(F32(*(u8 **)(o + 0x50), 0xC), D_089CBBE4, (f32 *)(o + 0x40)) == 0)
+        && (u8)camera_sphere_visible(F32(*(u8 **)(o + 0x50), 0xC), g_camera, (f32 *)(o + 0x40)) == 0)
         return;
     if ((u8)rl_insert(self, layer, o, (f32 *)(o + 0x40), flag) == 1)
         U32(o, 4) |= 2;
@@ -360,7 +360,7 @@ int rl_insert(u8 *self, u32 layer_arg, u8 *o, const f32 *pos, u32 flag_arg)
     if (layer >= 20)
         return 0;
     U32(o, 8) = 0;
-    cam = (f32 *)D_089CBBE4;
+    cam = (f32 *)g_camera;
     d = (F32(cam, 0xBB8) + (pos[2] * F32(cam, 0xBA8) + (pos[0] * F32(cam, 0xB88) + pos[1] * F32(cam, 0xB98))))
         * -1.0f;
     if (d < 0.0f) {
@@ -403,7 +403,7 @@ int rl_insert(u8 *self, u32 layer_arg, u8 *o, const f32 *pos, u32 flag_arg)
     }
 }
 
-/* world matrix: camera matrix (D_089CBBE4+0xBC0) x global scale x m */
+/* world matrix: camera matrix (g_camera+0xBC0) x global scale x m */
 void rl_set_world_matrix(u8 *self, const f32 *m)
 {
     f32 s[16] __attribute__((aligned(16)));
@@ -436,7 +436,7 @@ void rl_set_world_matrix(u8 *self, const f32 *m)
         "sv.q C010, 16(%0)\n"
         "sv.q C020, 32(%0)\n"
         "sv.q C030, 48(%0)\n"
-        : : "r"(r), "r"(s), "r"(m), "r"(D_089CBBE4 + 0xBC0) : "memory");
+        : : "r"(r), "r"(s), "r"(m), "r"(g_camera + 0xBC0) : "memory");
     GE(0x3A000000);
     for (i = 0; i < 16; i++) {
         if ((i & 3) != 3)

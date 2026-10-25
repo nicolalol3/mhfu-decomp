@@ -2,7 +2,7 @@
  * small random helpers. (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62C54;
+extern void *g_equip_data;
 extern const u8 D_08973834[], D_08963254[], D_08967674[], D_0896B814[], D_0896F84C[];
 extern const u8 D_08959FCC[], D_08960B9C[];   /* weapon tables: bowguns (0x18 bytes), others (0x1C) */
 extern const u8 *D_089B65DC[];
@@ -68,7 +68,7 @@ int equip_piece_exists(void *g, u32 kind, s32 gender, u32 id_arg)
 
     if (k >= 5)
         return 0;
-    e = armor_data(D_08A62C54, k, id);
+    e = armor_data(g_equip_data, k, id);
     if (gender == 0)
         return U16(e, 0) != 0;
     return U16(e, 2) != 0;
@@ -83,14 +83,14 @@ u8 hunter_piece_byte13(u8 *p, s32 i, u32 kind)
     if ((u8)hunter_has_piece(p, i, kind) != 1)
         return 0;
     k = equip_slot_to_kind(p, kind & 0xFF);
-    return armor_data(D_08A62C54, k, S16(h + k * 0xC, 0x6E))[0x13];
+    return armor_data(g_equip_data, k, S16(h + k * 0xC, 0x6E))[0x13];
 }
 
 u8 own_piece_byte13(u8 *g, u32 kind, s32 id)
 {
     if ((u8)own_has_piece(g, equip_kind_to_slot(g, kind & 0xFF) & 0xFF) != 1)
         return 0;
-    return armor_data(D_08A62C54, kind & 0xFF, (s16)id)[0x13];
+    return armor_data(g_equip_data, kind & 0xFF, (s16)id)[0x13];
 }
 
 /* first word of the weapon of the hunter i */
@@ -147,10 +147,10 @@ void table_interp(f32 x, void *unused, const f32 *t, f32 *out)
 /* random numbers in [0, 1.023] and [-1.024, 1.022] */
 f32 rand_unit(void)
 {
-    return 0.001f * (f32)((u16)game_rand(D_08A631A0, 1) & 0x3FF);
+    return 0.001f * (f32)((u16)game_rand(g_sys, 1) & 0x3FF);
 }
 
 f32 rand_signed(void)
 {
-    return 0.002f * (f32)(s32)(((u16)game_rand(D_08A631A0, 1) & 0x3FF) - 0x200);
+    return 0.002f * (f32)(s32)(((u16)game_rand(g_sys, 1) & 0x3FF) - 0x200);
 }

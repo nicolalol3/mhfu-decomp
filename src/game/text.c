@@ -23,7 +23,7 @@ void partner_add_exp(void *g, u8 *p)
 
         U16(p, 0x22) -= 10;
         thr = (p[0x4C] < p[0x4D]) ? 0x54 : 0x10;
-        if ((s32)(u16)game_rand(D_08A631A0, 1) % 100 < thr) {
+        if ((s32)(u16)game_rand(g_sys, 1) % 100 < thr) {
             if (p[0x24] < 99)
                 p[0x24]++;
         } else if (p[0x25] < 99) {

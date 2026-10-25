@@ -1,11 +1,11 @@
-/* Quest (D_08A62C7C): the 6 slots of Quest.slot, "N left" messages of the hunts, counts of
+/* Quest (g_quest): the 6 slots of Quest.slot, "N left" messages of the hunts, counts of
  * the monsters, bonus rewards (gathering in the area, Felyne comrade) and unlock checks.
  * (Guessed names.) */
 #include "quest.h"
 #undef text_menu
 #undef friend_marked
 
-extern void *D_09A0B540;
+extern void *g_heap;
 extern const u16 D_089AC5A0[];      /* IDs of the quest messages */
 extern const s32 D_089A853C[][5];
 extern const u8 D_0899D19C[];      /* item table (+4: flags) */
@@ -144,25 +144,25 @@ void quest_hunt_message(Quest *self, u32 id, s32 left, s32 max)
         /* "2 left", "1 left" */
         if (max > 2 && left < 3 && self->hunt_msg[1] == 0) {
             self->hunt_msg[1] = 1;
-            menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[D_089A853C[k][1]]));
+            menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[D_089A853C[k][1]]));
         }
         if (max > 1 && left < 2 && self->hunt_msg[0] == 0) {
             self->hunt_msg[0] = 1;
-            menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[D_089A853C[k][0]]));
+            menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[D_089A853C[k][0]]));
         }
     } else {
         /* "20 left", "10 left", "5 left" */
         if (max > 20 && left < 21 && self->hunt_msg[4] == 0) {
             self->hunt_msg[4] = 1;
-            menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[D_089A853C[k][4]]));
+            menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[D_089A853C[k][4]]));
         }
         if (max > 10 && left < 11 && self->hunt_msg[3] == 0) {
             self->hunt_msg[3] = 1;
-            menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[D_089A853C[k][3]]));
+            menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[D_089A853C[k][3]]));
         }
         if (max > 5 && left < 6 && self->hunt_msg[2] == 0) {
             self->hunt_msg[2] = 1;
-            menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[D_089A853C[k][2]]));
+            menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[D_089A853C[k][2]]));
         }
     }
 }
@@ -172,7 +172,7 @@ u32 quest_comrade_allowed(Quest *self)
 {
     s8 m;
 
-    if (friend_marked(D_089CC438) == NULL)
+    if (friend_marked(g_game) == NULL)
         return 0;
     if ((OPT_FLAGS & 1) != 0 || G_ARENA != 0)
         return 0;
@@ -264,8 +264,8 @@ static s32 shuffle_copy(u16 *buf, s32 n, u16 *dst)
 
     if (n > 0) {
         for (i = 0; i < n; i++) {
-            a = (s32)(game_rand(D_08A631A0, 0) & 0xFFFF) % n;
-            b = (s32)(game_rand(D_08A631A0, 0) & 0xFFFF) % n;
+            a = (s32)(game_rand(g_sys, 0) & 0xFFFF) % n;
+            b = (s32)(game_rand(g_sys, 0) & 0xFFFF) % n;
             t = buf[a];
             buf[a] = buf[b];
             buf[b] = t;
@@ -290,7 +290,7 @@ void quest_gather_rewards(Quest *self)
 
     if (self->gather_total == 0)
         return;
-    buf = (u16 *)temp_alloc(D_09A0B540, 0x19, self->gather_total * 2);
+    buf = (u16 *)temp_alloc(g_heap, 0x19, self->gather_total * 2);
     p = buf;
     for (i = 0; i < 20; ) {
         e = self->gathered[i];
@@ -307,14 +307,14 @@ void quest_gather_rewards(Quest *self)
             i++;
     }
     n = shuffle_copy(buf, n, G_REWARDS);
-    temp_free(D_09A0B540, 0x19);
+    temp_free(g_heap, 0x19);
     self->bonus_items += (s8)n;
 }
 
 /* bonus rewards brought by the Felyne comrade (monsters hunted, by comrade level) */
 void quest_comrade_rewards(Quest *self)
 {
-    u16 *buf = (u16 *)temp_alloc(D_09A0B540, 0x19, 0xB4);
+    u16 *buf = (u16 *)temp_alloc(g_heap, 0x19, 0xB4);
     u16 *p = buf;
     s32 k = QUEST->file->kind;
     s32 lv, i, n = 0;
@@ -327,7 +327,7 @@ void quest_comrade_rewards(Quest *self)
         k = 1;
     else if (k == 5)
         k = 2;
-    pts = S16(friend_marked(D_089CC438), 0x2A);
+    pts = S16(friend_marked(g_game), 0x2A);
     if (pts < 1000)
         lv = 0;
     else if (pts < 2500)
@@ -357,13 +357,13 @@ void quest_comrade_rewards(Quest *self)
         if (it == 0 || (D_0899D19C[it * 0x18] & 6) != 0)
             continue;
         ch = ((D_09BB89B0[i][0x5C] >> 2) & 1) != 0 ? D_0893162C[lv] : D_08931644[lv];
-        if ((game_rand(D_08A631A0, 0) & 0xFFFF) % 100 < ch) {
+        if ((game_rand(g_sys, 0) & 0xFFFF) % 100 < ch) {
             *p++ = it;
             n++;
         }
     }
     n = shuffle_copy(buf, n, &G_REWARDS[0x10]);
-    temp_free(D_09A0B540, 0x19);
+    temp_free(g_heap, 0x19);
     self->bonus_items += (s8)n;
 }
 
@@ -377,7 +377,7 @@ u32 quest_monster_unlocked(Quest *self, u32 id)
             continue;
         if (D_089A8624[i][0] == 0x164)
             return 1;
-        return game_test_flag(D_089CC438, D_089A8624[i][0]) != 0;
+        return game_test_flag(g_game, D_089A8624[i][0]) != 0;
     }
     return 1;
 }
@@ -395,9 +395,9 @@ u32 quest_is_special(Quest *self, s32 id)
 /* copies the delivered items of the player to the game state */
 void quest_save_deliveries(void)
 {
-    u8 *h = (u8 *)player_get(D_09A4F0C4, G_MY_SLOT);
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
 
-    memcpy(D_089CC438 + 0x43C8, h + 0x568, 0x60);
+    memcpy(g_game + 0x43C8, h + 0x568, 0x60);
 }
 
 u32 quest_any_unlock(Quest *self)
@@ -416,25 +416,25 @@ u32 quest_unlock_check(Quest *self, s32 i)
     s32 f;
 
     if (G_QUEST_ID == 0xC22 && quest_state(QUEST, 1) == 1)
-        game_set_flag(D_089CC438, 0x164);
-    f = flag_id_at(D_089CC438, (s8)i);
+        game_set_flag(g_game, 0x164);
+    f = flag_id_at(g_game, (s8)i);
     if (f < 0)
         return 0;
-    if (game_test_flag2(D_089CC438, f) != 0)
+    if (game_test_flag2(g_game, f) != 0)
         return 0;
     if (f >= 0x2C && f < 0x33)
-        return game_test_flag(D_089CC438, f + 0xB8) != 0;
+        return game_test_flag(g_game, f + 0xB8) != 0;
     if (f == 0x33)
-        return game_test_flag(D_089CC438, 0xED) != 0;
+        return game_test_flag(g_game, 0xED) != 0;
     if (f >= 0xB && f < 0x39) {
         for (i = 0; i < 38; i++)
-            if (f == D_089A8624[i][1] && game_test_flag(D_089CC438, D_089A8624[i][0]) != 0)
+            if (f == D_089A8624[i][1] && game_test_flag(g_game, D_089A8624[i][0]) != 0)
                 return 1;
         return 0;
     }
     if (f >= 0 && f < 0xB) {
         for (i = 0; i < 28; i++)
-            if (f == D_089A857C[i][1] && game_has_progress(D_089CC438, D_089A857C[i][0]) != 0)
+            if (f == D_089A857C[i][1] && game_has_progress(g_game, D_089A857C[i][0]) != 0)
                 return 1;
     }
     return 0;

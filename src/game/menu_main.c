@@ -7,7 +7,7 @@
 #undef menu_draw_main_page
 
 
-extern void *D_08A62D8C;          /* sound */
+extern void *g_sound;          /* sound */
 extern const char D_0893879C[];   /* "%2d/%2d" */
 extern const char D_08938540[];   /* "%d/%d" */
 extern const s16 D_08939854, D_08939856, D_08939434;
@@ -16,8 +16,8 @@ void sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int 
 u16 game_buttons(void *game);
 s32 func_0883E928(void *self, u32 key);
 s32 func_08834B0C(void *self, u32 key);
-void func_088D8900(void *hunter);
-void func_08890E08(void *font, int v);
+void pouch_backup_deliveries(void *hunter);
+void font_set_layer(void *font, int v);
 void func_088392F4(void *self);
 void hud_draw_item_get(void *self);
 
@@ -65,15 +65,15 @@ void menu_draw_pager(u8 *self, s32 x_arg, s32 y, u32 cur_arg, u32 total_arg, u32
     s16 w;
     u8 arrows;
 
-    func_08890DE8(D_08A631A8, 14, 14);
+    font_set_size(g_font, 14, 14);
     if (flags & 4)
         sprintf(buf, D_08938540, cur + 1, total);
     else
         sprintf(buf, D_0893879C, cur + 1, total);
-    func_08890E48(D_08A631A8, buf);
-    w = func_08890E48(D_08A631A8, buf) * 7;
+    font_char_count(g_font, buf);
+    w = font_char_count(g_font, buf) * 7;
     x = x - (w >> 1);
-    func_088915B0(D_08A631A8, x, y, 0, D_08938478, buf);
+    font_printf_at_color(g_font, x, y, 0, fmt_s, buf);
     if (flags & 1) {
         arrows = 3;
     } else if (total < 2) {
@@ -116,7 +116,7 @@ void menu_frame(u8 *self)
     } else if (self[0x52C] == 0) {
         self[0x52C] = 1;
 run:
-        if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 1) {
+        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 1) {
             self[0x606] = 0;
             if ((s32)U32(self, 0x600) > 0)
                 U32(self, 0x600) -= 1;
@@ -141,12 +141,12 @@ void menu_show(u8 *self)
 {
     if (*(s32 *)D_09B22D70 == 12)
         return;
-    D_089CC438[0x10] = 1;
+    g_game[0x10] = 1;
     *(s32 *)D_09B22D70 = 12;
     menu_close_state(self);
     self[0x111D] = 1;
     U16(self, 0x111E) = 0;
-    sound_play(D_08A62D8C, 0, 17, 0, 0, 0, 0, 0, 0);
+    sound_play(g_sound, 0, 17, 0, 0, 0, 0, 0, 0);
 }
 
 /* resets the state of the current page */
@@ -176,7 +176,7 @@ int menu_check_closed(u8 *self)
         menu_close_all(self);
         return 1;
     }
-    U16(self, 0x111E) = game_buttons(D_089CC438);
+    U16(self, 0x111E) = game_buttons(g_game);
     return 0;
 }
 
@@ -195,7 +195,7 @@ void menu_close_all(u8 *self)
     U32(self, 0x528) = f & ~0x800;
     U32(self, 0x528) = f & ~0xA00;
     U32(self, 0x528) = f & ~0xB00;
-    D_089CC438[0x10] = 0;
+    g_game[0x10] = 0;
     self[0x112C] = 0;
     self[0x1138] = 0;
     self[0x1144] = 0;
@@ -210,7 +210,7 @@ s32 menu_update_page(u8 *self, u32 key)
     s32 r = func_0883E928(self, key);
 
     if (r != 0)
-        func_088D8900(*(void **)(self + 0x530));
+        pouch_backup_deliveries(*(void **)(self + 0x530));
     return r;
 }
 
@@ -218,9 +218,9 @@ s32 menu_update_page(u8 *self, u32 key)
 void menu_draw_layer0(u8 *self)
 {
     self[0x534] = 9;
-    func_08890E08(D_08A631A8, 0);
+    font_set_layer(g_font, 0);
     menu_begin_draw(self);
-    if (*(s16 *)(D_089CC438 + 0x6AF0E) == 13)
+    if (*(s16 *)(g_game + 0x6AF0E) == 13)
         func_088392F4(self);
 }
 
@@ -228,11 +228,11 @@ void menu_draw_layer0(u8 *self)
 void menu_draw_layer1(u8 *self)
 {
     self[0x534] = 10;
-    func_08890E08(D_08A631A8, 1);
+    font_set_layer(g_font, 1);
     menu_begin_draw(self);
     if (self[0x52F] != 0)
         hud_draw_item_get(self);
-    else if (D_089CC438[0x10] != 0)
+    else if (g_game[0x10] != 0)
         menu_draw_page(self);
 }
 
@@ -240,7 +240,7 @@ void menu_draw_layer1(u8 *self)
 void menu_draw_layer2(u8 *self)
 {
     self[0x534] = 11;
-    func_08890E08(D_08A631A8, 2);
+    font_set_layer(g_font, 2);
     menu_begin_draw(self);
     if (self[0x5F0] != 0) {
         menu_draw_typewriter(self);
@@ -278,7 +278,7 @@ void menu_draw_page(u8 *self)
 u32 menu_get_key(u8 *self)
 {
     if (self[0x111D] == 0)
-        return game_buttons(D_089CC438);
+        return game_buttons(g_game);
     return U16(self, 0x111E);
 }
 
@@ -287,7 +287,7 @@ extern const char D_0893B218[], D_0893B220[];
 extern const u8 D_0893AFA0[];
 const char *func_09A7B790(void *a, u16 id);
 s32 hud_event_state(void *self, u8 a, u8 b);
-void func_0882F580(void *self, void *layout, int a, int b, int alpha, int c);
+void layout_draw_box(void *self, void *layout, int a, int b, int alpha, int c);
 void layout_build(Layout *out, const u8 *src, int title, s32 dx_arg, s32 dy_arg);
 void layout_draw_pages(void *self, Layout *l, u32 cur, u32 total_arg, s32 color, s32 alt);
 void menu_cursor_two_columns(void *self, u8 *pos, u32 keys, u32 count_arg);
@@ -305,11 +305,11 @@ void menu_draw_main_page(u8 *self, int dim)
     const u16 *ids;
     int i;
 
-    sprintf(title, D_0893B218, text_menu(D_089CC438, D_089AC850));
+    sprintf(title, D_0893B218, text_menu(g_game, D_089AC850));
     layout_build(&l, D_0893AFA0, (int)title, 0, 0);
     if ((s8)dim != 0)
         l.color = 0x80808080;
-    func_0882F580(self, &l, (int)title, (u8)(sel % 7), 255, 1);
+    layout_draw_box(self, &l, (int)title, (u8)(sel % 7), 255, 1);
     layout_draw_pages(self, &l, page, 2, 0, dim);
     col[6] = 0;
     col[5] = 0;
@@ -320,7 +320,7 @@ void menu_draw_main_page(u8 *self, int dim)
     col[0] = 0;
     if (page == 0) {
         ids = (const u16 *)0x09B051A0;
-        if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0) {
+        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
             col[3] = 10;
             col[4] = 10;
             col[6] = 10;
@@ -329,7 +329,7 @@ void menu_draw_main_page(u8 *self, int dim)
             col[1] = 10;
     } else {
         ids = (const u16 *)0x09B051AE;
-        if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0) {
+        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
             col[4] = 10;
             col[5] = 10;
         } else {
@@ -343,7 +343,7 @@ void menu_draw_main_page(u8 *self, int dim)
         col[6] = 10;
     }
     for (i = 0; i < 7; i++)
-        func_088915B0(D_08A631A8, l.tx, (s16)(l.ty + (s16)i * l.lh), col[i], D_0893B220,
+        font_printf_at_color(g_font, l.tx, (s16)(l.ty + (s16)i * l.lh), col[i], D_0893B220,
                       func_09A7B790(D_09B22D70, ids[i]));
 }
 
@@ -361,12 +361,12 @@ s32 menu_input(u8 *self, u32 keys)
         if (U32(self, 0x121C) == 0) {
             if (r & 8) {
                 self[0x111D] = 0;
-                sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+                sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
                 return 1;
             }
             if (r & 0x2000) {
                 menu_close_state(self);
-                sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+                sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
             }
         }
     } else if (st[0] == 0) {
@@ -376,13 +376,13 @@ s32 menu_input(u8 *self, u32 keys)
             if (menu_select_entry(self, self[0x111C]) == 0) {
                 st[0] += 1;
                 U32(self, 0x121C) = 0;
-                sound_play(D_08A62D8C, 0, 19, 0, 0, 0, 0, 0, 0);
+                sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
             } else {
-                sound_play(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
+                sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
             }
         } else if (keys & 0x2008) {
             self[0x111D] = 0;
-            sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+            sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
             return 1;
         }
     } else {
@@ -404,8 +404,8 @@ void skill_update_hunter(void *self, void *hunter);
 s32 menu_select_entry(u8 *self, u32 i_arg)
 {
     u8 i = i_arg;
-    u8 *h = (u8 *)player_get(D_09A4F0C4, D_089CC438[0x28]);
-    int online = (*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0;
+    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+    int online = (*(u32 *)(g_sys + 0xF7A57C) & 1) != 0;
     s32 r = 1;
 
     switch (i) {
@@ -454,8 +454,8 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
         U32(self, 0x5E8) |= 4;
         self[0x57E] = 0;
         self[0x57F] = 0;
-        U32(self, 0x118C) = (u32)(D_089CC438 + 0x69BEC);
-        g = D_089CC438;
+        U32(self, 0x118C) = (u32)(g_game + 0x69BEC);
+        g = g_game;
         for (k = 0; k < 13; k++, g += 0x70)
             if (g[0x69BEC] != 0)
                 n++;
@@ -481,8 +481,8 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
     case 10: {
         s8 m;
 
-        self[0x609] = D_089CC438[0x6ADDE];
-        m = D_089CC438[0x6ADD9];
+        self[0x609] = g_game[0x6ADDE];
+        m = g_game[0x6ADD9];
         if (m == 3)
             self[0x60A] = 2;
         else if (m == 2)
@@ -534,11 +534,11 @@ u16 menu_page_input_dispatch(u8 *self, u32 page, u32 keys)
     switch ((u8)page) {
     case 0:
         r = func_0881CB2C(self, keys);
-        func_088D8900((void *)player_get(D_09A4F0C4, D_089CC438[0x28]));
+        pouch_backup_deliveries((void *)player_get(g_players, g_game[0x28]));
         return r;
     case 1:
         r = func_0881DB5C(self, keys);
-        func_088D8900((void *)player_get(D_09A4F0C4, D_089CC438[0x28]));
+        pouch_backup_deliveries((void *)player_get(g_players, g_game[0x28]));
         break;
     case 2: r = menu_info_input(self, keys); break;
     case 3: r = hud_grid_input(self, keys); break;

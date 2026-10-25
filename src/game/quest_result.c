@@ -1,10 +1,10 @@
-/* End of the quest (object D_08A62CB4): size records, items sold at the end, timers of
+/* End of the quest (object g_result): size records, items sold at the end, timers of
  * the result screen. (Guessed names.) */
 #include "quest.h"
 #undef pouch_slot
 
-extern u8 *D_08A62CB4;
-extern u8 *D_08A62D8C;
+extern u8 *g_result;
+extern u8 *g_sound;
 extern const u8 D_0899D19C[];      /* item table (+4: flags) */
 extern const s32 D_0899D1A8[];     /* item table (+0xC: price), 6 words per item */
 
@@ -55,12 +55,12 @@ void result_size_records(u8 *self)
     int ch_max, ch_min;
 
     for (i = 1; i < 90; i++) {
-        mx[i] = (u16)game_record_max(D_089CC438, i & 0xFFFF);
-        mn[i] = (u16)game_record_min(D_089CC438, i & 0xFFFF);
+        mx[i] = (u16)game_record_max(g_game, i & 0xFFFF);
+        mn[i] = (u16)game_record_min(g_game, i & 0xFFFF);
     }
     /* the variants count in the record of their base monster */
     for (i = 1; i < 90; i++) {
-        g = game_table_byte(D_089CC438, i & 0xFF) & 0xFF;
+        g = game_table_byte(g_game, i & 0xFF) & 0xFF;
         if (g == (u32)(i & 0xFF)) {
             own[i] = 1;
             continue;
@@ -76,12 +76,12 @@ void result_size_records(u8 *self)
     /* sizes of this quest */
     for (i = 1; i < 90; i++) {
         v = q->size_max[i];
-        if (v != 0 && (u16)game_record_max(D_089CC438, i & 0xFFFF) < v)
-            game_update_record_max(D_089CC438, i & 0xFFFF, v);
+        if (v != 0 && (u16)game_record_max(g_game, i & 0xFFFF) < v)
+            game_update_record_max(g_game, i & 0xFFFF, v);
         w = q->size_min[i];
-        if (w != 0 && (w < (u16)game_record_min(D_089CC438, i & 0xFFFF) ||
-                       (u16)game_record_min(D_089CC438, i & 0xFFFF) == 0))
-            game_update_record_min(D_089CC438, i & 0xFFFF, q->size_min[i]);
+        if (w != 0 && (w < (u16)game_record_min(g_game, i & 0xFFFF) ||
+                       (u16)game_record_min(g_game, i & 0xFFFF) == 0))
+            game_update_record_min(g_game, i & 0xFFFF, q->size_min[i]);
     }
     U32(self, 0xCC) = 0;
     for (j = 0; j < 10; j++) {
@@ -92,15 +92,15 @@ void result_size_records(u8 *self)
     for (i = 1; i < 90; i++) {
         if (own[i] == 0)
             continue;
-        ch_max = mx[i] != (u16)game_best_record_max(D_089CC438, i & 0xFF, 0);
+        ch_max = mx[i] != (u16)game_best_record_max(g_game, i & 0xFF, 0);
         v = mn[i];
-        ch_min = mn[i] != (u16)game_best_record_min(D_089CC438, i & 0xFF, 0);
+        ch_min = mn[i] != (u16)game_best_record_min(g_game, i & 0xFF, 0);
         if (!ch_max && !ch_min)
             continue;
         if (ch_max && ch_min) {
-            u16 a = (u16)game_best_record_max(D_089CC438, i & 0xFF, 0);
+            u16 a = (u16)game_best_record_max(g_game, i & 0xFF, 0);
 
-            if (a == (u16)game_best_record_min(D_089CC438, i & 0xFF, 0)) {
+            if (a == (u16)game_best_record_min(g_game, i & 0xFF, 0)) {
                 add_record(self, i, mx[i], 0);
             } else {
                 add_record(self, i, mx[i], 1);
@@ -111,20 +111,20 @@ void result_size_records(u8 *self)
         } else {
             add_record(self, i, v, 2);
         }
-        em = emblem_find(D_089CBBEC, i & 0xFF);
+        em = emblem_find(g_menu, i & 0xFF);
         if (ch_max) {
-            u16 b = (u16)game_best_record_max(D_089CC438, i & 0xFF, 0);
+            u16 b = (u16)game_best_record_max(g_game, i & 0xFF, 0);
 
             if (S16(em, 4) <= (s32)b)
-                record_add_best(D_089CC438, QUEST->log, 8, i,
-                                (u32)((game_size_percent(D_089CC438, i & 0xFF, b) + 0.05f) * 10.0f));
+                record_add_best(g_game, QUEST->log, 8, i,
+                                (u32)((game_size_percent(g_game, i & 0xFF, b) + 0.05f) * 10.0f));
         }
         if (ch_min) {
-            u16 b = (u16)game_best_record_min(D_089CC438, i & 0xFF, 0);
+            u16 b = (u16)game_best_record_min(g_game, i & 0xFF, 0);
 
             if ((s32)b <= S16(em, 8))
-                record_add_best(D_089CC438, QUEST->log, 9, i,
-                                (u32)((game_size_percent(D_089CC438, i & 0xFF, b) + 0.05f) * 10.0f));
+                record_add_best(g_game, QUEST->log, 9, i,
+                                (u32)((game_size_percent(g_game, i & 0xFF, b) + 0.05f) * 10.0f));
         }
     }
 }
@@ -141,14 +141,14 @@ void result_init_timers(u8 *self)
  * returns their total price */
 s32 result_sell_items(u8 *self)
 {
-    u32 h = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    u32 h = player_get(g_players, g_game[0x28]);
     u16 *p, *o;
     s32 i, sum = 0;
 
     self[0x1E] = 0;
     for (i = 0; i < 60; i++)
         U16(self, 0x28 + i * 2) = 0;
-    p = pouch_slot(D_089CC438, 0);
+    p = pouch_slot(g_game, 0);
     U32(self, 0x24) = 0;
     o = &U16(self, 0x28);
     for (i = 0; i < 24; i++, p += 2) {
@@ -172,7 +172,7 @@ s32 result_sell_items(u8 *self)
 
 void result_init_sounds(u8 *self)
 {
-    func_08882C24(D_08A62D8C, 0, 4, 0x46);
+    func_08882C24(g_sound, 0, 4, 0x46);
     self[0xC1] = 1;
     self[0xC2] = 0;
     self[0xC3] = 4;
@@ -187,15 +187,15 @@ void result_init_money(u8 *self)
     U16(self, 0xA4) = 0;
     U16(self, 0xA6) = 0;
     U16(self, 0xAA) = 3600;
-    U32(D_08A62CB4, 0x14) = 0;
+    U32(g_result, 0x14) = 0;
     U16(self, 0xA8) = 10;
     if (quest_state(QUEST, 1) != 1)
         return;
-    h = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    h = player_get(g_players, g_game[0x28]);
     if (hunter_felyne_skill(h, 0x31) == 0)
-        U32(D_08A62CB4, 0x14) = q->reward;
+        U32(g_result, 0x14) = q->reward;
     else
-        U32(D_08A62CB4, 0x14) = q->reward << 1;
+        U32(g_result, 0x14) = q->reward << 1;
     if ((OPT_FLAGS & 1) == 0 || (u8)func_0887CA08(self) == 1)
-        U32(D_08A62CB4, 0x14) += QUEST->info->fee * 2;
+        U32(g_result, 0x14) += QUEST->info->fee * 2;
 }

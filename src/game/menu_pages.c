@@ -3,9 +3,9 @@
  * ids of the visible page at 0x5C8). Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62D8C;          /* sound */
+extern void *g_sound;          /* sound */
 extern u32 D_08A62C68;            /* buttons held */
-extern u8 *D_09A0B544;            /* player data (overlay) */
+extern u8 *g_net_players;            /* player data (overlay) */
 
 void *combo_next(void *a, u8 *pos, int dir, u16 *x, u16 *y, int c);
 s32 combo_known(void *a, void *b, int c, int d);
@@ -20,14 +20,14 @@ void menu_page_fill(u8 *self, u32 keys);
 void menu_select_hunter(u8 *self, u32 keys)
 {
     U32(self, 0x5E8) &= ~4;
-    if (game_count_bits62(D_089CC438) == 0) {
+    if (game_count_bits62(g_game) == 0) {
         U8(self, 0x5D9) = 0xFF;
     } else if (keys & 0xA0) {
         s8 c = menu_next_hunter(self, S8(self, 0x5D9), (keys & 0x80) ? -1 : 1);
 
         if (S8(self, 0x5D9) != c) {
             U8(self, 0x5D9) = c;
-            sound_play(D_08A62D8C, 0, 23, 0, 0, 0, 0, 0, 0);
+            sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
         }
     }
 }
@@ -179,29 +179,29 @@ void menu_set_hunter_name(void *self, u8 *hunter)
 {
     void *name;
 
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0)
-        name = D_089CC438 + 0x4A0;
+    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+        name = g_game + 0x4A0;
     else
-        name = D_09A0B544 + hunter[0x1E6] * 200 + 0xBC8;
-    func_088911A0(D_08A631A8, name);
+        name = g_net_players + hunter[0x1E6] * 200 + 0xBC8;
+    func_088911A0(g_font, name);
 }
 
 /* first value of the list of slot v */
 s32 menu_slot_first(void *self, u32 v)
 {
-    return (s16)*pouch_slot(D_089CC438, (u8)v);
+    return (s16)*pouch_slot(g_game, (u8)v);
 }
 
 u8 *pouch_item_data(void *a, u16 id);
-u8 *func_0885CA50(void *a, void *eq);
+u8 *equip_data_of(void *a, void *eq);
 s32 skill_entry_fill(void *self, void *hunter, u8 *e, int c);
 void skill_list_add(void *self, void *hunter, s32 c, void *other);
-extern void *D_08A62C54;
+extern void *g_equip_data;
 
 /* chooses the quantity of an item with the arrows (0x80 min, 0x20 max, 0x10 +1, 0x40 -1) */
 void menu_select_count(u8 *self, u32 keys)
 {
-    u8 max = ((u8 *)pouch_slot(D_089CC438, 0))[self[0x586] * 4 + 2];
+    u8 max = ((u8 *)pouch_slot(g_game, 0))[self[0x586] * 4 + 2];
     u8 c;
     u16 old;
 
@@ -230,9 +230,9 @@ void menu_select_count(u8 *self, u32 keys)
             self[0x58A] = c - 1;
     }
     if ((s16)old < 0)
-        sound_play(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
+        sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
     else if (old != self[0x58A])
-        sound_play(D_08A62D8C, 0, 23, 0, 0, 0, 0, 0, 0);
+        sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
     if (max <= self[0x58A])
         self[0x58B] = 1;
 }
@@ -262,9 +262,9 @@ int menu_slot_usable(void *self, u32 id_arg)
 {
     u16 id = id_arg;
 
-    if (S16(pouch_slot(D_089CC438, id), 2) < 1)
+    if (S16(pouch_slot(g_game, id), 2) < 1)
         return 0;
-    if (*(s16 *)pouch_slot(D_089CC438, id) == 0)
+    if (*(s16 *)pouch_slot(g_game, id) == 0)
         return 0;
     if (pouch_item_data(D_08A62C50, id)[1] != 1)
         return 0;
@@ -274,8 +274,8 @@ int menu_slot_usable(void *self, u32 id_arg)
 /* 1 if the armor piece eq can be worn by the hunter (blademaster/gunner, gender) */
 int menu_armor_wearable(void *self, u8 *hunter, void *eq)
 {
-    u8 *game = D_089CC438;
-    u8 *a = func_0885CA50(D_08A62C54, eq);
+    u8 *game = g_game;
+    u8 *a = equip_data_of(g_equip_data, eq);
     u8 m = game[0x4B3] == 0 ? 1 : 2;
 
     if (hunter[0x4E9] == 5)

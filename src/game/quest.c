@@ -1,4 +1,4 @@
-/* The current quest (Quest, object D_08A62C7C): start of the quest, start area, targets,
+/* The current quest (Quest, object g_quest): start of the quest, start area, targets,
  * waves of large monsters, end of the quest, bonuses and phase steps. (Guessed names.) */
 #include "quest.h"
 #include "vfpu.h"
@@ -11,11 +11,11 @@ extern s32 D_08A5C464;              /* = QFILE->tables */
 extern u8 D_08A62C8C[15];           /* random seeds received online */
 extern u8 D_08A62C80[10];           /* min / max size for each size rank */
 extern const u8 D_089A7EA4[10];
-extern u8 *D_08A62CB4;
-extern u8 *D_09C121B0;              /* monsters (20 slots at +0x1220) */
-extern void *D_09A1DAEC;
+extern u8 *g_result;
+extern u8 *g_monsters;              /* monsters (20 slots at +0x1220) */
+extern void *g_net;
 extern void *D_08A62D90;
-extern void **D_09A4F060;
+extern void **g_area;
 extern u16 **D_09CD3CF0[];          /* start areas for each map (3 weighted lists) */
 extern u16 *D_09CE470C[][2];
 extern const u8 D_089A609C[0x172][16];   /* points of the areas: area, x, y, z */
@@ -53,7 +53,7 @@ void quest_count_kind(Quest *self)
     case 0x1E: case 0x1F: k = 7; break;
     default: return;
     }
-    c = D_089CC438 + 0x6A53C + k;
+    c = g_game + 0x6A53C + k;
     if (*c < 0xFF)
         (*c)++;
 }
@@ -63,7 +63,7 @@ int quest_outside_map(Quest *self)
 {
     u16 cur = G_AREA;
 
-    if (game_map_id(D_089CC438) == cur)
+    if (game_map_id(g_game) == cur)
         return 0;
     return (self->flags & QF_ANY_MAP) == 0;
 }
@@ -72,7 +72,7 @@ int quest_outside_map(Quest *self)
 u8 *quest_map_object(Quest *self, u32 id)
 {
     u32 *t = self->map_objects;
-    u16 i = func_088C722C(D_09A4F060, G_MAP, id);
+    u16 i = func_088C722C(g_area, G_MAP, id);
 
     if (i == 0xFFFF)
         return NULL;
@@ -190,7 +190,7 @@ void quest_start(Quest *self)
     quest_clear_steps(self);
     if ((OPT_FLAGS & 1) == 0) {
         for (i = 0; i < 15; i++)
-            self->seed[i] = game_rand(D_08A631A0, 0);
+            self->seed[i] = game_rand(g_sys, 0);
     } else {
         for (i = 0; i < 15; i++)
             self->seed[i] = D_08A62C8C[i];
@@ -223,12 +223,12 @@ void quest_start(Quest *self)
     self->points_n = 0;
     self->item_mask[0] = 0;
     self->item_mask[1] = 0;
-    v = game_rank(D_089CC438);
+    v = game_rank(g_game);
     self->rank[G_MY_SLOT][1] = v;
-    D_089CC438[0x24] = 0;
-    D_089CC438[0x25] = 0;
-    D_089CC438[0x26] = 0;
-    D_089CC438[0x27] = 0;
+    g_game[0x24] = 0;
+    g_game[0x25] = 0;
+    g_game[0x26] = 0;
+    g_game[0x27] = 0;
     for (i = 0; i < 5; i++) {
         self->items[i].id = 0;
         self->items[i].count = 0;
@@ -244,7 +244,7 @@ void quest_start(Quest *self)
     self->time_left = 0;
     self->x002[2] = 0;
     self->main_models = 0;
-    self->base = D_08A5C440;
+    self->base = g_quest_file;
     self->file = QFILE;
     self->info = (QuestInfo *)QOFF(self, QFILE->info);
     G_MAP = self->info->map;
@@ -270,9 +270,9 @@ void quest_start(Quest *self)
     self->x116 = QFILE->x49;
     quest_pick_size(self, (s8 *)&self->size_class);
     if ((u8)quest_is_flag_800000(self) == 1)
-        D_089CC438[0x41A] = 1;
+        g_game[0x41A] = 1;
     else
-        D_089CC438[0x41A] = 0;
+        g_game[0x41A] = 0;
     self->bonus_kind = QFILE->bonus_kind;
     self->bonus_monster = QFILE->bonus_monster;
     self->bonus_count = QFILE->bonus_count;
@@ -286,17 +286,17 @@ void quest_start(Quest *self)
     }
     quest_clear_waves(self);
     quest_init_monsters(self);
-    func_08895EA0(D_089CBBEC);
+    func_08895EA0(g_menu);
     if (quest_flag_10() != 0) {
-        g = D_089CC438;
+        g = g_game;
         memcpy(g + 0x6ADFC, g + 0x43C8, 0x60);
         for (i = 0; i < 0x30; i++)
             U16(g, 0x43C8 + i * 2) = 0;
     }
     for (i = 0; i < 6; i++)
         quest_slot_clear(self, i);
-    U32(D_08A62CB4, 0x104) = U32(D_089CC438, 0x696F0);
-    U32(D_08A62CB4, 0x108) = U32(D_089CC438, 0x696E8);
+    U32(g_result, 0x104) = U32(g_game, 0x696F0);
+    U32(g_result, 0x108) = U32(g_game, 0x696E8);
     quest_count_monsters(self, self->count_start);
     self->active = 1;
     if (quest_comrade_allowed(QUEST) != 0)
@@ -308,7 +308,7 @@ void quest_start(Quest *self)
     self->x681 = 0;
     self->log_id = 0;
     self->time_msg = 0;
-    D_09C121B0[0x1278] = 0;
+    g_monsters[0x1278] = 0;
 }
 
 /* quest abandoned */
@@ -319,13 +319,13 @@ void quest_fail(Quest *self)
     G_QUEST_STATE = QS_ABANDONED;
     self->result = QS_ABANDONED;
     self->pc = -1;
-    net_send(D_09A1DAEC, 0xC, NULL);
+    net_send(g_net, 0xC, NULL);
 }
 
 /* start area of the quest (who = 0xFF: area of the game, else area of that hunter) */
 void quest_pick_start_area(Quest *self, u32 who)
 {
-    u8 *g = D_089CC438;
+    u8 *g = g_game;
     u16 **t = D_09CD3CF0[self->info->map];
     s8 c;
     u16 *l, *p;
@@ -371,7 +371,7 @@ void quest_pick_start_area(Quest *self, u32 who)
 hunter:
     {
         u16 a = G_AREA;
-        U16(player_get(D_09A4F0C4, G_MY_SLOT), E_AREA) = a;
+        U16(player_get(g_players, G_MY_SLOT), E_AREA) = a;
     }
 }
 
@@ -396,9 +396,9 @@ s32 quest_state(Quest *self, s32 mode)
 /* --- targets, waves and end of the quest --------------------------------------------- */
 extern const u16 D_089AC5A0[];      /* IDs of the quest messages */
 extern const u16 D_089A7EB0[];
-extern u8 *D_09A4F0D0;
-extern u8 *D_08A62D8C;
-extern void **D_089CC434;
+extern u8 *g_monster_models;
+extern u8 *g_sound;
+extern void **g_loader;
 extern void *D_09B23820;
 extern const u8 *D_089A800C[];
 extern const u16 D_09CE4808[], D_09CE5008[], D_09CE5220[];
@@ -411,7 +411,7 @@ u8 game_table_byte(u8 *g, u32 i);
 u16 func_09ACBF40(u8 *h);
 void func_09AC7668(u8 *h);
 void func_09AB46A8(u8 *a, u32 b);
-void func_088DE3D4(u8 *a, u32 b);
+void monster_models_release(u8 *a, u32 b);
 void func_09AB2B40(u8 *a, u32 b);
 void func_088B87B0(void *a, int b);
 u8 *func_09A8A4B0(void *a);
@@ -509,7 +509,7 @@ void quest_spawn_waves(Quest *self)
     u32 used, a, b;
 
     for (i = 0; i < 2; i++, w++) {
-        used = (i >= 0 && i < 20) ? U32(D_09C121B0, 0x1220 + i * 4) : 0;
+        used = (i >= 0 && i < 20) ? U32(g_monsters, 0x1220 + i * 4) : 0;
         if (used != 0)
             continue;
         if (w->n <= 0)
@@ -520,9 +520,9 @@ void quest_spawn_waves(Quest *self)
             continue;
         a = (u8)w->kind[w->cur];
         b = ((u8 *)w->kind)[w->cur - 1];    /* the previous monster of the wave */
-        func_09AB46A8(D_09C121B0, b);
-        func_088DE3D4(D_09A4F0D0, b);
-        func_09AB2B40(D_09C121B0, a);
+        func_09AB46A8(g_monsters, b);
+        monster_models_release(g_monster_models, b);
+        func_09AB2B40(g_monsters, a);
         w->spawned[w->cur] = 1;
     }
 }
@@ -535,7 +535,7 @@ void quest_send_wave(Quest *self, u32 i)
     ev.zero = 0;
     ev.arg[0] = (u8)i;
     ev.arg[1] = self->wave[(u8)i].cur;
-    net_send(D_09A1DAEC, 6, &ev);
+    net_send(g_net, 6, &ev);
 }
 
 /* a target monster h appears: position and area from the quest data */
@@ -551,7 +551,7 @@ s32 quest_place_target(Quest *self, u8 *h)
     e->state = QM_WAITING;
     if ((u8)monster_is_large2(self, h[E_KIND]) == 1) {
         U16(h, E_SIZE) += 5;
-        lim = game_table_byte(D_089CC438, h[E_KIND]);
+        lim = game_table_byte(g_game, h[E_KIND]);
         if (D_089A7EB0[lim] < U16(h, E_SIZE))
             U16(h, E_SIZE) = D_089A7EB0[lim];
         U16(h, E_SIZE_SHOWN) = func_09ACBF40(h);
@@ -576,7 +576,7 @@ int quest_pick_target_pos(Quest *self, u8 *h)
 {
     u8 *base = self->base;
     u16 *l = (u16 *)(self->file->target_pos + (u32)base);
-    u8 *st = (u8 *)D_09A4F060;
+    u8 *st = (u8 *)g_area;
     u32 id, f, r;
     u32 *p;
 
@@ -590,7 +590,7 @@ int quest_pick_target_pos(Quest *self, u8 *h)
         if (U16(h, E_AREA) == id)
             break;
     }
-    r = game_rand(D_08A631A0, 0) & 0xFFFF;
+    r = game_rand(g_sys, 0) & 0xFFFF;
     p = (u32 *)(U32(l, 4) + (u32)base + (s32)r % (s32)l[1] * 0x10);
     U32(h, E_ANGLE) = p[0];
     U32(h, E_POS) = p[1];
@@ -764,13 +764,13 @@ static void mark_absent(Quest *self, s32 shift)
 
 static void push_msg(u32 i)
 {
-    menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[i]));
+    menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[i]));
 }
 
 /* per-frame update of the quest: 0, 1 (finished), -1, -2 */
 s32 quest_update(Quest *self)
 {
-    u32 h = player_get(D_09A4F0C4, G_MY_SLOT);
+    u32 h = player_get(g_players, G_MY_SLOT);
     QuestEvent ev;
     u32 v;
 
@@ -788,14 +788,14 @@ s32 quest_update(Quest *self)
         v = self->points[self->points_n - 1];
         ev.arg[1] = v;
         ev.arg[0] = v >> 16;
-        net_send(D_09A1DAEC, 6, &ev);
+        net_send(g_net, 6, &ev);
         self->points_n = 0;
         ev.type = 0x10;
         ev.zero = 0;
         ev.arg[0] = self->item_mask[0];
         ev.arg[1] = self->item_mask[0] >> 16;
         ev.arg[2] = self->item_mask[1];
-        net_send(D_09A1DAEC, 6, &ev);
+        net_send(g_net, 6, &ev);
     }
     switch (self->end_step) {
     case 3:
@@ -827,19 +827,19 @@ s32 quest_update(Quest *self)
             ev.zero = 0;
             ev.arg[1] = self->net_value;
             ev.arg[0] = self->net_value >> 16;
-            net_send(D_09A1DAEC, 6, &ev);
+            net_send(g_net, 6, &ev);
             self->players |= 1 << (G_MY_SLOT + 4);
             self->sync_timer = 1800;
             return 0;
         case 0:
             self->end_sub = 1;
             self->result = QS_CLEARED;
-            self->rank[G_MY_SLOT][0] = game_rank(D_089CC438);
+            self->rank[G_MY_SLOT][0] = game_rank(g_game);
             ev.type = 0xC;
             ev.zero = 0;
             ev.arg[0] = self->rank[G_MY_SLOT][0];
             ev.arg[1] = 0;
-            net_send(D_09A1DAEC, 6, &ev);
+            net_send(g_net, 6, &ev);
             self->players |= 1 << G_MY_SLOT;
             self->sync_timer = 5400;
             return 0;
@@ -855,7 +855,7 @@ s32 quest_update(Quest *self)
             self->end_sub = 0;
             push_msg(2);
             if ((GAME_FLAGS & 4) == 0)
-                menu_msg_push(D_089CBBEC, 0, 0xF, 0);
+                menu_msg_push(g_menu, 0, 0xF, 0);
             self->active = 0;
             return 0;
         case 1:
@@ -925,7 +925,7 @@ u32 quest_rand(Quest *self)
 static void bonus_failed(void)
 {
     push_msg(9);
-    sound_play(D_08A62D8C, 1, 0x77, 0, 0, 0, 0, 0, 0);
+    sound_play(g_sound, 1, 0x77, 0, 0, 0, 0, 0, 0);
 }
 
 /* time bonus (kind 1): lost after the time or by chance */
@@ -941,7 +941,7 @@ void quest_bonus_check(Quest *self)
     if (self->time_left > p[0] * 1800)
         return;
     self->bonus_step++;
-    if ((game_rand(D_08A631A0, 0) & 0x7F) >= p[1])
+    if ((game_rand(g_sys, 0) & 0x7F) >= p[1])
         return;
     self->bonus_kind = 0;
     bonus_failed();
@@ -949,7 +949,7 @@ void quest_bonus_check(Quest *self)
     ev.zero = 0;
     ev.arg[0] = 0;
     ev.arg[1] = 0;
-    net_send(D_09A1DAEC, 6, &ev);
+    net_send(g_net, 6, &ev);
 }
 
 /* hunting bonus (kind 2): lost after hunting the wrong monsters */
@@ -989,19 +989,19 @@ void quest_hunt_done(Quest *self, u8 *h)
 void quest_goal_reached(Quest *self)
 {
     QuestEvent ev;
-    u8 *m = D_09A4F0D0;
+    u8 *m = g_monster_models;
     s32 i;
 
     ev.zero = 0;
     ev.type = 6;
     ev.arg[0] = self->phase;
     ev.arg[1] = 0;
-    net_send(D_09A1DAEC, 6, &ev);
+    net_send(g_net, 6, &ev);
     U32(m, 0x210) = U32(m, 0x204);
     U32(m, 0x20C) = U32(m, 0x208);
     for (i = 0x15; i <= 0x2A; i++)
         U16(m, i * 0xC) &= 0xFFFD;
-    func_088B87B0(D_089CC434, 1);
+    func_088B87B0(g_loader, 1);
 }
 
 /* item steps (kind 2): enough items in the pouch */
@@ -1013,7 +1013,7 @@ void quest_check_deliveries(Quest *self)
     for (i = 0; i < 2; i++, g++) {
         if (g->kind != 2)
             continue;
-        if ((s32)pouch_count(D_089CC438, g->id) < g->count)
+        if ((s32)pouch_count(g_game, g->id) < g->count)
             continue;
         if (self->phase < g->phase) {
             self->phase = g->phase;

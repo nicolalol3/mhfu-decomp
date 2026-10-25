@@ -81,9 +81,9 @@ void felyne_create(u8 *g, u8 *e, s32 mode)
         F32(e, 0x1C) = (f32)(u16)(l[3] + 10);
         e[0x29] = D_09CD01E0[e[0x16] * 6 + 5] + 0xB;
         e[0x28] = D_09CD01E0[e[0x16] * 6 + 4] + 100;
-        e[0x4B] = (u16)game_rand(D_08A631A0, 1) & 0xF;
-        e[0x2C] = ((u16)game_rand(D_08A631A0, 1) & 1) ? 0 : 1;
-        if ((u8)game_test_flag(D_089CC438, 0x5D) == 1)
+        e[0x4B] = (u16)game_rand(g_sys, 1) & 0xF;
+        e[0x2C] = ((u16)game_rand(g_sys, 1) & 1) ? 0 : 1;
+        if ((u8)game_test_flag(g_game, 0x5D) == 1)
             U32(e, 0x30) = 0xF;
     }
     e[0x4C] = 0;
@@ -104,7 +104,7 @@ void felyne_create(u8 *g, u8 *e, s32 mode)
     e[0x6E] = (t[5] & 0x3F) + ((cnt & 0x300) >> 2);
     e[0x6F] = U16(g, 0x6AD76);
     U16(g, 0x6AD76) = U16(g, 0x6AD76) + 1;
-    memcpy(e + 0x4E, D_089CC438 + 0x4A0, 0x12);
+    memcpy(e + 0x4E, g_game + 0x4A0, 0x12);
 }
 
 /* class of a record kind: 0 (< 3), 1 (< 0x11), 2 (< 0x13), 3 */

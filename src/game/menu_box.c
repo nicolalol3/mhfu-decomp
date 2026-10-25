@@ -1,4 +1,4 @@
-/* In-game menu (C++ class of 0x1220 bytes, global instance in D_089CBBEC):
+/* In-game menu (C++ class of 0x1220 bytes, global instance in g_menu):
  * creation/destruction and drawing of some windows (items, quantities, prices).
  * The structure is not yet rebuilt: fields are given by offset. (Names are guesses.) */
 #include "menu.h"
@@ -7,7 +7,7 @@
 /* costruttore */
 void *menu_ctor(void *self)
 {
-    D_089CBBEC = self;
+    g_menu = self;
     func_0890BEC0((u8 *)self + 0xE28, (void *)0x08816B64, (void *)0x08816B24, 0x24, 0x14);
     memset(self, 0, 0x1220);
     U32(self, 0x5A8) = 0;
@@ -25,7 +25,7 @@ void *menu_item_dtor(void *self, s32 del_arg)
 {
     s16 del = del_arg;
     if (self != NULL && del > 0)
-        func_0890BFA4(self);
+        op_delete(self);
     return self;
 }
 
@@ -33,7 +33,7 @@ void *func_08816B24(void *self, s32 del_arg)
 {
     s16 del = del_arg;
     if (self != NULL && del > 0)
-        func_0890BFA4(self);
+        op_delete(self);
     return self;
 }
 
@@ -44,9 +44,9 @@ void *menu_dtor(void *self, s32 del_arg)
     if (self != NULL) {
         menu_free_data(self);
         func_0890BE54((u8 *)self + 0xE28, (void *)0x08816B24, 0x24, 0x14);
-        D_089CBBEC = NULL;
+        g_menu = NULL;
         if (del > 0)
-            func_0890BFA4(self);
+            op_delete(self);
     }
     return self;
 }
@@ -57,14 +57,14 @@ void menu_open(void *self)
     u8 *g;
     u32 f;
 
-    U32(self, 0x530) = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    U32(self, 0x530) = player_get(g_players, g_game[0x28]);
     U8(self, 0x52F) = 0;
     U8(self, 0x52E) = 0;
     U8(self, 0x52D) = 0;
     U8(self, 0x52C) = 0;
     U32(self, 0x528) &= ~0x2400;
     U8(self, 0x57C) = 0;
-    D_089CC438[0x10] = 0;
+    g_game[0x10] = 0;
     U8(self, 0x554) = 0;
     hud_notice_clear(self);
     U8(self, 0x604) = 0;
@@ -82,7 +82,7 @@ void menu_open(void *self)
     U32(self, 0x5EC) = 0;
     U32(self, 0x5F4) = 0xFFFFFFFF;
     U8(self, 0x5F0) = 0;
-    g = D_089CC438;
+    g = g_game;
     if ((U32(g, 0x6AF14) & 1) == 0) {
         u8 i = U8(g, 0x6AF10);
         u32 v = D_08938A7C[i];
@@ -114,14 +114,14 @@ void menu_open(void *self)
         U16(self, 0x59C) = U8(p, 0x686);
         U8(self, 0x5DC) = 0;
         U8(self, 0x5DD) = 0;
-        U8(self, 0x5DF) = U8(D_089CC438, 0x6ADDF);
-        U8(self, 0x5E1) = U8(D_089CC438, 0x6ADE0);
-        U8(self, 0x5DE) = U8(D_089CC438, 0x6ADE1);
-        U8(self, 0x5E0) = U8(D_089CC438, 0x6ADE2);
-        U8(self, 0x5E2) = U8(D_089CC438, 0x6ADE4);
-        U8(self, 0x5E3) = U8(D_089CC438, 0x6ADE5);
-        U32(self, 0x558) = quest_time(D_08A62C7C, 0);
-        U32(self, 0x55C) = quest_time(D_08A62C7C, 1);
+        U8(self, 0x5DF) = U8(g_game, 0x6ADDF);
+        U8(self, 0x5E1) = U8(g_game, 0x6ADE0);
+        U8(self, 0x5DE) = U8(g_game, 0x6ADE1);
+        U8(self, 0x5E0) = U8(g_game, 0x6ADE2);
+        U8(self, 0x5E2) = U8(g_game, 0x6ADE4);
+        U8(self, 0x5E3) = U8(g_game, 0x6ADE5);
+        U32(self, 0x558) = quest_time(g_quest, 0);
+        U32(self, 0x55C) = quest_time(g_quest, 1);
         menu_get_mode(self);
         U32(self, 0x528) &= ~0x20;
         U8(self, 0x11AE) = 0;
@@ -145,9 +145,9 @@ void menu_open(void *self)
 /* text "%s" with the string id at the coordinates of the box */
 static void draw_title_text(void *self)
 {
-    func_08890DE8(D_08A631A8, 14, 14);
-    func_088920A8(D_08A631A8, (s16)(D_0893B164 + 98), (s16)(D_0893B166 + D_0893B168 * 2), D_08938478,
-                  text_menu(D_089CC438, D_089AC588[U8(self, 0x537)]));
+    font_set_size(g_font, 14, 14);
+    font_draw_at(g_font, (s16)(D_0893B164 + 98), (s16)(D_0893B166 + D_0893B168 * 2), fmt_s,
+                  text_menu(g_game, D_089AC588[U8(self, 0x537)]));
 }
 
 /* confirm/choice window */
@@ -163,7 +163,7 @@ void menu_draw_choice(void *self)
         v = 4;
     } else {
         v = (u8)menu_item_giftable(self) != 1;
-        if ((u8)menu_item_for_quest(self, *pouch_slot(D_089CC438, U8(self, 0x586))) != 1)
+        if ((u8)menu_item_for_quest(self, *pouch_slot(g_game, U8(self, 0x586))) != 1)
             v += 2;
     }
     U32(layout, 20) = (u32)(D_089AC5D8 + v * 8);
@@ -174,7 +174,7 @@ void menu_draw_choice(void *self)
         switch (U8(self, 0x588)) {
         case 3:
             U32(layout, 24) = 0x80808080;
-            func_0882F580(self, layout, 0, 3, 0xFF, 0);
+            layout_draw_box(self, layout, 0, 3, 0xFF, 0);
             sel = U8(self, 0x595);
             color = 0x8000C040;
             flags = 0x90;
@@ -190,13 +190,13 @@ void menu_draw_choice(void *self)
             break;
         case 0:
             U32(layout, 24) = 0x80808080;
-            func_0882F580(self, layout, 0, 0, 0xFF, 0);
+            layout_draw_box(self, layout, 0, 0, 0xFF, 0);
             layout_draw_from(self, D_0893AFF0, 0, U8(self, 0x537), 0xFF, 0);
             break;
         }
         break;
     case 1:
-        func_0882F580(self, layout, 0, U8(self, 0x588), 0xFF, 0);
+        layout_draw_box(self, layout, 0, U8(self, 0x588), 0xFF, 0);
         color = 0x80808080;
         break;
     case 0:
@@ -239,7 +239,7 @@ void menu_draw_item_name(void *self, int x, int y, s32 avail_arg, u32 id_arg, s3
         color = 10;
     else
         color = 0;
-    func_088915B0(D_08A631A8, x, y, color, D_08938478, text_item_name(D_089CC438, id_arg));   /* the original passes the received value */
+    font_printf_at_color(g_font, x, y, color, fmt_s, text_item_name(g_game, id_arg));   /* the original passes the received value */
 }
 
 /* searches the list "slots" for item id and sets the text color */
@@ -253,9 +253,9 @@ static void set_color_for_slot(void *self, u16 *slots, s16 id)
 
             if (r >= 0) {
                 if (r == 1)
-                    func_08890E38(D_08A631A8, 6);
+                    font_set_color(g_font, 6);
                 else if (r == 0)
-                    func_08890E38(D_08A631A8, 2);
+                    font_set_color(g_font, 2);
             }
             return;
         }
@@ -275,20 +275,20 @@ void menu_draw_trade(void *self)
     for (i = 0; i < 7; i++)
         xoff[i] = D_089384F4[i];
     lang = LANG;
-    if ((U32(D_089CC438, 0x6AF14) & 0x200) == 0)
-        slots = (u16 *)(D_089CC438 + 0x43C8);
+    if ((U32(g_game, 0x6AF14) & 0x200) == 0)
+        slots = (u16 *)(g_game + 0x43C8);
     else
-        slots = pouch_slot(D_089CC438, 0);
+        slots = pouch_slot(g_game, 0);
 
     st = U8(self, 0x5B8);
     if (st < 3 && (U32(self, 0x528) & 0x10) == 0) {
-        layout_draw(self, st == 2 ? D_089384CC : D_0893847C, text_menu(D_089CC438, D_089AC834[0]), 0xFF);
+        layout_draw(self, st == 2 ? D_089384CC : D_0893847C, text_menu(g_game, D_089AC834[0]), 0xFF);
         c = U8(self, 0x5B8);
         if (c == 0) {
             u8 s;
 
-            func_088915B0(D_08A631A8, (s16)(D_08938488 + D_0893848C * 3 + xoff[lang]), D_0893848A, 3,
-                          D_08938478, text_menu(D_089CC438, D_089AC834[9]));
+            font_printf_at_color(g_font, (s16)(D_08938488 + D_0893848C * 3 + xoff[lang]), D_0893848A, 3,
+                          fmt_s, text_menu(g_game, D_089AC834[9]));
             s = U8(self, 0x586);
             if ((u8)menu_slot_has_item(self, s, slots[s * 2]) != 1)
                 menu_draw_item_name(self, D_08938488, (s16)(D_0893848A + D_0893848C), -1, slots[U8(self, 0x586) * 2], 0);
@@ -302,13 +302,13 @@ void menu_draw_trade(void *self)
         }
         c = U8(self, 0x5B8);
         if (c != 0) {
-            layout_draw(self, c == 2 ? D_089384E0 : D_08938490, text_menu(D_089CC438, D_089AC834[1]), 0xFF);
+            layout_draw(self, c == 2 ? D_089384E0 : D_08938490, text_menu(g_game, D_089AC834[1]), 0xFF);
             c = U8(self, 0x5B8);
             if (c == 1) {
                 u8 s;
 
-                func_088915B0(D_08A631A8, (s16)(D_0893849C + D_089384A0 * 3 + xoff[lang]), D_0893849E, 3,
-                              D_08938478, text_menu(D_089CC438, D_089AC834[9]));
+                font_printf_at_color(g_font, (s16)(D_0893849C + D_089384A0 * 3 + xoff[lang]), D_0893849E, 3,
+                              fmt_s, text_menu(g_game, D_089AC834[9]));
                 s = U8(self, 0x586);
                 if (combo_find(D_08A62C50, S16(self, 0x5AC), (s16)slots[s * 2], 0, 0, 0) == 0)
                     menu_draw_item_name(self, D_0893849C, (s16)(D_0893849E + D_089384A0), -1,
@@ -358,42 +358,42 @@ void menu_draw_trade(void *self)
         D_089384B8 = 0xF8 - a[LANG];
         D_089384C0 = b[LANG] + 9;
         layout_build(layout, &D_089384B8, 0, 0, 0);
-        func_0882F580(self, layout, 0, U8(self, 0x5B9), 0xFF, 0);
-        func_088915B0(D_08A631A8, S16(layout, 12), S16(layout, 14), U8(self, 0x5BA) ? 10 : 0, D_08938478,
-                      text_menu(D_089CC438, D_089AC834[6]));
+        layout_draw_box(self, layout, 0, U8(self, 0x5B9), 0xFF, 0);
+        font_printf_at_color(g_font, S16(layout, 12), S16(layout, 14), U8(self, 0x5BA) ? 10 : 0, fmt_s,
+                      text_menu(g_game, D_089AC834[6]));
         /* prosegue */
     case 3:
     case 4:
-        layout_draw(self, &D_089384A4, text_menu(D_089CC438, D_089AC834[2]), 0xFF);
+        layout_draw(self, &D_089384A4, text_menu(g_game, D_089AC834[2]), 0xFF);
         if (S16(self, 0x5B4) < 1) {
             const char *s1, *s2;
 
-            func_08890E38(D_08A631A8, 10);
-            s1 = text_menu(D_089CC438, D_089AC834[3]);
-            func_08891474(D_08A631A8, D_089384B0, (s16)(D_089384B2 + D_089384B4), D_08938478, s1);
-            s2 = text_menu(D_089CC438, D_089AC834[5]);
-            func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 2), D_08938478, s2);
-            func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938478, s1);
-            func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938478, s1);
+            font_set_color(g_font, 10);
+            s1 = text_menu(g_game, D_089AC834[3]);
+            font_printf_at(g_font, D_089384B0, (s16)(D_089384B2 + D_089384B4), fmt_s, s1);
+            s2 = text_menu(g_game, D_089AC834[5]);
+            font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 2), fmt_s, s2);
+            font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 3), fmt_s, s1);
+            font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 4), fmt_s, s1);
         } else {
             s8 rank;
             u16 have;
 
-            func_08890E38(D_08A631A8, 0);
-            func_08891474(D_08A631A8, D_089384B0, (s16)(D_089384B2 + D_089384B4), D_08938478,
-                          text_item_name(D_089CC438, U16((u8 *)U32(self, 0x5A8), 2)));
+            font_set_color(g_font, 0);
+            font_printf_at(g_font, D_089384B0, (s16)(D_089384B2 + D_089384B4), fmt_s,
+                          text_item_name(g_game, U16((u8 *)U32(self, 0x5A8), 2)));
             rank = (s8)combo_rate_of(D_08A62C50, U32(self, 0x5A8), 0);
-            func_08890E38(D_08A631A8, D_0893AF2C[(u8)combo_rate_class(rank)]);
-            func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 2),
-                          text_menu(D_089CC438, D_089AC834[4]), (int)rank);
-            func_08890E38(D_08A631A8, 0);
-            func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938478,
+            font_set_color(g_font, D_0893AF2C[(u8)combo_rate_class(rank)]);
+            font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 2),
+                          text_menu(g_game, D_089AC834[4]), (int)rank);
+            font_set_color(g_font, 0);
+            font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 3), fmt_s,
                           menu_item_category(self, U32(self, 0x5A8)));
             set_color_for_slot(self, slots, S16(self, 0x5B4));
-            have = (u16)pouch_count(D_089CC438, S16(self, 0x5B4));
-            func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938540, have,
+            have = (u16)pouch_count(g_game, S16(self, 0x5B4));
+            font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938540, have,
                           D_0899D19B[S16(self, 0x5B4) * 0x18]);
-            func_08890E38(D_08A631A8, 0);
+            font_set_color(g_font, 0);
         }
         break;
     case 5:
@@ -409,16 +409,16 @@ void menu_draw_trade(void *self)
             n = U8(self, 0x5E5);
             t = 7;
         }
-        layout_draw(self, &D_089384A4, text_menu(D_089CC438, D_089AC834[t]), 0xFF);
-        have = (u16)pouch_count(D_089CC438, S16(self, 0x5B6));
+        layout_draw(self, &D_089384A4, text_menu(g_game, D_089AC834[t]), 0xFF);
+        have = (u16)pouch_count(g_game, S16(self, 0x5B6));
         max = D_0899D19B[S16(self, 0x5B6) * 0x18];
-        func_08890E38(D_08A631A8, 0);
-        func_08891474(D_08A631A8, D_089384B0, (s16)(D_089384B2 + D_089384B4), D_08938478,
-                      text_item_name(D_089CC438, U16(self, 0x5B6)));
-        func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938548, n);
+        font_set_color(g_font, 0);
+        font_printf_at(g_font, D_089384B0, (s16)(D_089384B2 + D_089384B4), fmt_s,
+                      text_item_name(g_game, U16(self, 0x5B6)));
+        font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938548, n);
         set_color_for_slot(self, slots, S16(self, 0x5B4));
-        func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938540, have, max);
-        func_08890E38(D_08A631A8, 0);
+        font_printf_at(g_font, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938540, have, max);
+        font_set_color(g_font, 0);
         break;
     }
     }

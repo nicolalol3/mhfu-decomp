@@ -8,18 +8,18 @@
 #undef layout_draw
 
 extern void *D_08A62C40;          /* display list manager */
-extern void *D_08A62D8C;          /* sound */
+extern void *g_sound;          /* sound */
 extern const s16 D_08938614[6];
 extern const char D_08938620[];
 extern const u16 D_089AD020[];
 extern const s16 D_08938690[];
 
 u8 save_in_progress(void *game);
-void func_08890E08(void *font, int v);
+void font_set_layer(void *font, int v);
 void popup_update(void *msg);
 void popup_show_text(void *msg, u32 a, u8 b, int c);
 void popup_show(void *msg, s32 a, s32 b, s32 c, u8 d);
-void func_0887D02C(u16 x, u16 y, const char *s, int size);
+void font_draw_centered(u16 x, u16 y, const char *s, int size);
 u32 *dl_cur(void *dl);
 void dl_link(void *dl, u32 *p, int n, u8 layer);
 void dl_set_cur(void *dl, u32 *end);
@@ -33,7 +33,7 @@ void menu_begin_draw(void *self);
 /* 1 if the menu is opened in a special mode (game flag or hunter flag) */
 int menu_special_mode(void *self)
 {
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) != 0)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) != 0)
         return 1;
     if ((U32(*(void **)((u8 *)self + 0x530), 0x614) & 4) != 0)
         return 1;
@@ -46,10 +46,10 @@ void menu_draw_messages(void *self)
     u8 *p = self;
     int i;
 
-    if (save_in_progress(D_089CC438) == 1)
+    if (save_in_progress(g_game) == 1)
         return;
     U8(self, 0x534) = 14;
-    func_08890E08(D_08A631A8, 5);
+    font_set_layer(g_font, 5);
     menu_begin_draw(self);
     menu_msg_next(self);
     for (i = 0; i < 20; i++, p += 0x24)
@@ -84,7 +84,7 @@ void menu_msg_next(void *self)
     s8 h;
     int i;
 
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && D_089CC438[0x422] == 1)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0 && g_game[0x422] == 1)
         return;
     for (i = 0; i < 20; i++)
         if (U8((u8 *)self + i * 0x24, 0xE28) != 0)
@@ -122,10 +122,10 @@ void menu_draw_money(void *self, u32 grey, int low)
         r[5] += 28;
     }
     gfx_draw_window(self, r[0], r[1], (u16)r[2], (u16)r[3], 255);
-    sprintf(buf, D_08938620, *(u32 *)(D_089CC438 + 0x696F0));
-    func_08890DE8(D_08A631A8, 14, 14);
-    func_08890E38(D_08A631A8, (s8)((u8)grey != 0 ? 10 : 0));
-    func_0887D02C(r[4], r[5], buf, 14);
+    sprintf(buf, D_08938620, *(u32 *)(g_game + 0x696F0));
+    font_set_size(g_font, 14, 14);
+    font_set_color(g_font, (s8)((u8)grey != 0 ? 10 : 0));
+    font_draw_centered(r[4], r[5], buf, 14);
 }
 
 /* resets the state of the hunter view */
@@ -153,7 +153,7 @@ const char *menu_item_category(void *self, u8 *item)
 {
     if (item == NULL)
         return NULL;
-    return text_menu(D_089CC438, D_089AD020[item[5]]);
+    return text_menu(g_game, D_089AD020[item[5]]);
 }
 
 /* per-frame update of a counter of the hunter */
@@ -195,7 +195,7 @@ void menu_begin_draw(void *self)
 void menu_page_back(void *self)
 {
     U8(self, 0x585) -= 1;
-    sound_play(D_08A62D8C, 0, 20, 0, 0, 0, 0, 0, 0);
+    sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
     S16(self, 0x5FC) = menu_slot_first(self, U8(self, 0x586)) + 24;
 }
 
@@ -207,7 +207,7 @@ void menu_draw_compare(void *self, u32 a, u32 b, s32 x, s32 y, u32 flags, s32 bi
 
     equip_draw_name_box(self, a, x, y, (flags | 0x20) & ~8, b, n);
     equip_draw_name_box(self, b, x, (s16)((s16)y + 120 + D_08938690[big]), flags, a, n);
-    s = vfpu_sinf((f32)(u16)((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x1F) << 11) * (3.14159265f / 32768.0f));
+    s = vfpu_sinf((f32)(u16)((*(u32 *)(g_sys + 0xF7A554) & 0x1F) << 11) * (3.14159265f / 32768.0f));
     gfx_draw_sprite(self, (s16)x + 104, (s16)y + 112 + D_08938690[big],
                   (s8)(int)(s * 95.0f) + 159, (s8)(int)(s * 63.0f) + 191, 255, 0x9C, 0);
 }
@@ -230,14 +230,14 @@ u8 menu_msg_push(u8 *self, u32 id, u32 x, u32 y)
 
     if (S8(self, 0x10F8) >= 19)
         return 0xFF;
-    D_089CC438[0x380] = (D_089CC438[0x380] + 1) & 0x7F;
+    g_game[0x380] = (g_game[0x380] + 1) & 0x7F;
     e = MSG_SLOT(self);
     e[0xE42] = id;
     U16(e, 0xE44) = x;
-    e[0xE43] = D_089CC438[0x380];
+    e[0xE43] = g_game[0x380];
     U16(e, 0xE46) = y;
     S8(self, 0x10F8) += 1;
-    return D_089CC438[0x380];
+    return g_game[0x380];
 }
 
 /* queues a message with a text in memory owned by the caller */
@@ -247,13 +247,13 @@ u8 menu_msg_push_text(u8 *self, const char *s)
 
     if (S8(self, 0x10F8) >= 19)
         return 0xFF;
-    D_089CC438[0x380] = (D_089CC438[0x380] + 1) & 0x7F;
+    g_game[0x380] = (g_game[0x380] + 1) & 0x7F;
     e = MSG_SLOT(self);
-    e[0xE43] = D_089CC438[0x380];
+    e[0xE43] = g_game[0x380];
     e[0xE42] = 0xFF;
     *(const char **)(e + 0xE48) = s;
     S8(self, 0x10F8) += 1;
-    return D_089CC438[0x380];
+    return g_game[0x380];
 }
 
 /* queues a message with a copy of the text s */
@@ -269,23 +269,23 @@ u8 menu_msg_push_copy(u8 *self, const char *s)
     p = heap_alloc(self + 0x500, n, 16);
     if (p == NULL)
         return 0xFF;
-    D_089CC438[0x380] = (D_089CC438[0x380] + 1) & 0x7F;
+    g_game[0x380] = (g_game[0x380] + 1) & 0x7F;
     e = MSG_SLOT(self);
-    e[0xE43] = D_089CC438[0x380];
+    e[0xE43] = g_game[0x380];
     e[0xE42] = 0xFE;
     memcpy(p, s, n);
     *(char **)(e + 0xE48) = p;
     S8(self, 0x10F8) += 1;
-    return D_089CC438[0x380];
+    return g_game[0x380];
 }
 
 /* plays the sound of a new character of the typewriter text */
 static void typewriter_sound(int quest_sound, int alt_sound)
 {
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0)
-        sound_play(D_08A62D8C, func_088855D0(D_08A62D8C, 0x4A), quest_sound, D_089AA1D2, 0, 0, 0, 0, 0);
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0)
+        sound_play(g_sound, func_088855D0(g_sound, 0x4A), quest_sound, D_089AA1D2, 0, 0, 0, 0, 0);
     else
-        sound_play(D_08A62D8C, 1, alt_sound, 0, 0, 0, 0, 0, 0);
+        sound_play(g_sound, 1, alt_sound, 0, 0, 0, 0, 0, 0);
 }
 
 /* text s shown one character at a time: t = time since the start, mode 3/4 = close,
@@ -324,7 +324,7 @@ start:
     i = 0;
     for (;;) {
         do {
-            k = func_08892708(D_08A631A8, i, ch, s, aux);
+            k = func_08892708(g_font, i, ch, s, aux);
             if (k == 4) {
                 if ((u32)(s32)S16(self, 0x5F2) < n)
                     typewriter_sound(0x1D, 0x84);
@@ -371,13 +371,13 @@ extern const u8 D_08938770[];      /* layout of the text box */
 extern const u16 D_089AC868[2], D_089AC86C;
 extern const u16 D_0893B208[];     /* save data file ids per language */
 extern const s16 D_08939A34;
-extern void **D_089CC434;         /* save data manager (C++ object) */
-extern void *D_09A0B540;
+extern void **g_loader;         /* save data manager (C++ object) */
+extern void *g_heap;
 void layout_draw(void *self, const void *layout, const char *text, int alpha);
-void func_08890E40(void *font, int v);
+void font_set_height2(void *font, int v);
 void func_088921FC(void *font, s32 n, const char *s);
 s32 temp_alloc(void *a, int b, s32 c);
-s32 func_08898898(void *a, int b);
+s32 temp_get(void *a, int b);
 void menu_draw_sprite(u8 *self, u32 x, u32 y, s32 id);
 void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id);
 
@@ -401,8 +401,8 @@ void menu_draw_typewriter(u8 *self)
     layout_draw(self, D_08938770, NULL, 255);
     if ((S8(self, 0x5F0) & 0x20) != 0)
         return;
-    func_08890E40(D_08A631A8, 16);
-    func_08890E38(D_08A631A8, 0);
+    font_set_height2(g_font, 16);
+    font_set_color(g_font, 0);
     left = S16(self, 0x5F2);
     s = *(const char **)(self + 0x5EC);
     y = 96;
@@ -411,7 +411,7 @@ void menu_draw_typewriter(u8 *self)
         budget = 22;
         n = 0;
         while (left > 0 && budget > 0) {
-            s16 k = func_08892708(D_08A631A8, i, ch, s, &next);
+            s16 k = func_08892708(g_font, i, ch, s, &next);
 
             i++;
             if ((s8)ch[0] == '\n')
@@ -422,27 +422,27 @@ void menu_draw_typewriter(u8 *self)
                 budget--;
             budget--;
         }
-        func_08890DFC(D_08A631A8, 16, y);
-        func_088921FC(D_08A631A8, n, s);
+        font_set_pos(g_font, 16, y);
+        func_088921FC(g_font, n, s);
         y += 16;
         if (budget != 0) {
             s = next;
         } else {
-            func_08892708(D_08A631A8, i, ch, s, &next2);
+            func_08892708(g_font, i, ch, s, &next2);
             s = (s8)ch[0] != '\n' ? next : next2;
         }
     }
     if (S8(self, 0x5F0) & 2)
-        func_088920A8(D_08A631A8, 16, y, D_08938478,
-                      text_menu(D_089CC438, D_089AC868[(S8(self, 0x5F0) & 4) == 0]));
+        font_draw_at(g_font, 16, y, fmt_s,
+                      text_menu(g_game, D_089AC868[(S8(self, 0x5F0) & 4) == 0]));
     if (S8(self, 0x5F0) & 8)
-        func_088915B0(D_08A631A8, 114, y, 2, D_08938478, text_menu(D_089CC438, D_089AC86C));
+        font_printf_at_color(g_font, 114, y, 2, fmt_s, text_menu(g_game, D_089AC86C));
 }
 
 /* 1 if the menu cannot take input (game busy, text running or locked) */
 int menu_busy(u8 *self)
 {
-    if (D_089CC438[0x10] != 0)
+    if (g_game[0x10] != 0)
         return 1;
     if (self[0x604] != 0)
         return 1;
@@ -470,14 +470,14 @@ int menu_load_data(u8 *self)
         return 1;
     }
     if (st == 1) {
-        if ((u8)VCALL(VFunc0, D_089CC434, 0x38)(D_089CC434) == 0)
+        if ((u8)VCALL(VFunc0, g_loader, 0x38)(g_loader) == 0)
             U32(self, 0x1198) += 1;
     } else if (st == 0) {
         u16 id = D_0893B208[LANG];
-        s32 r = VCALL(VFunc1, D_089CC434, 0x18)(D_089CC434, id);
+        s32 r = VCALL(VFunc1, g_loader, 0x18)(g_loader, id);
 
-        r = temp_alloc(D_09A0B540, 11, r);
-        VCALL(VFunc6, D_089CC434, 0x34)(D_089CC434, id, r, -1, 0, 0, 1);
+        r = temp_alloc(g_heap, 11, r);
+        VCALL(VFunc6, g_loader, 0x34)(g_loader, id, r, -1, 0, 0, 1);
         U32(self, 0x1198) += 1;
     } else {
         return 0;
@@ -489,7 +489,7 @@ int menu_load_data(u8 *self)
 u8 menu_save_data(u8 *self)
 {
     if (U32(self, 0x1198) == 1) {
-        if (VCALL(VFunc0, D_089CC434, 0x38)(D_089CC434) != 0)
+        if (VCALL(VFunc0, g_loader, 0x38)(g_loader) != 0)
             return 0;
         U32(self, 0x1198) = 0;
         return 1;
@@ -497,7 +497,7 @@ u8 menu_save_data(u8 *self)
     if (U32(self, 0x1198) == 0) {
         u16 id = D_0893B208[LANG];
 
-        VCALL(VFunc6, D_089CC434, 0x34)(D_089CC434, id, func_08898898(D_09A0B540, 11), -1, 0, 0, 1);
+        VCALL(VFunc6, g_loader, 0x34)(g_loader, id, temp_get(g_heap, 11), -1, 0, 0, 1);
         U32(self, 0x1198) += 1;
         return 0;
     }

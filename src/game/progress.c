@@ -124,9 +124,9 @@ void hunter_card_init(u8 *g)
     g[0x679A3] = t[0];
     g[0x679A4] = ((t[1] & 0xF) << 4) + ((t[2] & 0x1E) >> 1);
     g[0x679A5] = ((t[2] & 1) << 7) + (t[4] & 0x1F);
-    frame = *(u32 *)(D_08A631A0 + 0xF7A554);
+    frame = *(u32 *)(g_sys + 0xF7A554);
     g[0x679A6] = (t[5] & 0x3F) + ((frame & 0x300) >> 2);
-    g[0x679A7] = *(u32 *)(D_08A631A0 + 0xF7A554);
+    g[0x679A7] = *(u32 *)(g_sys + 0xF7A554);
     U16(g, 0x677F2) = 0;
     U16(g, 0x677F4) = 0;
     U16(g, 0x677F6) = 0;
@@ -252,5 +252,5 @@ void game_pay_pending(u8 *g)
 
 int quest_flag_10(void)
 {
-    return (U32(D_08A62C7C, 0x28) & 0x10) != 0;
+    return (U32(g_quest, 0x28) & 0x10) != 0;
 }

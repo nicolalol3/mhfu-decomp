@@ -7,21 +7,21 @@
 #undef menu_slot_has_item
 #undef menu_combo_room
 
-extern void *D_08A62C54;          /* equipment data */
+extern void *g_equip_data;          /* equipment data */
 extern void *D_089CBBE8;          /* text converter */
 extern const s32 D_0893AEB8[5];
 extern u8 *const D_08978474[];      /* armor tables (0x28 bytes per piece) */
 
 s32 equip_skill_points(void *a, void *eq, u8 skill);
 s32 armor_set_points(void *a, void *hunter, u8 skill);
-u8 func_088D6AC8(void *hunter, int skill);
-u8 *func_0885CA50(void *a, void *eq);
+u8 hunter_skill_value(void *hunter, int skill);
+u8 *equip_data_of(void *a, void *eq);
 u8 equip_rarity(void *a, int type, u16 id);
 u8 table_314fc_b(void *a, u8 v);
 u32 func_088D7DE8(void *hunter);
 void func_088D897C(void *hunter);
 s16 func_08828658(void *self, void *hunter);
-s32 func_08890F70(void *font, const char *s);
+s32 font_text_width(void *font, const char *s);
 int utf8_seq_len(void *self, u32 c_arg);
 void equip_set_weapon(u8 *hunter, u8 *eq);
 int skill_entry_flags(void *self, u8 *hunter, u8 *e);
@@ -38,18 +38,18 @@ int skill_entry_fill(u8 *self, u8 *hunter, u8 *e, int cmp)
 
     if (e[3] == 1)
         return skill_entry_flags(self, hunter, e);
-    e[4] = equip_skill_points(D_08A62C54, hunter + 0x4E8, e[3]);
-    e[5] = equip_skill_points(D_08A62C54, hunter + 0x500, e[3]);
-    e[6] = armor_set_points(D_08A62C54, hunter, e[3]);
-    e[7] = equip_skill_points(D_08A62C54, hunter + 0x518, e[3]);
-    e[8] = equip_skill_points(D_08A62C54, hunter + 0x524, e[3]);
-    e[9] = equip_skill_points(D_08A62C54, hunter + 0x4F4, e[3]);
+    e[4] = equip_skill_points(g_equip_data, hunter + 0x4E8, e[3]);
+    e[5] = equip_skill_points(g_equip_data, hunter + 0x500, e[3]);
+    e[6] = armor_set_points(g_equip_data, hunter, e[3]);
+    e[7] = equip_skill_points(g_equip_data, hunter + 0x518, e[3]);
+    e[8] = equip_skill_points(g_equip_data, hunter + 0x524, e[3]);
+    e[9] = equip_skill_points(g_equip_data, hunter + 0x4F4, e[3]);
     if (e[9] == 0 && e[8] == 0 && e[7] == 0 && e[6] == 0 && e[4] == 0 && e[5] == 0)
         return 0;
     e[2] = 0x80;
     e[10] = e[9] + e[8] + e[7] + e[6] + e[4] + e[5];
     U16(e, 0) = 0;
-    if (func_088D6AC8(hunter, e[3]) == 0) {
+    if (hunter_skill_value(hunter, e[3]) == 0) {
         e[17] = 0; e[16] = 0; e[15] = 0; e[14] = 0; e[13] = 0; e[12] = 0; e[11] = 0;
     } else {
         e[2] |= 1;
@@ -92,12 +92,12 @@ int skill_entry_flags(void *self, u8 *hunter, u8 *e)
 {
     int any;
 
-    e[4] = (s8)equip_skill_points(D_08A62C54, hunter + 0x4E8, e[3]) > 0;
-    e[5] = (s8)equip_skill_points(D_08A62C54, hunter + 0x500, e[3]) > 0;
-    e[6] = (s8)equip_skill_points(D_08A62C54, hunter + 0x50C, e[3]) > 0;
-    e[7] = (s8)equip_skill_points(D_08A62C54, hunter + 0x518, e[3]) > 0;
-    e[8] = (s8)equip_skill_points(D_08A62C54, hunter + 0x524, e[3]) > 0;
-    e[9] = (s8)equip_skill_points(D_08A62C54, hunter + 0x4F4, e[3]) > 0;
+    e[4] = (s8)equip_skill_points(g_equip_data, hunter + 0x4E8, e[3]) > 0;
+    e[5] = (s8)equip_skill_points(g_equip_data, hunter + 0x500, e[3]) > 0;
+    e[6] = (s8)equip_skill_points(g_equip_data, hunter + 0x50C, e[3]) > 0;
+    e[7] = (s8)equip_skill_points(g_equip_data, hunter + 0x518, e[3]) > 0;
+    e[8] = (s8)equip_skill_points(g_equip_data, hunter + 0x524, e[3]) > 0;
+    e[9] = (s8)equip_skill_points(g_equip_data, hunter + 0x4F4, e[3]) > 0;
     any = e[9] || e[8] || e[7] || e[6] || e[4] || e[5];
     if (any) {
         e[2] = 0x82;
@@ -170,7 +170,7 @@ void skill_update_hunter(void *self, u8 *hunter)
     equip_set_weapon(hunter, hunter + 0x4E8);
     func_088D897C(hunter);
     v = func_08828658(self, hunter);
-    v = (s8)D_089CC438[0x6993C] + 100 + v;
+    v = (s8)g_game[0x6993C] + 100 + v;
     if (v < 151) {
         S16(hunter, 0x2E4) = v;
     } else {
@@ -178,15 +178,15 @@ void skill_update_hunter(void *self, u8 *hunter)
         S16(hunter, 0x2E4) = 150;
     }
     S16(hunter, 0x41E) = v;
-    S16(hunter, 0x62E) = *(s16 *)(D_089CC438 + 0x69938) + 300;
+    S16(hunter, 0x62E) = *(s16 *)(g_game + 0x69938) + 300;
     if (S16(hunter, 0x62E) < 75)
         S16(hunter, 0x62E) = 75;
     if (S16(hunter, 0x62E) > 450)
         S16(hunter, 0x62E) = 450;
-    U8(hunter, 0x38A) = D_089CC438[0x6993A];
+    U8(hunter, 0x38A) = g_game[0x6993A];
     U8(hunter, 0x3D4) = 0;
     (*(void (**)(void *))(*(u8 **)hunter + 0x5C))(hunter);
-    U8(hunter, 0x38B) = D_089CC438[0x6993B];
+    U8(hunter, 0x38B) = g_game[0x6993B];
     U8(hunter, 0x3D8) = 0;
     (*(void (**)(void *))(*(u8 **)hunter + 0x60))(hunter);
     (*(void (**)(void *))(*(u8 **)hunter + 0x64))(hunter);
@@ -206,14 +206,14 @@ void text_draw_lines_block(void *self, s32 x_arg, s32 y_arg, const char *s, s32 
         const char *nl = strchr(p, '\n');
 
         if (nl == NULL) {
-            n = func_08890F70(D_08A631A8, p);
+            n = font_text_width(g_font, p);
             if (w < n)
                 w = n;
             break;
         }
         strncpy(buf, p, nl - p);
         buf[nl - p] = 0;
-        n = func_08890F70(D_08A631A8, buf);
+        n = font_text_width(g_font, buf);
         if (w < n)
             w = n;
         p = nl + 1;
@@ -228,7 +228,7 @@ void text_draw_lines_block(void *self, s32 x_arg, s32 y_arg, const char *s, s32 
         }
         strncpy(buf, s, n);
         buf[n] = 0;
-        func_088920A8(D_08A631A8, (s16)(x - (s16)w), y, buf);
+        font_draw_at(g_font, (s16)(x - (s16)w), y, buf);
         y += lh;
         if (*p == 0)
             break;
@@ -255,8 +255,8 @@ void text_draw_lines(void *self, s32 x_arg, s32 y_arg, const char *s, s32 align,
         }
         strncpy(buf, s, n);
         buf[n] = 0;
-        w = func_08890F70(D_08A631A8, buf) * align / 4;
-        func_088920A8(D_08A631A8, (s16)(x - (s16)w), y, buf);
+        w = font_text_width(g_font, buf) * align / 4;
+        font_draw_at(g_font, (s16)(x - (s16)w), y, buf);
         y += lh;
         if (*p == 0)
             break;
@@ -269,8 +269,8 @@ void text_draw_lines(void *self, s32 x_arg, s32 y_arg, const char *s, s32 align,
 int skill_applies_to_weapon(u8 *self, u8 *eq, u32 k_arg, const s8 *list)
 {
     s8 k = k_arg;
-    u8 cls = equip_rarity(D_08A62C54, eq[1], U16(eq, 2));
-    u8 f = table_314fc_b(D_08A62C54, cls);
+    u8 cls = equip_rarity(g_equip_data, eq[1], U16(eq, 2));
+    u8 f = table_314fc_b(g_equip_data, cls);
     s8 other;
     int i;
 
@@ -282,7 +282,7 @@ int skill_applies_to_weapon(u8 *self, u8 *eq, u32 k_arg, const s8 *list)
     case 0x07: other = 0x06; break;
     case 0x30:
         if ((s8)cls == 5 || (s8)cls == 1) {
-            u32 w = U32(func_0885CA50(D_08A62C54, eq), 0x18);
+            u32 w = U32(equip_data_of(g_equip_data, eq), 0x18);
 
             return ((w | func_088D7DE8(*(void **)(self + 0x530))) & 0xE00) != 0;
         }
@@ -312,7 +312,7 @@ extern const s8 D_08978E38[];      /* shells of the gunlances (4 per weapon) */
 s32 hunter_has_skill(void *hunter, int skill);
 s32 func_0885B3A0(void *a, s32 id, int b, int c);
 void hunter_add_item(void *hunter, u16 id, int a, int b);
-void func_088D8900(void *hunter);
+void pouch_backup_deliveries(void *hunter);
 s32 combo_known(void *a, void *b, int c, int d);
 
 /* 1 if the gunlance wd has a shell of the kind of skill k (0x16, 0x17, 0x18) */
@@ -353,7 +353,7 @@ int skill_gunlance_shell(void *self, void *hunter, u8 *wd, u32 k_arg)
 /* affinity bonus of the skill 9 of the hunter */
 s32 skill_affinity_bonus(void *self, void *hunter)
 {
-    switch (func_088D6AC8(hunter, 9)) {
+    switch (hunter_skill_value(hunter, 9)) {
     case 0x11: return 20;
     case 0x12: return 30;
     case 0x13: return 50;
@@ -372,9 +372,9 @@ int menu_slot_has_item(void *self, s32 s_arg, s32 id_arg)
 
     if (s == -1)
         return 0;
-    if (S16(pouch_slot(D_089CC438, s), 2) == 0)
+    if (S16(pouch_slot(g_game, s), 2) == 0)
         return 0;
-    if (id != *(s16 *)pouch_slot(D_089CC438, s))
+    if (id != *(s16 *)pouch_slot(g_game, s))
         return 0;
     return (u8)func_0885B3A0(D_08A62C50, id, 0, 0) != 0;
 }
@@ -389,10 +389,10 @@ int menu_slot_combine(u8 *self, s32 a_arg, s32 b_arg)
 
     if (a == -1 || b == a)
         return 0;
-    if (S16(pouch_slot(D_089CC438, a), 2) == 0)
+    if (S16(pouch_slot(g_game, a), 2) == 0)
         return 0;
-    ib = *(s16 *)pouch_slot(D_089CC438, b);
-    e = (u8 *)combo_find(D_08A62C50, ib, *(s16 *)pouch_slot(D_089CC438, a), 0, 0, 0);
+    ib = *(s16 *)pouch_slot(g_game, b);
+    e = (u8 *)combo_find(D_08A62C50, ib, *(s16 *)pouch_slot(g_game, a), 0, 0, 0);
     U32(self, 0x5A8) = (u32)e;
     if (e == NULL)
         return 0;
@@ -413,8 +413,8 @@ void menu_slot_restore(u8 *self)
     for (i = 0; i < 2; i++)
         if (U16(self, 0x5AC + i * 2) != 0xFFFF)
             hunter_add_item(*(void **)(self + 0x530), U16(self, 0x5AC + i * 2), 1, 0);
-    if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) != 0)
-        func_088D8900(*(void **)(self + 0x530));
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) != 0)
+        pouch_backup_deliveries(*(void **)(self + 0x530));
     U32(self, 0x528) &= ~8;
 }
 
@@ -473,7 +473,7 @@ void menu_layout_pos(void *self, f32 *x, f32 *y, f32 *z, u32 id_arg)
     u16 id = id_arg;
     const s16 *p = D_08938AFC[id];
 
-    if (D_089CC438[0x6AF10] == 15 && (u32)(id - 0x80) < 2)
+    if (g_game[0x6AF10] == 15 && (u32)(id - 0x80) < 2)
         p = D_08939140[id - 0x80];
     *x = p[0];
     *y = p[1];
@@ -495,7 +495,7 @@ int menu_layout_screen_pos(void *self, f32 *x, f32 *y, u32 id)
         return 0;
     }
     {
-        u8 g = D_089CC438[0x6AF10];
+        u8 g = g_game[0x6AF10];
 
         *x = 0x1.af286cp-8f * *x * D_0893887C[g][0];
         *y = 0x1.af286cp-8f * *y * D_0893887C[g][1];
@@ -511,7 +511,7 @@ s32 menu_next_hunter(void *self, s32 cur_arg, s32 dir_arg)
     s32 v;
     int n;
 
-    if (game_count_bits62(D_089CC438) == 0)
+    if (game_count_bits62(g_game) == 0)
         return -1;
     if (cur < 0) {
         v = 0;
@@ -528,7 +528,7 @@ s32 menu_next_hunter(void *self, s32 cur_arg, s32 dir_arg)
     for (n = 62; n > 0; n--) {
         s8 c;
 
-        if (game_test_bit62(D_089CC438, v & 0xFF) != 0)
+        if (game_test_bit62(g_game, v & 0xFF) != 0)
             return v;
         c = v;
         if (dir < 0) {

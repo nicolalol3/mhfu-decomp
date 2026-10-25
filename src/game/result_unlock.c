@@ -1,5 +1,5 @@
 /* Result screens at the end of the quest (2): unlocked contents, size records, special
- * conditions; helpers of all the result screens. The object is D_08A62CB4. (Guessed names.) */
+ * conditions; helpers of all the result screens. The object is g_result. (Guessed names.) */
 #include "quest.h"
 #undef menu_draw_sprite
 #undef gfx_draw_window
@@ -54,11 +54,11 @@ void result_init_sounds(u8 *self);
 u8 *pouch_item_data(void *a, s32 i);
 u32 hunter_add_item(u32 h, s32 id, s32 n, s32 c);
 void func_08890114(void *a);
-void func_08890E08(void *font, int a);
-void func_08890DFC(void *font, int x, int y);
-void func_08892004(void *font, const char *fmt, ...);
-s32 func_08890F70(void *font, const char *s);
-void func_0887D02C(s32 x, s32 y, const char *s, s32 c);
+void font_set_layer(void *font, int a);
+void font_set_pos(void *font, int x, int y);
+void font_draw(void *font, const char *fmt, ...);
+s32 font_text_width(void *font, const char *s);
+void font_draw_centered(s32 x, s32 y, const char *s, s32 c);
 
 #define RTEXT(id) func_09A63198(D_09A44C5C, id)
 
@@ -68,11 +68,11 @@ u32 result_special_check(u8 *self, u32 i);
 
 static void begin_window(void)
 {
-    U8(D_089CBBEC, 0x534) = 9;
-    func_08890E08(D_08A631A8, 0);
-    menu_begin_draw(D_089CBBEC);
-    gfx_dim_screen(D_089CBBEC, 0);
-    gfx_draw_window(D_089CBBEC, 0x18, 0x30, 0x1B0, 0xB0, 0xFF);
+    U8(g_menu, 0x534) = 9;
+    font_set_layer(g_font, 0);
+    menu_begin_draw(g_menu);
+    gfx_dim_screen(g_menu, 0);
+    gfx_draw_window(g_menu, 0x18, 0x30, 0x1B0, 0xB0, 0xFF);
 }
 
 static void draw_title(u8 *self, char *buf)
@@ -86,12 +86,12 @@ static void draw_bottom(u8 *self, char *buf, int show)
 {
     if (show) {
         sprintf(buf, RTEXT(D_089B53AE));
-        func_08890DFC(D_08A631A8, 400, 0xC0);
-        func_08892004(D_08A631A8, D_089A8870, buf);
-        menu_draw_sprite(D_089CBBEC, 0x17E, 0xBF, 0x33);
+        font_set_pos(g_font, 400, 0xC0);
+        font_draw(g_font, D_089A8870, buf);
+        menu_draw_sprite(g_menu, 0x17E, 0xBF, 0x33);
     }
-    func_08890DFC(D_08A631A8, 0x40, 0xC0);
-    func_08892004(D_08A631A8, RTEXT(D_089B53EC), S16(self, 0xAC) / 30);
+    font_set_pos(g_font, 0x40, 0xC0);
+    font_draw(g_font, RTEXT(D_089B53EC), S16(self, 0xAC) / 30);
 }
 
 /* screen of the new unlocked contents */
@@ -102,18 +102,18 @@ void result_unlock_draw(u8 *self)
     s32 i, f;
 
     begin_window();
-    func_08890E38(D_08A631A8, 0);
-    func_08890DE8(D_08A631A8, 0x10, 0x10);
+    font_set_color(g_font, 0);
+    font_set_size(g_font, 0x10, 0x10);
     draw_title(self, buf);
-    text_draw_lines_block(D_089CBBEC, 0xF0, 0x60, RTEXT(D_089B53A2), 0x10, 0x10);
+    text_draw_lines_block(g_menu, 0xF0, 0x60, RTEXT(D_089B53A2), 0x10, 0x10);
     for (i = 0; i < 0x3D; i++) {
         if (quest_unlock_check((Quest *)self, i) == 0)
             continue;
-        f = flag_id_at(D_089CC438, (s8)i);
+        f = flag_id_at(g_game, (s8)i);
         if ((f < 0 || f >= 0xB) && f < 0x39)
-            sprintf(buf, RTEXT(D_089B539E), text_menu(D_089CC438, D_089ACAF8[i]));
+            sprintf(buf, RTEXT(D_089B539E), text_menu(g_game, D_089ACAF8[i]));
         else
-            sprintf(buf, RTEXT(D_089B539C), text_menu(D_089CC438, D_089ACAF8[i]));
+            sprintf(buf, RTEXT(D_089B539C), text_menu(g_game, D_089ACAF8[i]));
         result_text_center(self, (s16)((n + 4) * 0x10 + 0x40), buf);
         n++;
     }
@@ -125,18 +125,18 @@ static void set_rating_color(u8 *self, u8 *em, s32 v)
     s16 r = result_rating(self, em, (s16)v);
 
     if (r == 2)
-        func_08890E38(D_08A631A8, 7);
+        font_set_color(g_font, 7);
     else if (r == 1)
-        func_08890E38(D_08A631A8, 0xB);
+        font_set_color(g_font, 0xB);
     else
-        func_08890E38(D_08A631A8, 0);
+        font_set_color(g_font, 0);
 }
 
 /* screen of a new size record (largest / smallest) of a monster */
 void result_record_draw(u8 *self)
 {
     u8 *e = self + 0xD0 + self[0x1F] * 4;
-    u8 *em = emblem_find(D_089CBBEC, e[0]);
+    u8 *em = emblem_find(g_menu, e[0]);
     s16 t[7];
     char buf[0x100];
     const u16 *txt;
@@ -144,8 +144,8 @@ void result_record_draw(u8 *self)
     u16 best;
     f32 f;
 
-    func_08890E38(D_08A631A8, 0);
-    func_08890DE8(D_08A631A8, 0x10, 0x10);
+    font_set_color(g_font, 0);
+    font_set_size(g_font, 0x10, 0x10);
     for (i = 0; i < 7; i++)
         t[i] = D_089A88A0[i];
     D_089A8878 = t[LANG] + 0x13C;
@@ -153,45 +153,45 @@ void result_record_draw(u8 *self)
     D_089A8898 = D_089A8878;
     begin_window();
     result_text_center(self, D_089A8874, RTEXT(D_089B53AA));
-    sprintf(buf, text_menu(D_089CC438, D_089AC63A), text_menu(D_089CC438, D_089AC65C[e[0]]));
+    sprintf(buf, text_menu(g_game, D_089AC63A), text_menu(g_game, D_089AC65C[e[0]]));
     result_text_center(self, D_089A8876, buf);
     set_rating_color(self, em, (s16)U16(e, 2));
     k = e[1] == 0 ? 6 : e[1] == 1 ? 9 : 10;
     txt = &D_089B53A0[k];
-    func_0887D02C((u16)D_089A8878, (u16)D_089A887A, RTEXT(*txt), 0x10);
-    f = game_size_percent(D_089CC438, e[0], U16(e, 2)) + 0.05f;
+    font_draw_centered((u16)D_089A8878, (u16)D_089A887A, RTEXT(*txt), 0x10);
+    f = game_size_percent(g_game, e[0], U16(e, 2)) + 0.05f;
     if (U16(e, 2) == 0)
         sprintf(buf, RTEXT(D_089B53B0));
     else
         sprintf(buf, RTEXT(D_089B53B6), (s32)f, (s32)(10.0f * f) % 10);
-    func_08891474(D_08A631A8, D_089A8878, D_089A887A, buf);
-    best = e[1] == 2 ? game_best_record_min(D_089CC438, e[0], 0) : game_best_record_max(D_089CC438, e[0], 0);
+    font_printf_at(g_font, D_089A8878, D_089A887A, buf);
+    best = e[1] == 2 ? game_best_record_min(g_game, e[0], 0) : game_best_record_max(g_game, e[0], 0);
     set_rating_color(self, em, (s16)best);
-    func_0887D02C((u16)D_089A887C, (u16)D_089A887E, RTEXT(*txt), 0x10);
-    f = (e[1] == 2 ? game_size_min(D_089CC438, e[0], 1) : game_size_max(D_089CC438, e[0], 1)) + 0.05f;
-    func_08891474(D_08A631A8, D_089A887C, D_089A887E, RTEXT(D_089B53B6), (s32)f,
+    font_draw_centered((u16)D_089A887C, (u16)D_089A887E, RTEXT(*txt), 0x10);
+    f = (e[1] == 2 ? game_size_min(g_game, e[0], 1) : game_size_max(g_game, e[0], 1)) + 0.05f;
+    font_printf_at(g_font, D_089A887C, D_089A887E, RTEXT(D_089B53B6), (s32)f,
                   (s32)(10.0f * f) % 10);
-    func_08890E38(D_08A631A8, 0);
+    font_set_color(g_font, 0);
     if (self[0xC1] == 0 && S16(self, 0xA8) <= 0) {
-        func_08891474(D_08A631A8, D_089A8884, D_089A8886, RTEXT(D_089B53AE));
-        menu_draw_sprite(D_089CBBEC, (u16)(D_089A8884 - 0x12), (u16)(D_089A8886 - 1), 0x33);
+        font_printf_at(g_font, D_089A8884, D_089A8886, RTEXT(D_089B53AE));
+        menu_draw_sprite(g_menu, (u16)(D_089A8884 - 0x12), (u16)(D_089A8886 - 1), 0x33);
     }
-    func_088920A8(D_08A631A8, D_089A8880, D_089A8882, RTEXT(D_089B53EC), S16(self, 0xAC) / 30);
-    gfx_draw_sprite_scaled(D_089CBBEC, (u16)D_089A8888, (u16)D_089A888A, 0x50, 0x40, 0xAF);
-    gfx_draw_sprite_scaled(D_089CBBEC, (u16)D_089A8898, (u16)D_089A889A, (u16)D_089A889C,
+    font_draw_at(g_font, D_089A8880, D_089A8882, RTEXT(D_089B53EC), S16(self, 0xAC) / 30);
+    gfx_draw_sprite_scaled(g_menu, (u16)D_089A8888, (u16)D_089A888A, 0x50, 0x40, 0xAF);
+    gfx_draw_sprite_scaled(g_menu, (u16)D_089A8898, (u16)D_089A889A, (u16)D_089A889C,
                            (u16)D_089A889E, 0x9C);
-    emblem_draw(D_089CBBEC, (u16)D_089A888C, (u16)D_089A888E, em[1], em[2]);
-    menu_draw_rating_icon(D_089CBBEC, em, D_089A8890, D_089A8892, (s16)U16(e, 2));
-    best = e[1] == 2 ? game_best_record_min(D_089CC438, e[0], 0) : game_best_record_max(D_089CC438, e[0], 0);
-    menu_draw_rating_icon(D_089CBBEC, em, D_089A8894, D_089A8896, (s16)best);
+    emblem_draw(g_menu, (u16)D_089A888C, (u16)D_089A888E, em[1], em[2]);
+    menu_draw_rating_icon(g_menu, em, D_089A8890, D_089A8892, (s16)U16(e, 2));
+    best = e[1] == 2 ? game_best_record_min(g_game, e[0], 0) : game_best_record_max(g_game, e[0], 0);
+    menu_draw_rating_icon(g_menu, em, D_089A8894, D_089A8896, (s16)best);
 }
 
 /* special conditions reached in this quest (shown at the end) */
 u32 result_special_check(u8 *self, u32 i)
 {
-    u16 q = U16(D_089CC438, 0x6AF12);
+    u16 q = U16(g_game, 0x6AF12);
 
-    if (game_test_flag_696e4(D_089CC438) != 0)
+    if (game_test_flag_696e4(g_game) != 0)
         return 0;
     switch (i) {
     case 0: return q == 0x277E;
@@ -205,36 +205,36 @@ u32 result_special_check(u8 *self, u32 i)
     case 8: return q == 0x28AB;
     case 9: return q == 0x28A2;
     case 10:
-        return (s16)game_group_count_total(D_089CC438, 8) != 0 &&
-               event_quest_any_done(D_089CC438, 0x5209) != 0 && event_quest_any_done(D_089CC438, 0x520A) != 0;
+        return (s16)game_group_count_total(g_game, 8) != 0 &&
+               event_quest_any_done(g_game, 0x5209) != 0 && event_quest_any_done(g_game, 0x520A) != 0;
     case 11:
-        return (s16)game_group_count_total(D_089CC438, 0x15) != 0 &&
-               event_quest_any_done(D_089CC438, 0x520B) != 0 && event_quest_any_done(D_089CC438, 0x520C) != 0;
+        return (s16)game_group_count_total(g_game, 0x15) != 0 &&
+               event_quest_any_done(g_game, 0x520B) != 0 && event_quest_any_done(g_game, 0x520C) != 0;
     case 12:
-        return (s16)game_group_count_total(D_089CC438, 0x43) != 0 &&
-               event_quest_any_done(D_089CC438, 0x520D) != 0 && event_quest_any_done(D_089CC438, 0x520E) != 0;
+        return (s16)game_group_count_total(g_game, 0x43) != 0 &&
+               event_quest_any_done(g_game, 0x520D) != 0 && event_quest_any_done(g_game, 0x520E) != 0;
     case 13:
-        return (s16)game_group_count_total(D_089CC438, 0xB) != 0 &&
-               event_quest_any_done(D_089CC438, 0x520F) != 0 && event_quest_any_done(D_089CC438, 0x5210) != 0;
+        return (s16)game_group_count_total(g_game, 0xB) != 0 &&
+               event_quest_any_done(g_game, 0x520F) != 0 && event_quest_any_done(g_game, 0x5210) != 0;
     case 14:
-        return (s16)game_group_count_total(D_089CC438, 0x35) != 0 &&
-               event_quest_any_done(D_089CC438, 0x5211) != 0 && event_quest_any_done(D_089CC438, 0x5212) != 0;
+        return (s16)game_group_count_total(g_game, 0x35) != 0 &&
+               event_quest_any_done(g_game, 0x5211) != 0 && event_quest_any_done(g_game, 0x5212) != 0;
     case 15:
-        return game_has_progress(D_089CC438, 0x3F7) != 0 && game_count_total(D_089CC438, 8) > 4;
+        return game_has_progress(g_game, 0x3F7) != 0 && game_count_total(g_game, 8) > 4;
     case 16:
-        return game_has_progress(D_089CC438, 0x4B9) != 0 && (u16)game_group_count_total(D_089CC438, 1) > 9;
+        return game_has_progress(g_game, 0x4B9) != 0 && (u16)game_group_count_total(g_game, 1) > 9;
     case 17:
-        return game_has_progress(D_089CC438, 0x845) != 0 && (u16)game_group_count_total(D_089CC438, 0x43) > 4;
+        return game_has_progress(g_game, 0x845) != 0 && (u16)game_group_count_total(g_game, 0x43) > 4;
     case 18:
-        return game_has_progress(D_089CC438, 0xC82) != 0 && game_count_total(D_089CC438, 0x4B) > 9;
-    case 19: return game_has_progress(D_089CC438, 0xBC1) != 0;
-    case 20: return game_has_progress(D_089CC438, 0xBCC) != 0;
-    case 21: return game_has_progress(D_089CC438, 0xBC4) != 0;
-    case 22: return game_has_progress(D_089CC438, 0xC1F) != 0;
-    case 23: return game_has_progress(D_089CC438, 0xC31) != 0;
-    case 24: return game_has_progress(D_089CC438, 0xC22) != 0;
-    case 25: return game_has_progress(D_089CC438, 0xC26) != 0;
-    case 26: return game_has_progress(D_089CC438, 0xC8C) != 0;
+        return game_has_progress(g_game, 0xC82) != 0 && game_count_total(g_game, 0x4B) > 9;
+    case 19: return game_has_progress(g_game, 0xBC1) != 0;
+    case 20: return game_has_progress(g_game, 0xBCC) != 0;
+    case 21: return game_has_progress(g_game, 0xBC4) != 0;
+    case 22: return game_has_progress(g_game, 0xC1F) != 0;
+    case 23: return game_has_progress(g_game, 0xC31) != 0;
+    case 24: return game_has_progress(g_game, 0xC22) != 0;
+    case 25: return game_has_progress(g_game, 0xC26) != 0;
+    case 26: return game_has_progress(g_game, 0xC8C) != 0;
     }
     return 0;
 }
@@ -265,15 +265,15 @@ void result_special_draw(u8 *self)
     s32 i, n = 0, k;
 
     begin_window();
-    func_08890E38(D_08A631A8, 0);
-    func_08890DE8(D_08A631A8, 0x10, 0x10);
+    font_set_color(g_font, 0);
+    font_set_size(g_font, 0x10, 0x10);
     draw_title(self, buf);
     result_text_center(self, 0x60, RTEXT(D_089B53A6));
     for (i = 0; i < 0x1B; i++) {
         if (result_special_check(self, i) != 0) {
             k = i < 10 ? 0 : i < 15 ? 1 : i < 19 ? 2 : 3;
-            result_text_center(self, y, text_menu(D_089CC438, D_089AD0BC[k]));
-            result_text_center(self, (s16)(y + 0x10), text_menu(D_089CC438, D_089AD0BC[i + 4]));
+            result_text_center(self, y, text_menu(g_game, D_089AD0BC[k]));
+            result_text_center(self, (s16)(y + 0x10), text_menu(g_game, D_089AD0BC[i + 4]));
             y += 0x20;
             n++;
         }
@@ -281,7 +281,7 @@ void result_special_draw(u8 *self)
             break;
     }
     draw_bottom(self, buf, self[0xC1] == 0 && S16(self, 0xAC) < 0x32B);
-    func_08890E38(D_08A631A8, 5);
+    font_set_color(g_font, 5);
     sprintf(buf, D_089A8870, RTEXT(D_089B53EE));
     result_text_center(self, y, buf);
 }
@@ -300,10 +300,10 @@ void result_text_draw(u8 *self)
     char buf[0x100];
 
     begin_window();
-    func_08890E38(D_08A631A8, 0);
-    func_08890DE8(D_08A631A8, 0x10, 0x10);
+    font_set_color(g_font, 0);
+    font_set_size(g_font, 0x10, 0x10);
     draw_title(self, buf);
-    text_draw_lines_block(D_089CBBEC, 0xF0, 0x60, RTEXT(D_089B53F2), 0x10, 0x10);
+    text_draw_lines_block(g_menu, 0xF0, 0x60, RTEXT(D_089B53F2), 0x10, 0x10);
     draw_bottom(self, buf, self[0xC1] == 0 && S16(self, 0xAC) < 0x32B);
 }
 
@@ -311,7 +311,7 @@ void result_text_draw(u8 *self)
 s32 result_rewards_value(void)
 {
     s32 i, sum = 0;
-    u16 *p = &U16(D_089CC438, 0x390);
+    u16 *p = &U16(g_game, 0x390);
 
     for (i = 0; i < 0x20; i++, p += 2)
         if (p[0] != 0)
@@ -322,7 +322,7 @@ s32 result_rewards_value(void)
 s32 result_rewards_count(void)
 {
     s32 i, n = 0;
-    s16 *p = &S16(D_089CC438, 0x390);
+    s16 *p = &S16(g_game, 0x390);
 
     for (i = 0; i < 0x20; i++, p += 2)
         if (p[0] != 0)
@@ -333,20 +333,20 @@ s32 result_rewards_count(void)
 /* end of the quest: items used up, hunting counters, records, rank */
 void result_finish(u8 *self)
 {
-    u32 h = player_get(D_09A4F0C4, D_089CC438[0x28]);
+    u32 h = player_get(g_players, g_game[0x28]);
     Quest *q;
     u8 t[24];
     s32 i, j;
     u32 n, step, c, tot;
     u16 *p, *s;
 
-    func_08890114(D_08A631A0);
-    U32(D_089CC438, 0x47C) = 0;
+    func_08890114(g_sys);
+    U32(g_game, 0x47C) = 0;
     for (i = 0; i < 0x18; i++) {
         if ((pouch_item_data(D_08A62C50, i)[4] & 4) == 0)
             continue;
-        p = pouch_slot(D_089CC438, i);
-        s = pouch_slot(D_089CC438, i);
+        p = pouch_slot(g_game, i);
+        s = pouch_slot(g_game, i);
         hunter_add_item(h, p[0], (s16)-(s16)s[1], 0);
     }
     for (i = 0; i < 0x5A; i++) {
@@ -362,40 +362,40 @@ void result_finish(u8 *self)
                     break;
                 }
             }
-            c = game_group_count_total(D_089CC438, i & 0xFF) & 0xFFFF;
+            c = game_group_count_total(g_game, i & 0xFF) & 0xFFFF;
             tot = c + n;
             if (tot < 9999 && n + c % step >= step)
-                record_add_best(D_089CC438, QUEST->log, 0x15, i, (step / 10) * (tot / step));
+                record_add_best(g_game, QUEST->log, 0x15, i, (step / 10) * (tot / step));
         }
         q = QUEST;
         if (q->kills[i] != 0)
-            game_add_count_a(D_089CC438, i & 0xFF, q->kills[i]);
+            game_add_count_a(g_game, i & 0xFF, q->kills[i]);
         q = QUEST;
         if (q->captures[i] != 0)
-            game_add_count_b(D_089CC438, i & 0xFF, q->captures[i]);
+            game_add_count_b(g_game, i & 0xFF, q->captures[i]);
     }
     result_size_records(self);
-    self[0xC0] = game_rank(D_089CC438);
+    self[0xC0] = game_rank(g_game);
     self[0xC1] = 0;
 }
 
 /* text centered on the screen */
 void result_text_center(u8 *self, s32 y, const char *s)
 {
-    s32 w = func_08890F70(D_08A631A8, s);
+    s32 w = font_text_width(g_font, s);
 
-    func_088920A8(D_08A631A8, (s16)(0xF0 - ((w << 3) >> 1)), y, D_089A8870, s);
+    font_draw_at(g_font, (s16)(0xF0 - ((w << 3) >> 1)), y, D_089A8870, s);
 }
 
 /* the 5 windows of the result screens */
 void result_draw_windows(u8 *self)
 {
-    gfx_dim_screen(D_089CBBEC, 0);
-    gfx_draw_window(D_089CBBEC, D_089A88D0[0], D_089A88D0[1], D_089A88D0[2], D_089A88D0[3], 0xFF);
-    gfx_draw_window(D_089CBBEC, D_089A88C8[0], D_089A88C8[1], D_089A88C8[2], D_089A88C8[3], 0xFF);
-    gfx_draw_window(D_089CBBEC, D_089A88D8[0], D_089A88D8[1], D_089A88D8[2], D_089A88D8[3], 0xFF);
-    gfx_draw_window(D_089CBBEC, D_089A88E0[0], D_089A88E0[1], D_089A88E0[2], D_089A88E0[3], 0xFF);
-    gfx_draw_window(D_089CBBEC, D_089A88E8[0], D_089A88E8[1], D_089A88E8[2], D_089A88E8[3], 0xFF);
+    gfx_dim_screen(g_menu, 0);
+    gfx_draw_window(g_menu, D_089A88D0[0], D_089A88D0[1], D_089A88D0[2], D_089A88D0[3], 0xFF);
+    gfx_draw_window(g_menu, D_089A88C8[0], D_089A88C8[1], D_089A88C8[2], D_089A88C8[3], 0xFF);
+    gfx_draw_window(g_menu, D_089A88D8[0], D_089A88D8[1], D_089A88D8[2], D_089A88D8[3], 0xFF);
+    gfx_draw_window(g_menu, D_089A88E0[0], D_089A88E0[1], D_089A88E0[2], D_089A88E0[3], 0xFF);
+    gfx_draw_window(g_menu, D_089A88E8[0], D_089A88E8[1], D_089A88E8[2], D_089A88E8[3], 0xFF);
 }
 
 /* crown of a size: 2 = gold (smallest / largest), 1 = silver, 0 = none */

@@ -57,7 +57,7 @@ extern const char D_0899A174[], D_0899A19C[], D_0899A1B8[], D_0899A1DC[];
 extern const u8 D_08979804[];      /* SHA-1 of the files (0x14 bytes each) */
 extern const u8 D_089CC420[0x14];
 extern u8 D_0884E678[];            /* entry of the transfer thread */
-extern u8 *D_09A4F0D0;
+extern u8 *g_monster_models;
 extern u8 *D_09A1FDDC;
 
 u32 game_rand(void *a, int b);
@@ -137,8 +137,8 @@ void fl_init(u8 *p)
     U32(p, 0x2FBC4) = sceKernelCreateThread(D_0899A140, fl_sha1_thread, 0x31, 0x1000, 0, NULL);
     arg = p;
     sceKernelStartThread(U32(p, 0x2FBC4), 4, &arg);
-    *(u32 *)(D_08A631A0 + 0xF7F030) = U32(p, 0x2FBC4);
-    D_08A631A0[0xF7F034] = 1;
+    *(u32 *)(g_sys + 0xF7F030) = U32(p, 0x2FBC4);
+    g_sys[0xF7F034] = 1;
     U32(p, 0x2FBE8) = sceKernelCreateEventFlag(D_0899A14C, 0x200, 0, NULL);
     U32(p, 0x2FBEC) = sceKernelCreateThread(D_0899A160, D_0884E678, 0x13, 0x1000, 0, NULL);
     arg = p;
@@ -183,7 +183,7 @@ void fl_loader_thread(u32 args, void *argp)
         switch (U32(p, 0x100C)) {
         case 0:
             sceKernelWaitSema(U32(p, 0x2931C), 1, NULL);
-            U32(p, 0x100C) = (S8(D_089CC438, 0x6ADDE) != 0) ? 1 : 7;
+            U32(p, 0x100C) = (S8(g_game, 0x6ADDE) != 0) ? 1 : 7;
             continue;
         case 1: {
             /* patch file on the Memory Stick */
@@ -370,7 +370,7 @@ void fl_copy_block(u8 *p, u8 *e)
 /* 0 if the destination of the request is in the user RAM and the loader is stopped */
 int fl_must_copy(u8 *p, u8 *e)
 {
-    if (D_09A4F0D0[0x214] != 0)
+    if (g_monster_models[0x214] != 0)
         return 1;
     return fl_in_user_ram(p, U32(e, 4) + U32(e, 0xC), U32(e, 8)) == 0;
 }
@@ -500,7 +500,7 @@ int fl_queue_file(u8 *p, u32 id, u32 dst, s32 size, u32 mode, u32 done, u32 wake
     if (size == -1)
         size = VCALL(p, 0x18)(p, id);
     left = size;
-    if (p[0x2FBCC] != 0 && (u16)game_rand(D_08A631A0, 1) % 100 < 5)
+    if (p[0x2FBCC] != 0 && (u16)game_rand(g_sys, 1) % 100 < 5)
         hash = 1;
     for (;;) {
         u8 *e = REQ(p, U32(p, 0x1008));
@@ -672,7 +672,7 @@ void fl_report_error(u8 *p, s32 err)
 /* error message to show (depends on the error and on on-line / off-line) */
 void fl_set_error(u8 *p, s32 err)
 {
-    int online = (*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0;
+    int online = (*(u32 *)(g_sys + 0xF7A57C) & 1) != 0;
     u32 code;
 
     if (err == (s32)0x80020321) {
@@ -697,7 +697,7 @@ void fl_set_error(u8 *p, s32 err)
             code = online ? 11 : 7;
     }
     U32(p, 0x2FBE0) = code;
-    D_089CC438[0x6ADDE] = 0;
+    g_game[0x6ADDE] = 0;
 }
 
 const char *fl_data_path(u8 *p)
@@ -713,18 +713,18 @@ u32 *fl_dtor(u32 *o, s32 flag)
         o[0] = (u32)D_089BAAA8;
         o[0] = (u32)D_089BAC20;
         if ((s16)flag > 0)
-            func_0890BFA4(o);
+            op_delete(o);
     }
     return o;
 }
 
-/* constructor of the general game state (D_089CC438) */
+/* constructor of the general game state (g_game) */
 u8 *game_state_ctor(u8 *g)
 {
     int i;
     u8 *q;
 
-    D_089CC438 = g;
+    g_game = g;
     U32(g, 0x6AF14) = 0;
     U16(g, 0x6AF0E) = 0xFF;
     g[0x6AF10] = 0;

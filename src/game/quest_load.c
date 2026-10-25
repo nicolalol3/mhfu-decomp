@@ -1,16 +1,16 @@
-/* Quest (D_08A62C7C): events sent to the other players, loading of the quest file and of
+/* Quest (g_quest): events sent to the other players, loading of the quest file and of
  * the monsters of the area, life records of the hunts, sizes and helpers of the goals.
  * (Guessed names.) */
 #include "quest.h"
 
-extern void *D_09A1DAEC;
-extern u8 *D_09C121B0;
-extern u8 *D_09A4F0D0;
-extern void **D_089CC434;          /* file loader (C++ object) */
-extern void *D_09A0B540;
+extern void *g_net;
+extern u8 *g_monsters;
+extern u8 *g_monster_models;
+extern void **g_loader;          /* file loader (C++ object) */
+extern void *g_heap;
 extern void *D_09A44C60;
-extern u8 *D_08A62D8C;
-extern void *D_089CBBE4;
+extern u8 *g_sound;
+extern void *g_camera;
 extern const u8 *const *D_089A7CE8[];   /* quest id -> file id tables */
 extern const u16 D_09BC8400[][3];        /* monster models: 3 file ids each */
 extern const s32 D_089A8278[];
@@ -25,7 +25,7 @@ extern const s8 D_089A8040[20], D_089A8054[20];
 typedef s32 (*LdFunc0)(void *);
 typedef s32 (*LdFunc1)(void *, u32);
 typedef s32 (*LdFunc6)(void *, u32, void *, s32, s32, s32, s32);
-#define LDCALL(type, off) ((type)((void **)*D_089CC434)[(off) / 4])
+#define LDCALL(type, off) ((type)((void **)*g_loader)[(off) / 4])
 
 u16 game_map_id(u8 *g);
 int party_has_kitchen_skill(u8 *p, u32 k);
@@ -33,13 +33,13 @@ void camera_mode_for_area(void *cam);
 s32 hunter_has_skill(u32 h, int a);
 s32 temp_alloc(void *a, int b, s32 c);
 void temp_free(void *a, int b);
-s32 func_08898898(void *a, int b);
+s32 temp_get(void *a, int b);
 void func_088C2BE0(void *a, void *b, s32 c);
 s32 func_088DDFE8(u8 *a, u32 b);
 void func_088DDE20(u8 *a, u32 b);
 void func_088DE0B8(u8 *a, u32 b, u32 c, s32 d);
-void func_088DE22C(u8 *a, u32 b, u32 c);
-void func_088DE3D4(u8 *a, u32 b);
+void monster_models_load(u8 *a, u32 b, u32 c);
+void monster_models_release(u8 *a, u32 b);
 void func_09AF4050(u8 *p);
 void func_09AB2E68(u8 *a, s32 i);
 void func_09AB46A8(u8 *a, u32 b);
@@ -55,7 +55,7 @@ void func_08881114(u8 *snd, s32 a, u32 b, u32 c, u32 d, u32 k, s32 i);
 
 static void send_event(QuestEvent *ev)
 {
-    net_send(D_09A1DAEC, 6, ev);
+    net_send(g_net, 6, ev);
 }
 
 /* time left, sent to the other players */
@@ -105,12 +105,12 @@ s32 quest_load_file(Quest *self, u32 id, u8 *dst)
     u32 k, f;
 
     if (self->load_step == 1) {
-        if (LDCALL(LdFunc0, 0x38)(D_089CC434) != 0)
+        if (LDCALL(LdFunc0, 0x38)(g_loader) != 0)
             return 0;
         if (dst == NULL)
-            dst = D_08A5C440;
-        func_088C2BE0(D_09A44C60, dst, func_08898898(D_09A0B540, 0x17));
-        temp_free(D_09A0B540, 0x17);
+            dst = g_quest_file;
+        func_088C2BE0(D_09A44C60, dst, temp_get(g_heap, 0x17));
+        temp_free(g_heap, 0x17);
         self->load_step = 0;
         return 1;
     }
@@ -135,7 +135,7 @@ s32 quest_load_file(Quest *self, u32 id, u8 *dst)
     f = ((const u16 *)D_089A7CE8[k][(s32)id % 1000 / 100])[(s32)id % 100];
     if (self->file_id == f)
         return 1;
-    LDCALL(LdFunc6, 0x34)(D_089CC434, f, (void *)temp_alloc(D_09A0B540, 0x17, 0x6800), -1, 0, 0, 1);
+    LDCALL(LdFunc6, 0x34)(g_loader, f, (void *)temp_alloc(g_heap, 0x17, 0x6800), -1, 0, 0, 1);
     self->file_id = f;
     self->load_step++;
     return 0;
@@ -159,7 +159,7 @@ void quest_load_wave_models(Quest *self)
     for (w = 0, e = self->wave; w < 2; w++, e++) {
         sz[w] = 0;
         for (j = 0; j < e->n; j++) {
-            v = LDCALL(LdFunc1, 0x18)(D_089CC434, ((u8)e->kind[j] + 0x17DF) & 0xFFFF);
+            v = LDCALL(LdFunc1, 0x18)(g_loader, ((u8)e->kind[j] + 0x17DF) & 0xFFFF);
             if (sz[w] < v)
                 sz[w] = v;
         }
@@ -175,7 +175,7 @@ void quest_load_wave_models(Quest *self)
             }
         }
         if (uniq) {
-            func_088DE0B8(D_09A4F0D0, (u8)e->kind[0], sz[w], w);
+            func_088DE0B8(g_monster_models, (u8)e->kind[0], sz[w], w);
             done[w] = e->kind[0];
         }
     }
@@ -208,9 +208,9 @@ static int area_has_4a(Quest *self, u32 a)
 
 static void load_monster(u32 k)
 {
-    u8 *m = D_09A4F0D0;
+    u8 *m = g_monster_models;
 
-    if (m[0x214] != 0 && func_088DDFE8(D_09A4F0D0, k) != 0)
+    if (m[0x214] != 0 && func_088DDFE8(g_monster_models, k) != 0)
         func_088DDE20(m, k);
     else
         func_088DE0B8(m, k, 0, -1);
@@ -223,7 +223,7 @@ void quest_load_area_monsters(Quest *self)
     s32 i;
 
     quest_check_monsters_done(QUEST, a);
-    if (a == game_map_id(D_089CC438))
+    if (a == game_map_id(g_game))
         load_monster(0x12);
     if (area_has_10(self, a))
         load_monster(10);
@@ -248,18 +248,18 @@ void quest_place_area_monsters(Quest *self, u32 a)
 
     if (q->wave[1].n > 0 && q->wave[0].kind[0] != q->wave[1].kind[0])
         n++;
-    if ((a & 0xFFFF) == game_map_id(D_089CC438))
-        func_088DE22C(D_09A4F0D0, 0x12, n++);
+    if ((a & 0xFFFF) == game_map_id(g_game))
+        monster_models_load(g_monster_models, 0x12, n++);
     if (area_has_10(self, a & 0xFFFF))
-        func_088DE22C(D_09A4F0D0, 10, n++);
+        monster_models_load(g_monster_models, 10, n++);
     if (area_has_4a(self, a & 0xFFFF))
-        func_088DE22C(D_09A4F0D0, 0x4A, n++);
+        monster_models_load(g_monster_models, 0x4A, n++);
     l = (u32 *)quest_find_entry(self, a, 0, self->phase);
     if (l == NULL)
         return;
     for (i = 0; i < 4; i++, l++)
         if (*l != SMALL_END)
-            func_088DE22C(D_09A4F0D0, *l & 0xFF, n++);
+            monster_models_load(g_monster_models, *l & 0xFF, n++);
 }
 
 /* 1 when the small monster k belongs to the current area */
@@ -288,7 +288,7 @@ void quest_leave_area(Quest *self)
     u32 *l;
 
     for (i = 0; i < 20; i++) {
-        p = (i >= 0 && i < 20) ? (u8 *)U32(D_09C121B0, 0x1220 + i * 4) : NULL;
+        p = (i >= 0 && i < 20) ? (u8 *)U32(g_monsters, 0x1220 + i * 4) : NULL;
         if (p == NULL || quest_area_has_monster(self, p[E_KIND]) == 0)
             continue;
         e = quest_find_monster(self, p);
@@ -307,21 +307,21 @@ void quest_leave_area(Quest *self)
             e->slot = -1;
         }
         quest_monster_detach(self, p);
-        func_09AB2E68(D_09C121B0, i);
+        func_09AB2E68(g_monsters, i);
     }
     quest_reset_monsters(self, G_AREA);
-    func_09AB46A8(D_09C121B0, 0x12);
-    func_09AB46A8(D_09C121B0, 10);
-    func_09AB46A8(D_09C121B0, 0x4A);
-    func_088DE3D4(D_09A4F0D0, 0x12);
-    func_088DE3D4(D_09A4F0D0, 10);
-    func_088DE3D4(D_09A4F0D0, 0x4A);
+    func_09AB46A8(g_monsters, 0x12);
+    func_09AB46A8(g_monsters, 10);
+    func_09AB46A8(g_monsters, 0x4A);
+    monster_models_release(g_monster_models, 0x12);
+    monster_models_release(g_monster_models, 10);
+    monster_models_release(g_monster_models, 0x4A);
     l = (u32 *)quest_find_entry(self, G_AREA, 0, self->area_phase);
     if (l == NULL)
         return;
     for (; *l != SMALL_END; l++) {
-        func_09AB46A8(D_09C121B0, *l & 0xFF);
-        func_088DE3D4(D_09A4F0D0, *(u8 *)l);
+        func_09AB46A8(g_monsters, *l & 0xFF);
+        monster_models_release(g_monster_models, *(u8 *)l);
     }
 }
 
@@ -334,7 +334,7 @@ void quest_monster_detach(Quest *self, u8 *p)
     if (*(s8 *)(p + E_KIND) != 0x12)
         return;
     for (i = 0; i < 4; i++) {
-        h = (u8 *)player_get(D_09A4F0C4, i);
+        h = (u8 *)player_get(g_players, i);
         if (h != NULL && (U32(h, 4) & 1) != 0 && U32(h, 0x560) == (u32)p)
             U32(h, 0x560) = 0;
     }
@@ -352,7 +352,7 @@ void quest_spawn_sub_monsters(Quest *self)
 
     if (l != NULL) {
         while (l->kind >= 0) {
-            p = func_09AB2958(D_09C121B0, l);
+            p = func_09AB2958(g_monsters, l);
             if (p != NULL && l->large != 0) {
                 self->record_target = p;
                 if (D_09BC8400[p[E_KIND]][0] == D_09BC8400[pk][0]) {
@@ -390,7 +390,7 @@ void quest_spawn_sub_monsters(Quest *self)
             l++;
         }
     }
-    func_09AB35F0(D_09C121B0);
+    func_09AB35F0(g_monsters);
 }
 
 /* sounds / models of the large monsters of the quest (up to 4) */
@@ -412,31 +412,31 @@ void quest_load_main_models(Quest *self)
     for (i = 0; i < 4; i++, l++) {
         if (*l == -1)
             break;
-        func_08880CF8(D_08A62D8C, i);
+        func_08880CF8(g_sound, i);
         a[i] = D_09BC8400[*l][0];
         b[i] = D_09BC8400[*l][1];
         c[i] = D_09BC8400[*l][2];
         k[i] = *l;
-        func_08880D64(D_08A62D8C, (s16)D_089A8278[i], a[i], b[i], c[i], k[i], i);
+        func_08880D64(g_sound, (s16)D_089A8278[i], a[i], b[i], c[i], k[i], i);
         n++;
     }
     if (n <= 0)
         return;
     if (k[0] == k[1])
         n--;
-    func_08880D94(D_08A62D8C, a, 0);
-    r = func_08880D94(D_08A62D8C, b, 1);
-    func_08880D94(D_08A62D8C, c, 2);
+    func_08880D94(g_sound, a, 0);
+    r = func_08880D94(g_sound, b, 1);
+    func_08880D94(g_sound, c, 2);
     for (i = 0, w = self->wave; i < n; i++, w++) {
         for (j = 0; j < w->n; j++) {
-            v = LDCALL(LdFunc1, 0x18)(D_089CC434, D_09BC8400[w->kind[j]][1]);
+            v = LDCALL(LdFunc1, 0x18)(g_loader, D_09BC8400[w->kind[j]][1]);
             if (sz[i] < v)
                 sz[i] = v;
         }
         if (i == 1 && r != 0)
             sz[i] = 0;
     }
-    func_08880E50(D_08A62D8C, D_089A8278, a, b, c, k, n, 0, sz);
+    func_08880E50(g_sound, D_089A8278, a, b, c, k, n, 0, sz);
     self->main_models = n;
 }
 
@@ -449,12 +449,12 @@ void quest_load_wave_model(Quest *self, u32 w)
     w &= 0xFF;
     e = &self->wave[w];
     id = (u8)e->kind[e->cur];
-    func_08880CF8(D_08A62D8C, w);
+    func_08880CF8(g_sound, w);
     a = D_09BC8400[id][0];
     b = D_09BC8400[id][1];
     c = D_09BC8400[id][2];
-    func_08880D64(D_08A62D8C, (s16)D_089A8278[w], a, b, c, id, w);
-    func_08881114(D_08A62D8C, D_089A8278[w], a, b, c, id, w);
+    func_08880D64(g_sound, (s16)D_089A8278[w], a, b, c, id, w);
+    func_08881114(g_sound, D_089A8278[w], a, b, c, id, w);
 }
 
 /* models of the monsters already present in the area (slots after Quest.main_models) */
@@ -469,8 +469,8 @@ void quest_load_area_models(Quest *self)
     for (i = 0; i < 4; i++)
         a[i] = b[i] = c[i] = 0xFFFF;
     for (i = self->main_models; i < 4; i++) {
-        func_08880CF8(D_08A62D8C, i);
-        e = D_09A4F0D0 + i * 0xC;
+        func_08880CF8(g_sound, i);
+        e = g_monster_models + i * 0xC;
         v = (U16(e, 0x6C) & 3) != 0 ? U16(e, 0x6E) : 0xFFFF;
         if (v == 0xFFFF)
             continue;
@@ -478,15 +478,15 @@ void quest_load_area_models(Quest *self)
         a[i] = D_09BC8400[k[i]][0];
         b[i] = D_09BC8400[k[i]][1];
         c[i] = D_09BC8400[k[i]][2];
-        func_08880D64(D_08A62D8C, (s16)D_089A8278[i], a[i], b[i], c[i], k[i], i);
+        func_08880D64(g_sound, (s16)D_089A8278[i], a[i], b[i], c[i], k[i], i);
         n++;
     }
     if (n <= 0)
         return;
-    func_08880D94(D_08A62D8C, a, 0);
-    func_08880D94(D_08A62D8C, b, 1);
-    func_08880D94(D_08A62D8C, c, 2);
-    func_08880E50(D_08A62D8C, D_089A8278, a, b, c, k, self->main_models + n, 1, NULL);
+    func_08880D94(g_sound, a, 0);
+    func_08880D94(g_sound, b, 1);
+    func_08880D94(g_sound, c, 2);
+    func_08880E50(g_sound, D_089A8278, a, b, c, k, self->main_models + n, 1, NULL);
 }
 
 /* extra rewards (captures and broken parts) added after the 16 normal ones */
@@ -514,7 +514,7 @@ void quest_extra_rewards(Quest *self)
         if (li == 0xFFFF)
             continue;
         if (e[1] == 0x80) {
-            h = player_get(D_09A4F0C4, G_MY_SLOT);
+            h = player_get(g_players, G_MY_SLOT);
             if (hunter_has_skill(h, 0xCE) != 0)
                 ch = D_089A7F7C;
             else if (hunter_has_skill(h, 0xCD) != 0)
@@ -527,13 +527,13 @@ void quest_extra_rewards(Quest *self)
         for (j = 0; n < 32; j++) {
             s8 c = ch[j];
 
-            if (!((s32)(game_rand(D_08A631A0, 0) & 0xFFFF & 0x1F) < c))
+            if (!((s32)(game_rand(g_sys, 0) & 0xFFFF & 0x1F) < c))
                 break;
             {
-                u16 v = quest_table_rand((const u16 *)D_09CDD850[li], &U16(D_089CC438, off + 0x392));
+                u16 v = quest_table_rand((const u16 *)D_09CDD850[li], &U16(g_game, off + 0x392));
 
                 n++;
-                U16(D_089CC438, off + 0x390) = v;
+                U16(g_game, off + 0x390) = v;
                 off += 4;
             }
         }
@@ -549,7 +549,7 @@ u16 quest_table_rand(const u16 *l, u16 *out)
 
     for (p = l; *p != 0xFFFF; p += st)
         sum = (sum + *p) & 0xFFFF;
-    r = ((s32)(game_rand(D_08A631A0, 0) & 0xFFFF) % (s32)(sum & 0xFFFF)) & 0xFFFF;
+    r = ((s32)(game_rand(g_sys, 0) & 0xFFFF) % (s32)(sum & 0xFFFF)) & 0xFFFF;
     for (p = l; *p != 0xFFFF; p += st) {
         acc = (acc + *p) & 0xFFFF;
         if ((s32)r < (s32)acc) {
@@ -599,9 +599,9 @@ void quest_record_apply(Quest *self, u8 *h)
     u8 *rec;
 
     if ((OPT_FLAGS & 1) != 0)
-        rec = D_089CC438 + 0x388;
+        rec = g_game + 0x388;
     else
-        rec = D_089CC438 + r * 0x20 + k * 4 + 0x6A54A;
+        rec = g_game + r * 0x20 + k * 4 + 0x6A54A;
     if (S16(rec, 0) == 0)
         S16(rec, 0) = D_089A818C[r][k];
     S16(h, 0x41E) = D_089A818C[r][k];
@@ -625,7 +625,7 @@ void quest_record_save(Quest *self)
 
     if ((k & 0xFF) == 0xFF)
         return;
-    rec = D_089CC438 + record_rank(self) * 0x20 + (k & 0xFF) * 4 + 0x6A54A;
+    rec = g_game + record_rank(self) * 0x20 + (k & 0xFF) * 4 + 0x6A54A;
     m = self->record_target;
     self->parts_broken[self->record_kind] = U16(m, E_PARTS);
     rec[2] = self->parts_broken[self->record_kind];
@@ -648,7 +648,7 @@ void quest_start_timer2(Quest *self, u8 *h)
     self->timer2 = 18000;
     if (U16(h, E_SLOT) != G_MY_SLOT)
         return;
-    camera_mode_for_area(D_089CBBE4);
+    camera_mode_for_area(g_camera);
     ev.type = 0x13;
     ev.zero = 0;
     ev.arg[0] = 0;
@@ -695,7 +695,7 @@ void quest_pick_size(Quest *self, s8 *p)
 
     if ((self->flags & QF_FIXED_SIZE) != 0)
         return;
-    t = party_has_kitchen_skill(D_089CC438, 0x1D) == 0 ? D_089A8040 : D_089A8054;
+    t = party_has_kitchen_skill(g_game, 0x1D) == 0 ? D_089A8040 : D_089A8054;
     *p = quest_size_clamp(self, *p, t[(s32)(quest_rand(self) & 0xFFFF) % 20]);
 }
 

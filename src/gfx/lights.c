@@ -3,7 +3,7 @@
 #include "menu.h"
 
 extern u8 *D_08A62C58;
-extern u8 **D_09A4F060;
+extern u8 **g_area;
 extern u8 D_089BAB08[];
 extern const f32 D_089A5B90[][3], D_089A5BB4[][4], D_089A5BE4[][4], D_089A5C14[][4];
 void light_obj_nop(void);
@@ -41,7 +41,7 @@ u8 *lights_dtor(u8 *l, s32 flag)
     if (l != NULL) {
         D_08A62C58 = NULL;
         if ((s16)flag > 0)
-            func_0890BFA4(l);
+            op_delete(l);
     }
     return l;
 }
@@ -67,7 +67,7 @@ void light_get(u8 *l, f32 *out, s32 i_arg, u32 mode_arg)
         out[1] = D_089A5BB4[i][1];
         out[2] = D_089A5BB4[i][2];
     } else {
-        u8 *w = *D_09A4F060 + i * 0x24;
+        u8 *w = *g_area + i * 0x24;
 
         if (mode != 1) {
             if (mode != 0)

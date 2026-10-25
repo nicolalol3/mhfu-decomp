@@ -2,7 +2,7 @@
  * (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62D8C;          /* sound */
+extern void *g_sound;          /* sound */
 extern const f32 D_09A5F114[3];
 void animator_set(u8 *a, u8 *anim, s32 slot);
 void animator_play(f32 t, u8 *a, u8 *anim, s32 x, s32 slot);
@@ -86,7 +86,7 @@ void entity_update_common(u8 *o)
             o[0x276]--;
         (*(void (**)(void *))(U32(o, 0) + 0x3C))(o);
     }
-    if ((U32(D_089CC438, 0x6AF14) & 1) == 0) {
+    if ((U32(g_game, 0x6AF14) & 1) == 0) {
         entity_clear_flag(o, 0x800);
         if (entity_flag(o, 1) == 0)
             entity_clear_flag(o, 0x2000);
@@ -137,7 +137,7 @@ void entity_set_mode(u8 *o, u32 mode, s32 f1, s32 f2)
 /* 1 if the entity is in the current area */
 int entity_in_area(u8 *o)
 {
-    return S16(o, 0x29A) == S16(D_089CC438, 0x6AF0E);
+    return S16(o, 0x29A) == S16(g_game, 0x6AF0E);
 }
 
 u32 entity_flag(u8 *o, u32 f)
@@ -183,5 +183,5 @@ s32 entity_sound(u8 *o, int a, int b, int c, int d, int e, int f, int g, int h)
 {
     if ((u8)entity_in_area(o) != 1)
         return 0;
-    return func_08883B54(D_08A62D8C, 1, a, b, c, d, e, f, g, h, 0);
+    return func_08883B54(g_sound, 1, a, b, c, d, e, f, g, h, 0);
 }

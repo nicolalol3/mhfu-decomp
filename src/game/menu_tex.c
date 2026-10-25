@@ -3,9 +3,9 @@
 #include "menu.h"
 
 extern u8 *D_08A62C40;            /* display list manager */
-extern void *D_089CBBE0;          /* texture bank of the menu */
-extern void *D_09A0B540;
-extern void *D_08A62C54;          /* equipment data */
+extern void *g_vram;          /* texture bank of the menu */
+extern void *g_heap;
+extern void *g_equip_data;          /* equipment data */
 
 /* texture description from the menu bank */
 typedef struct BankTex {
@@ -27,7 +27,7 @@ typedef struct FileTex {
 } FileTex;
 
 void vram_get_surface(void *bank, u32 i, BankTex *out);
-s32 func_08898898(void *a, u32 b);
+s32 temp_get(void *a, u32 b);
 void tmh_get_image(void *dl, s32 file, u32 i, int a, int b, FileTex *out);
 u32 pow2_log(void *dl, s32 v);
 u32 *dl_cur(void *dl);
@@ -65,14 +65,14 @@ void tex_select(u8 *self, u32 tex, u32 file)
         FileTex t;
         u32 lh;
 
-        tmh_get_image(D_08A62C40, func_08898898(D_09A0B540, file), tex & 0xFFF, 0, 0, &t);
+        tmh_get_image(D_08A62C40, temp_get(g_heap, file), tex & 0xFFF, 0, 0, &t);
         lh = pow2_log(D_08A62C40, t.h);
         TEX_CMDS(w, t.fmt, t.addr, t.w, pow2_log(D_08A62C40, t.w), lh, t.clut, t.clutn);
     } else {
         BankTex t;
         u32 lh;
 
-        vram_get_surface(D_089CBBE0, tex & 0xFF, &t);
+        vram_get_surface(g_vram, tex & 0xFF, &t);
         lh = pow2_log(D_08A62C40, t.h);
         TEX_CMDS(w, t.fmt, t.addr, t.w, pow2_log(D_08A62C40, t.w), lh, t.clut, t.clutn);
     }
@@ -106,7 +106,7 @@ void tex_select_sprite(u8 *self, const s16 *spr)
     if ((u16)spr[4] & 0x8000) {
         FileTex t;
 
-        tmh_get_image(D_08A62C40, func_08898898(D_09A0B540, (u16)spr[5]), (u16)spr[4] & 0xFFF, 0, 0, &t);
+        tmh_get_image(D_08A62C40, temp_get(g_heap, (u16)spr[5]), (u16)spr[4] & 0xFFF, 0, 0, &t);
         k = TEX_PER128(t.fmt);
         off = t.w * ((spr[1] / 8) * (128 / k)) + k * ((128 / k) * ((u32)(s32)spr[0] / k));
         lh = pow2_log(D_08A62C40, spr[3]);
@@ -114,7 +114,7 @@ void tex_select_sprite(u8 *self, const s16 *spr)
     } else {
         BankTex t;
 
-        vram_get_surface(D_089CBBE0, (u16)spr[4] & 0xFF, &t);
+        vram_get_surface(g_vram, (u16)spr[4] & 0xFF, &t);
         k = TEX_PER128(t.fmt);
         off = t.w * ((spr[1] / 8) * (128 / k)) + k * ((128 / k) * ((u32)(s32)spr[0] / k));
         lh = pow2_log(D_08A62C40, spr[3]);
@@ -134,8 +134,8 @@ void text_draw_list(void *self, s32 x, s32 y, const s16 *ids, s32 lh_arg, const 
 
     while (*ids != -1) {
         if (col != NULL)
-            func_08890E38(D_08A631A8, *col++);
-        func_088920A8(D_08A631A8, x, y, D_08938478, text_menu(D_089CC438, *ids));
+            font_set_color(g_font, *col++);
+        font_draw_at(g_font, x, y, fmt_s, text_menu(g_game, *ids));
         ids++;
         y = (s16)(y + lh);
     }
@@ -152,7 +152,7 @@ void equip_draw_icon_rarity(void *self, u32 type, u32 id, u32 x, u32 y, u32 w_ar
 
     eq[1] = type;
     U16(eq, 2) = id;
-    c = equip_rarity_color(self, func_0885C83C(D_08A62C54, type, id), alpha, alt);
+    c = equip_rarity_color(self, func_0885C83C(g_equip_data, type, id), alpha, alt);
     gfx_draw_sprite_scaled_rgba(self, x, y, (s16)w, h, (u8)(c >> 16), (u8)(c >> 8), (u8)c, c >> 24,
                   equip_icon(self, eq, w < 24));
 }
@@ -238,7 +238,7 @@ void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u
 /* gradient with a pulsing alpha */
 void gfx_fill_gradient_pulse(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g, u32 b)
 {
-    f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x3F) << 10) * (3.14159265f / 32768.0f));
+    f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(g_sys + 0xF7A554) & 0x3F) << 10) * (3.14159265f / 32768.0f));
 
     gfx_fill_gradient(self, x, y, w, h, r, g, b, (u8)((s8)(int)(48.0f * s) + 191));
 }
@@ -273,14 +273,14 @@ s32 menu_give_items(u8 *self, u8 *hunter, u32 id, s32 key_arg, u32 flags_arg, u3
         self[0x52F] = 1;
         S16(self, 0x58E) = id;
         self[0x593] = n;
-        if ((flags & 2) && U16(hunter, 0x1E6) == D_089CC438[0x28])
+        if ((flags & 2) && U16(hunter, 0x1E6) == g_game[0x28])
             func_088860A0(D_08A62D90, id);
         self[0x58D] = 0xFF;
     } else if (r == 3 || r == 2) {
         if (flags & 1)
             menu_msg_push(self, 1, 3, (s16)id);
     } else if (r == 1 || r == 0) {
-        if ((flags & 2) && U16(hunter, 0x1E6) == D_089CC438[0x28])
+        if ((flags & 2) && U16(hunter, 0x1E6) == g_game[0x28])
             func_088860A0(D_08A62D90, id);
         if (flags & 1)
             menu_msg_push(self, 1, 0, (s16)id);
@@ -382,7 +382,7 @@ void gfx_draw_panel(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 c)
 void menu_free_data(u8 *self)
 {
     if (U32(self, 0x528) & 0x1000) {
-        temp_free(D_09A0B540, 11);
+        temp_free(g_heap, 11);
         U32(self, 0x528) &= ~0x1000;
     }
 }
@@ -391,11 +391,11 @@ void menu_free_data(u8 *self)
 void menu_quest_slot_name(void *self, s32 n, char *out)
 {
     char num[8];
-    u32 f = *(u32 *)(D_089CC438 + 0x6AF14);
+    u32 f = *(u32 *)(g_game + 0x6AF14);
     u16 k = ((f & 8) != 0 || (f & 4) != 0) ? 2 : 1;
 
     sprintf(num, D_089386E8, n + 1);
-    sprintf(out, D_08938784, text_menu(D_089CC438, D_089AD048[k]), num);
+    sprintf(out, D_08938784, text_menu(g_game, D_089AD048[k]), num);
 }
 
 extern const s16 D_08939E18, D_08939E1A, D_08939908, D_0893990A;
@@ -459,8 +459,8 @@ void gfx_draw_button_hint(u8 *self, u32 i)
     const u16 *e = D_0893878C[i & 0xFF];
 
     menu_draw_sprite(self, e[0], e[1], 56);
-    func_08890DE8(D_08A631A8, 14, 14);
-    func_088915B0(D_08A631A8, (s16)e[2], (s16)e[3], 0, text_menu(D_089CC438, D_089ACAD8));
+    font_set_size(g_font, 14, 14);
+    font_printf_at_color(g_font, (s16)e[2], (s16)e[3], 0, text_menu(g_game, D_089ACAD8));
 }
 
 /* number n with the up/down arrows (n < max: up, n != 1: down) */
@@ -479,15 +479,15 @@ void gfx_draw_counter(u8 *self, s32 x_arg, s32 y_arg, u32 n, u32 max, u32 flags)
                                  255, 157, 4);
     }
     sprintf(buf, D_089386E8, n);
-    func_08890DE8(D_08A631A8, 14, 14);
-    func_088915B0(D_08A631A8, (s16)(x + 5), y_arg, 0, buf);
+    font_set_size(g_font, 14, 14);
+    font_printf_at_color(g_font, (s16)(x + 5), y_arg, 0, buf);
 }
 
 /* box with a quantity selector */
 void gfx_draw_count_box(u8 *self, u32 x, u32 y, u32 n, u32 max, u32 flags)
 {
     gfx_draw_subwindow(self, x & 0xFFFF, y & 0xFFFF, 88, 48, 255);
-    func_08890DE8(D_08A631A8, 14, 14);
-    func_088915B0(D_08A631A8, (s16)((s16)x + 8), (s16)((s16)y + 8), 5, text_menu(D_089CC438, D_089ACA08));
+    font_set_size(g_font, 14, 14);
+    font_printf_at_color(g_font, (s16)((s16)x + 8), (s16)((s16)y + 8), 5, text_menu(g_game, D_089ACA08));
     gfx_draw_counter(self, (s16)((s16)x + 52), (s16)((s16)y + 18), n, max, flags);
 }

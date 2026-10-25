@@ -5,7 +5,7 @@
  * In the hunter: 0x4E8 = weapon, 0x4F4 + type * 0xC = armor pieces (5). */
 #include "menu.h"
 
-extern void *D_08A62C54;          /* equipment data */
+extern void *g_equip_data;          /* equipment data */
 extern u8 D_0893AC30[], D_0893AC38[], D_0893AC3C[], D_0893AC44[], D_0893AC4C[], D_0893AC50[];
 extern u8 D_0893AC58[], D_0893AC60[], D_0893AC64[], D_0893AC6C[], D_0893AC74[], D_0893AC7C[];
 extern u8 D_0893AC84[];
@@ -17,8 +17,8 @@ extern const char D_089385D8[], D_089385DC[];
 extern const u16 D_089AC9CC, D_089AC9D2, D_089AC8AA;
 extern const s32 D_0893AEB8[5];
 
-u8 *func_0885CA50(void *a, void *eq);
-u8 func_088D6AC8(void *pad, int key);
+u8 *equip_data_of(void *a, void *eq);
+u8 hunter_skill_value(void *pad, int key);
 s32 hunter_has_skill(void *pad, int key);
 void func_088D897C(void *hunter);
 void func_088DAAA0(void *hunter);
@@ -56,13 +56,13 @@ u16 equip_preview_weapon(u8 *self, u8 *eq, u8 *sharp, u8 *hits)
 {
     void *hunter = *(void **)(self + 0x530);
     u16 r = 0;
-    u8 *w = func_0885CA50(D_08A62C54, eq);
+    u8 *w = equip_data_of(g_equip_data, eq);
     u8 k;
 
     equip_save(self, hunter);
     equip_try_weapon(self, hunter, eq);
     *sharp = w[0x13] + 3;
-    k = func_088D6AC8(hunter, 0x14);
+    k = hunter_skill_value(hunter, 0x14);
     if (k != 0) {
         switch (k) {
         case 0x2F: *sharp += 1; break;
@@ -109,21 +109,21 @@ u8 *equip_entry_layout(void *self, u8 *eq, u32 flags, u8 *other)
         if (other == NULL)
             return D_0893AC84;
         if ((U8(other, 1) == 6 || U8(other, 1) == 5) && (flags & 0x100) == 0
-            && deco_count(D_08A62C54, other) == 0)
+            && deco_count(g_equip_data, other) == 0)
             return D_0893AC84;
         return D_0893AC7C;
     }
-    a = deco_count(D_08A62C54, eq);
+    a = deco_count(g_equip_data, eq);
     if (other == NULL) {
         flags &= 0x110;
         kind = 0xFFFFFFFF;
     } else {
-        a |= deco_count(D_08A62C54, other);
+        a |= deco_count(g_equip_data, other);
         kind = U8(other, 1);
         flags = (flags & 0x100) | a;
     }
     if (U8(eq, 1) == 6) {
-        if (equip_rarity(D_08A62C54, 6, U16(eq, 2)) == 10) {
+        if (equip_rarity(g_equip_data, 6, U16(eq, 2)) == 10) {
             if (flags != 0)
                 return D_0893AC58;
             return a == 0 ? D_0893AC60 : D_0893AC64;
@@ -157,7 +157,7 @@ void equip_draw_sharpness(void *self, u8 *hunter, u8 *eq, s32 x_arg, s32 y_arg)
 
     if (U8(eq, 1) != 5)
         return;
-    w = func_0885CA50(D_08A62C54, eq);
+    w = equip_data_of(g_equip_data, eq);
     lvl = w[9];
     equip_save(self, hunter);
     equip_try_weapon(self, hunter, eq);
@@ -177,7 +177,7 @@ void equip_draw_sharpness(void *self, u8 *hunter, u8 *eq, s32 x_arg, s32 y_arg)
             color = 2;
             sign = -1;
         }
-        func_088915B0(D_08A631A8, (s16)(x + 100), (s16)(y + 1), color, D_089385D8, sign);
+        font_printf_at_color(g_font, (s16)(x + 100), (s16)(y + 1), color, D_089385D8, sign);
     }
     col = D_0893AC9C;
     t = D_0897923C[D_08978488[U16(w, 0)]] + w[8] * 7;
@@ -221,7 +221,7 @@ void equip_draw_skill_points(void *self, u32 id, s32 x, s32 y, u32 cmp, u32 flag
         color = 10;
         cmp = 0;
     }
-    func_088915B0(D_08A631A8, x, y, color, D_08938478, text_menu(D_089CC438, D_089AC9CC));
+    font_printf_at_color(g_font, x, y, color, fmt_s, text_menu(g_game, D_089AC9CC));
     for (i = 0; i < 9; i++)
         col[i] = c0;
     equip_list_skill_points(self, id, pts);
@@ -240,18 +240,18 @@ void equip_draw_skill_points(void *self, u32 id, s32 x, s32 y, u32 cmp, u32 flag
     y0 = (s16)y + 16;
     ly = y0;
     for (i = 0, p = pts; i < 9; i++, p += 2) {
-        func_08890E38(D_08A631A8, c0);
-        func_08890DFC(D_08A631A8, cx, ly);
+        font_set_color(g_font, c0);
+        font_set_pos(g_font, cx, ly);
         if (p[0] == 0) {
             if (i == 0)
-                func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, D_089AC9D2));
+                font_printf(g_font, fmt_s, text_menu(g_game, D_089AC9D2));
             return;
         }
-        func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, D_089ACC70[p[0]]));
+        font_printf(g_font, fmt_s, text_menu(g_game, D_089ACC70[p[0]]));
         if (p[0] != 1) {
-            func_08891474(D_08A631A8, (s16)(cx + 70), ly, D_08938478, text_menu(D_089CC438, D_089AC8AA));
-            func_08890E38(D_08A631A8, col[i]);
-            func_08891474(D_08A631A8, (s16)(cx + 84), ly, D_089385DC, (s8)p[1]);
+            font_printf_at(g_font, (s16)(cx + 70), ly, fmt_s, text_menu(g_game, D_089AC8AA));
+            font_set_color(g_font, col[i]);
+            font_printf_at(g_font, (s16)(cx + 84), ly, D_089385DC, (s8)p[1]);
         }
         ly += 16;
         if (i == 4) {
@@ -325,11 +325,11 @@ int equip_same(void *self, const u8 *a, const u8 *b)
 void equip_set_weapon(u8 *hunter, u8 *eq)
 {
     EQ_COPY(hunter + 0x4E8, eq);
-    U16(hunter, 0x534) = weapon_base_id(D_08A62C54, hunter + 0x4E8);
-    U8(hunter, 0x1E8) = item_rarity(D_08A62C54, U16(hunter, 0x534));
-    U8(hunter, 0x5F3) = table_314fc_a(D_08A62C54, U8(hunter, 0x1E8));
-    U8(hunter, 0x5F4) = table_314fc_b(D_08A62C54, U8(hunter, 0x1E8));
-    U8(hunter, 0x5F5) = bowgun_byte13(D_08A62C54, hunter + 0x4E8);
+    U16(hunter, 0x534) = weapon_base_id(g_equip_data, hunter + 0x4E8);
+    U8(hunter, 0x1E8) = item_rarity(g_equip_data, U16(hunter, 0x534));
+    U8(hunter, 0x5F3) = table_314fc_a(g_equip_data, U8(hunter, 0x1E8));
+    U8(hunter, 0x5F4) = table_314fc_b(g_equip_data, U8(hunter, 0x1E8));
+    U8(hunter, 0x5F5) = bowgun_byte13(g_equip_data, hunter + 0x4E8);
     func_088DAAA0(hunter);
     U8(hunter, 0x5F2) = func_088DAB94(hunter, S16(hunter, 0x60C));
 }

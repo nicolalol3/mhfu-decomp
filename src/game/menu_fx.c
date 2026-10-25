@@ -8,7 +8,7 @@ extern const s16 D_089386FC, D_089386FE, D_08938700, D_08938702, D_08938704, D_0
 extern const s16 D_08938708, D_0893870A, D_0893870C, D_0893870E, D_08938710, D_08938712;
 extern const s16 D_08938714, D_08938716;
 
-void func_08890E08(void *font, int v);
+void font_set_layer(void *font, int v);
 void gfx_set_mask(void *self, int on);
 void gfx_draw_sprite_scaled_rgba(void *self, u16 x, u16 y, s32 w, s32 h, u8 r, u8 g, u8 b, u8 a, int mode);
 void gfx_draw_quad(void *self, s16 *pts, int r, int g, int b, int a);
@@ -24,7 +24,7 @@ void fx_draw_all(u8 *self)
     int i;
 
     self[0x534] = 12;
-    func_08890E08(D_08A631A8, 3);
+    font_set_layer(g_font, 3);
     menu_begin_draw(self);
     gfx_set_mask(self, 1);
     for (i = 0; i < 6; i++, p += 0xC) {

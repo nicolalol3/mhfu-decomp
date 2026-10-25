@@ -2,8 +2,8 @@
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
-#define GAME_FLAGS (*(u32 *)(D_089CC438 + 0x6AF14))
-#define OPT_FLAGS  (*(u32 *)(D_08A631A0 + 0xF7A57C))
+#define GAME_FLAGS (*(u32 *)(g_game + 0x6AF14))
+#define OPT_FLAGS  (*(u32 *)(g_sys + 0xF7A57C))
 
 void menu_draw_page_list(void *self, s32 dim);
 
@@ -16,14 +16,14 @@ void menu_draw_main(void *self)
         s8 m = U8(self, 0x57F);
 
         if (m == 2) {
-            if (friend_marked(D_089CC438) == 0) {
-                func_08890E38(D_08A631A8, 0);
-                func_08890DE8(D_08A631A8, 14, 14);
+            if (friend_marked(g_game) == 0) {
+                font_set_color(g_font, 0);
+                font_set_size(g_font, 14, 14);
                 gfx_draw_frame(self, 0x10, 2, 0xE0, 0xBE, 0xFF, 0x1D5);
                 gfx_draw_frame(self, 0x10, 0xC0, 0xE0, 0x4D, 0xFF, 0x1D5);
-                func_08891474(D_08A631A8, 0x22, 0x5C, text_menu(D_089CC438, *(u16 *)0x089AD118));
+                font_printf_at(g_font, 0x22, 0x5C, text_menu(g_game, *(u16 *)0x089AD118));
             } else {
-                func_08833290(self, 0x10, 2, friend_marked(D_089CC438), 0);
+                func_08833290(self, 0x10, 2, friend_marked(g_game), 0);
             }
         } else if (m == 1) {
             menu_draw_info_card(self);
@@ -45,10 +45,10 @@ void menu_draw_info(void *self)
     u32 page;
     u8 *p;
 
-    sprintf(buf, D_0893854C, text_menu(D_089CC438, D_089AC7C4[0]));
+    sprintf(buf, D_0893854C, text_menu(g_game, D_089AC7C4[0]));
     if ((U32(self, 0x528) & 0x40) == 0) {
-        func_0882F580(self, (void *)&D_0893B040, (int)buf, -1, 0xFF, 0);
-        func_088915B0(D_08A631A8, 0xFC, 0x86, 0, D_08938478, text_menu(D_089CC438, D_089AC7C4[1]));
+        layout_draw_box(self, (void *)&D_0893B040, (int)buf, -1, 0xFF, 0);
+        font_printf_at_color(g_font, 0xFC, 0x86, 0, fmt_s, text_menu(g_game, D_089AC7C4[1]));
         return;
     }
     l = D_0893B040;
@@ -56,22 +56,22 @@ void menu_draw_info(void *self)
     if (GAME_FLAGS & 1)
         page = (page + 1) & 0xFF;
     if (page == 0)
-        sprintf(buf, D_0893854C, text_menu(D_089CC438, D_089AC7C4[2]));
+        sprintf(buf, D_0893854C, text_menu(g_game, D_089AC7C4[2]));
     l.ptr = D_089AC7CC + page * 0x1A;
-    func_0882F580(self, &l, (int)buf, -1, 0xFF, 0);
+    layout_draw_box(self, &l, (int)buf, -1, 0xFF, 0);
     layout_draw_pages(self, &l, U8(self, 0x57F), U8(self, 0x581), 0, 0);
-    func_088915B0(D_08A631A8, l.tx, (s16)(l.ty + l.lh - 2), 0, D_08938478, quest_text(D_08A62C7C, 0));
+    font_printf_at_color(g_font, l.tx, (s16)(l.ty + l.lh - 2), 0, fmt_s, quest_text(g_quest, 0));
     gfx_fill_rect(self, l.tx, l.ty + l.lh * 2 - 3, l.w - 0x18, 1, 0x80, 0x80, 0x80);
     if (page == 3) {
-        func_08891474(D_08A631A8, (s16)(l.tx + l.cw * 4), (s16)(l.ty + l.lh * 2), D_08938478,
-                      quest_text(D_08A62C7C, 5));
-        func_08891474(D_08A631A8, l.tx, (s16)(l.ty + l.lh * 4), D_08938478, quest_text(D_08A62C7C, 3));
+        font_printf_at(g_font, (s16)(l.tx + l.cw * 4), (s16)(l.ty + l.lh * 2), fmt_s,
+                      quest_text(g_quest, 5));
+        font_printf_at(g_font, l.tx, (s16)(l.ty + l.lh * 4), fmt_s, quest_text(g_quest, 3));
     } else if (page == 2) {
-        func_08890DFC(D_08A631A8, (s16)(l.tx + l.cw * 6), (s16)(l.ty + l.lh * 2));
+        font_set_pos(g_font, (s16)(l.tx + l.cw * 6), (s16)(l.ty + l.lh * 2));
         p = menu_quest_data(self);
         menu_draw_stars(self, (s8)p[0x1A]);
-        func_08891474(D_08A631A8, l.tx, (s16)(l.ty + l.lh * 5), D_08938478, quest_text(D_08A62C7C, 1));
-        func_08891474(D_08A631A8, l.tx, (s16)(l.ty + l.lh * 9), D_08938478, quest_text(D_08A62C7C, 2));
+        font_printf_at(g_font, l.tx, (s16)(l.ty + l.lh * 5), fmt_s, quest_text(g_quest, 1));
+        font_printf_at(g_font, l.tx, (s16)(l.ty + l.lh * 9), fmt_s, quest_text(g_quest, 2));
     } else if (page == 1) {
         int x = (s16)(l.tx + l.cw * 5);
 
@@ -81,12 +81,12 @@ void menu_draw_info(void *self)
         menu_draw_number(self, x, (s16)(l.ty + l.lh * 3), U32(p, 4));
         menu_draw_time(self, x, (s16)(l.ty + l.lh * 4), 1);
         p = menu_quest_data(self);
-        func_08891474(D_08A631A8, x, (s16)(l.ty + l.lh * 5), D_08938478,
-                      text_menu(D_089CC438, D_089ACC04[(s8)p[0x1C]]));
-        func_08891474(D_08A631A8, l.tx, (s16)(l.ty + l.lh * 7), D_08938478, quest_text(D_08A62C7C, 4));
+        font_printf_at(g_font, x, (s16)(l.ty + l.lh * 5), fmt_s,
+                      text_menu(g_game, D_089ACC04[(s8)p[0x1C]]));
+        font_printf_at(g_font, l.tx, (s16)(l.ty + l.lh * 7), fmt_s, quest_text(g_quest, 4));
         p = menu_quest_data(self);
-        func_08891474(D_08A631A8, l.tx, (s16)(l.ty + l.lh * 10), D_08938478,
-                      text_menu(D_089CC438, D_089ACC44[p[0x1D]]));
+        font_printf_at(g_font, l.tx, (s16)(l.ty + l.lh * 10), fmt_s,
+                      text_menu(g_game, D_089ACC44[p[0x1D]]));
     } else if (page == 0) {
         hud_draw_quest_info(self);
     }
@@ -101,7 +101,7 @@ void menu_draw_equip_box(void *self)
 {
     u8 buf[12];
 
-    func_0882F580(self, D_0893B068, (int)text_menu(D_089CC438, *(u16 *)0x089AC860), U8(self, 0x57F), 0xFF, 0);
+    layout_draw_box(self, D_0893B068, (int)text_menu(g_game, *(u16 *)0x089AC860), U8(self, 0x57F), 0xFF, 0);
     menu_draw_equipment(self, (u8 *)U32(self, 0x530), 1);
     equip_draw_name_box(self, (u32)menu_get_equip_slot(self, buf, U8(self, 0x57F), (u8 *)U32(self, 0x530)), 8, 0x28,
                   U8(self, 0x582) | 0x100, 0, 1);
@@ -127,23 +127,23 @@ void menu_draw_confirm(void *self)
 
         for (i = 0; i < 20; i++)
             l[i] = D_0893B0F4[i];
-        n = func_08890E48(D_08A631A8, text_menu(D_089CC438, *(u16 *)0x089AC84C));
+        n = font_char_count(g_font, text_menu(g_game, *(u16 *)0x089AC84C));
         *(s16 *)(l + 0xC) = 0xF0 - ((n * l[8]) >> 2);
         t = (n * l[8]) >> 1;
         w = ((t + 0x20) / 16) * 16;
         *(s16 *)(l + 4) = w;
         *(s16 *)(l + 0) = 0xF0 - ((w & 0xFFFF) >> 1);
-        s = text_menu(D_089CC438, *(u16 *)0x089AC84C);
+        s = text_menu(g_game, *(u16 *)0x089AC84C);
         layout_draw(self, l, s, 0xFF);
         U32((u8 *)U32(self, 0x530), 0x614) &= ~1;
     } else {
         m = U8(self, 0x593);
         if (m < 2) {
-            layout_draw(self, D_0893B108, text_item_name(D_089CC438, U16(self, 0x590)), 0xFF);
+            layout_draw(self, D_0893B108, text_item_name(g_game, U16(self, 0x590)), 0xFF);
         } else {
-            const char *fmt = text_menu(D_089CC438, *(u16 *)0x089AC84E);
+            const char *fmt = text_menu(g_game, *(u16 *)0x089AC84E);
 
-            sprintf(buf, fmt, text_item_name(D_089CC438, U16(self, 0x590)), (int)m);
+            sprintf(buf, fmt, text_item_name(g_game, U16(self, 0x590)), (int)m);
             layout_draw(self, D_0893B11C, buf, 0xFF);
         }
     }
@@ -159,13 +159,13 @@ void menu_draw_confirm(void *self)
             return;
         if (U8(self, 0x5DA) == 0) {
             menu_draw_sprite(self, 0x10E, 0x50, 0x35);
-            func_088915B0(D_08A631A8, 0x120, 0x52, 0, text_menu(D_089CC438, *(u16 *)0x089AC9FE));
+            font_printf_at_color(g_font, 0x120, 0x52, 0, text_menu(g_game, *(u16 *)0x089AC9FE));
         }
     }
     layout_build(layout, D_0893B130, 0, 0, 0);
     U32(layout, 0x14) = (u32)D_089AC600;
     U32(layout, 0x18) = D_0893AAB0[U8(self, 0x52F)];
-    func_0882F580(self, layout, 0, U8(self, 0x58C), 0xFF, 0);
+    layout_draw_box(self, layout, 0, U8(self, 0x58C), 0xFF, 0);
 }
 
 /* list of the entries of one page (6 per page); dim = draw in grey */
@@ -184,11 +184,11 @@ void menu_draw_page_list(void *self, s32 dim_arg)
         return;
     }
     page = (s16)(U8(self, 0x57D) / 6);
-    sprintf(title, D_0893854C, text_menu(D_089CC438, *(u16 *)0x089AC850));
+    sprintf(title, D_0893854C, text_menu(g_game, *(u16 *)0x089AC850));
     layout_build(layout, D_0893AF8C, (int)title, 0, 0);
     if (dim != 0)
         U32(layout, 0x18) = 0x80808080;
-    func_0882F580(self, layout, (int)title, U8(self, 0x57D) - (s16)(page * 6), 0xFF, 0);
+    layout_draw_box(self, layout, (int)title, U8(self, 0x57D) - (s16)(page * 6), 0xFF, 0);
     layout_draw_pages(self, layout, page, 2, 0, dim);
     for (i = 0; i < 6; i++)
         col[i] = 0;
@@ -201,21 +201,21 @@ void menu_draw_page_list(void *self, s32 dim_arg)
             col[3] = 10;
         if ((GAME_FLAGS & 0x100) == 0)
             col[4] = 10;
-        if ((s8)game_quest_locked(D_089CC438, 0) == 1) {
+        if ((s8)game_quest_locked(g_game, 0) == 1) {
             col[5] = 10;
             col[4] = 10;
         }
         if (OPT_FLAGS & 1)
             col[5] = 10;
     } else {
-        if ((s8)game_quest_locked(D_089CC438, 0) == 1)
+        if ((s8)game_quest_locked(g_game, 0) == 1)
             col[4] = 10;
         col[5] = 10;
     }
     ids = D_089B54E0 + (s16)(page * 6);
     y = S16(layout, 14);
     for (i = 0; i < 6; i++) {
-        func_088915B0(D_08A631A8, S16(layout, 12), y, col[i], func_09A63198(D_09A44C5C, ids[i]));
+        font_printf_at_color(g_font, S16(layout, 12), y, col[i], func_09A63198(D_09A44C5C, ids[i]));
         y += S16(layout, 16);
     }
 }
@@ -225,13 +225,13 @@ void menu_draw_help_keys(void *self)
 {
     int x = 0x168, w = 0x70;
 
-    func_08890DE8(D_08A631A8, 14, 14);
-    func_08890E38(D_08A631A8, 0);
-    func_088920A8(D_08A631A8, 0x170, 0xB1, func_09A63198(D_09A44C5C, D_089B5558[U8(self, 0x576) & 1]));
+    font_set_size(g_font, 14, 14);
+    font_set_color(g_font, 0);
+    font_draw_at(g_font, 0x170, 0xB1, func_09A63198(D_09A44C5C, D_089B5558[U8(self, 0x576) & 1]));
     if (OPT_FLAGS & 1) {
         x = 0x128;
         w = 0xB0;
-        func_088920A8(D_08A631A8, 0x130, 0xB1, func_09A63198(D_09A44C5C, D_089B5558[2]));
+        font_draw_at(g_font, 0x130, 0xB1, func_09A63198(D_09A44C5C, D_089B5558[2]));
     }
     gfx_draw_subwindow(self, x, 0xA8, w, 0x20, 0xFF);
 }
@@ -284,10 +284,10 @@ void menu_draw_desc(void *self, u32 kind_arg, u32 id_arg, int arg)
         menu_draw_item_stats(self, it, x + 0x30, y + 9, arg);
         gfx_draw_item_icon_alpha(self, it, x + 10, y + 8, 0x20, 0x20, 1, 0xFF);
         item = D_0899D198 + it * 0x18;
-        func_08890E38(D_08A631A8, (s8)equip_rarity_text_color(self, item[2]));
-        func_08890DE8(D_08A631A8, 12, 12);
-        func_088920A8(D_08A631A8, x + 8, y + 0x2A, text_menu(D_089CC438, *(u16 *)0x089AC864), item[2] + 1);
-        func_08890E38(D_08A631A8, 0);
+        font_set_color(g_font, (s8)equip_rarity_text_color(self, item[2]));
+        font_set_size(g_font, 12, 12);
+        font_draw_at(g_font, x + 8, y + 0x2A, text_menu(g_game, *(u16 *)0x089AC864), item[2] + 1);
+        font_set_color(g_font, 0);
         return;
     }
     f = U32(self, 0x528);
@@ -306,7 +306,7 @@ void menu_draw_desc(void *self, u32 kind_arg, u32 id_arg, int arg)
     if (kind == 5 || kind == 4)
         s = func_09A7B790(D_09B22D70, D_0893AF34[kind][id]);
     else
-        s = text_menu(D_089CC438, D_0893AF34[kind][id]);
+        s = text_menu(g_game, D_0893AF34[kind][id]);
     layout_draw(self, layout, s, 0xFF);
 }
 
@@ -320,41 +320,41 @@ void menu_draw_item_stats(void *self, u32 id_arg, s32 x_arg, s32 y_arg, u32 mode
     const u8 *item = D_0899D198 + id * 0x18;
     u8 kind;
 
-    func_08890DE8(D_08A631A8, 14, 14);
+    font_set_size(g_font, 14, 14);
     if (*(s16 *)(item + 0x16) == 0 || (s8)mode < 0) {
         kind = 0;
     } else {
         kind = mode & 3;
-        func_08890E38(D_08A631A8, 0);
-        func_08890DFC(D_08A631A8, (s16)(x + 0x8C), (s16)(y + 0x1C));
-        func_08892004(D_08A631A8, D_08938478,
-                      text_menu(D_089CC438, (mode & 3) == 0 ? *(u16 *)0x089AC880 : *(u16 *)0x089AC882));
+        font_set_color(g_font, 0);
+        font_set_pos(g_font, (s16)(x + 0x8C), (s16)(y + 0x1C));
+        font_draw(g_font, fmt_s,
+                      text_menu(g_game, (mode & 3) == 0 ? *(u16 *)0x089AC880 : *(u16 *)0x089AC882));
     }
-    func_08890E38(D_08A631A8, 0);
+    font_set_color(g_font, 0);
     if (kind == 1) {
         u16 n = *(u16 *)(item + 0x16);
         const u8 *e = D_089779DC + n * 0x10;
         int i;
 
         for (i = 0; i < 4; i++, e += 2) {
-            func_08890DFC(D_08A631A8, (s16)(x + D_0893AF54[i][0]), (s16)(y + D_0893AF54[i][1]));
+            font_set_pos(g_font, (s16)(x + D_0893AF54[i][0]), (s16)(y + D_0893AF54[i][1]));
             if (e[0] == 0) {
                 if (i == 0)
-                    func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, *(u16 *)0x089AC9D2));
+                    font_printf(g_font, fmt_s, text_menu(g_game, *(u16 *)0x089AC9D2));
                 break;
             }
-            func_08890DE8(D_08A631A8, 12, 14);
-            func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, D_089ACC70[e[0]]));
+            font_set_size(g_font, 12, 14);
+            font_printf(g_font, fmt_s, text_menu(g_game, D_089ACC70[e[0]]));
             if (e[0] != 1) {
-                func_08890DE8(D_08A631A8, 14, 14);
-                func_08890DFC(D_08A631A8, (s16)(x + D_0893AF54[i][0] + 0x3C), (s16)(y + D_0893AF54[i][1]));
-                func_0889134C(D_08A631A8, text_menu(D_089CC438, *(u16 *)0x089AC87E), (s8)e[1]);
+                font_set_size(g_font, 14, 14);
+                font_set_pos(g_font, (s16)(x + D_0893AF54[i][0] + 0x3C), (s16)(y + D_0893AF54[i][1]));
+                font_printf(g_font, text_menu(g_game, *(u16 *)0x089AC87E), (s8)e[1]);
             }
         }
-        func_088915B0(D_08A631A8, x_arg, (s16)(y + 0x1C), 5, text_menu(D_089CC438, *(u16 *)0x089AC87C),
+        font_printf_at_color(g_font, x_arg, (s16)(y + 0x1C), 5, text_menu(g_game, *(u16 *)0x089AC87C),
                       D_089779D4[n * 0x10]);
     } else if (kind == 0) {
-        func_088920A8(D_08A631A8, x_arg, y_arg, D_08938478, text_item_info(D_089CC438, id_arg)); /* values received, not reduced */
+        font_draw_at(g_font, x_arg, y_arg, fmt_s, text_item_info(g_game, id_arg)); /* values received, not reduced */
     }
 }
 
@@ -366,9 +366,9 @@ void menu_draw_item_list(void *self, int sel, u32 color, u32 flags, int d)
     int i, n, used;
 
     if ((flags & 2) == 0)
-        src = (s16 *)pouch_slot(D_089CC438, 0);
+        src = (s16 *)pouch_slot(g_game, 0);
     else
-        src = (s16 *)(D_089CC438 + 0x43C8);
+        src = (s16 *)(g_game + 0x43C8);
     if (flags & 0x20) {
         s16 *dst = list;
 

@@ -23,9 +23,9 @@ typedef struct {
 } CtrlData;
 
 extern u32 D_08A62C68;          /* held */
-extern u32 D_08A62C6C;          /* pressed */
+extern u32 g_pad_pressed;          /* pressed */
 extern u32 D_08A62C70;          /* released */
-extern u32 D_08A62C74;          /* pressed + auto repeat */
+extern u32 g_pad_held;          /* pressed + auto repeat */
 extern s16 D_08A62C78;          /* stick angle (0x10000 = full turn) */
 extern s16 D_08A62C7A;          /* stick strength */
 extern const u16 D_089A607C[];  /* direction bits for each 22.5 degrees */
@@ -127,17 +127,17 @@ void pad_read(Pad *p)
     p->prev = old;
     held = p->buttons | (dir & 0xFFFF) << 16;
     D_08A62C68 = held;
-    D_08A62C74 = 0;
+    g_pad_held = 0;
     D_08A62C70 = ~held & old;
-    D_08A62C6C = ~old & held;
+    g_pad_pressed = ~old & held;
     if (old == held) {
         p->repeat++;
         if (p->repeat >= 13) {
             p->repeat = 10;
-            D_08A62C74 = D_08A62C68;
+            g_pad_held = D_08A62C68;
         }
     } else {
-        D_08A62C74 = D_08A62C6C;
+        g_pad_held = g_pad_pressed;
         p->repeat = 0;
     }
     D_08A62C78 = ((s32)p->deg << 16) / 360;

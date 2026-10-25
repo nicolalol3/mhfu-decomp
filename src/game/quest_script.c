@@ -1,16 +1,16 @@
-/* Quest (D_08A62C7C): the 2 goals (Quest.goal, copies in Quest.goal_orig), the quest script
+/* Quest (g_quest): the 2 goals (Quest.goal, copies in Quest.goal_orig), the quest script
  * (QuestCmd, commands QC_*), the rewards and the events received from the other players.
  * (Guessed names.) */
 #include "quest.h"
 #undef text_menu
 #undef pouch_count
 
-extern void *D_09A1DAEC;
-extern u8 *D_09C121B0;
-extern u8 *D_09A4F0D0;
-extern void **D_089CC434;
-extern u8 *D_08A62D8C;
-extern void *D_089CBBE4;
+extern void *g_net;
+extern u8 *g_monsters;
+extern u8 *g_monster_models;
+extern void **g_loader;
+extern u8 *g_sound;
+extern void *g_camera;
 extern const u16 D_089AC5A0[];      /* IDs of the quest messages */
 extern const s32 D_089A77C4[][2];
 extern const s32 D_089A822C[];
@@ -30,7 +30,7 @@ u8 *game_table_ptr(u8 *g, u32 i);
 u32 pouch_count(void *game, s16 id);
 u8 hunter_felyne_skill(u32 h, int a);
 s32 hunter_has_skill(u32 h, int a);
-void func_088966C0(void *a, int b);
+void help_popup(void *a, int b);
 u8 func_09AC88F0(u8 *p);
 void func_08813594(void *cam, int a);
 void func_088B87B0(void *a, int b);
@@ -142,9 +142,9 @@ void quest_goal_set(Quest *self, s32 i, u32 how)
     g = &self->goal[i];
     g->flags |= GOAL_DONE;
     if (how == GOAL_BY_KILL)
-        func_088966C0(D_089CBBEC, 0x11);
+        help_popup(g_menu, 0x11);
     if (how == GOAL_BY_CAPTURE)
-        func_088966C0(D_089CBBEC, 0x12);
+        help_popup(g_menu, 0x12);
     quest_goals_check(self, 0);
     g = &self->goal[i];
     if ((g->flags & (GOAL_HUNT | GOAL_ACTIVE)) == (GOAL_HUNT | GOAL_ACTIVE))
@@ -158,7 +158,7 @@ void quest_goal_set(Quest *self, s32 i, u32 how)
         ev.arg[3] = 0xFFFF;
     else
         ev.arg[3] = S16(self->last_target, E_QINDEX);
-    net_send(D_09A1DAEC, 6, &ev);
+    net_send(g_net, 6, &ev);
 }
 
 void quest_goals_clear(Quest *self)
@@ -239,7 +239,7 @@ void quest_goals_update(Quest *self)
         if ((s32)self->target_life - S16(self->record_target, E_LIFE) >= g->count * 100) {
             if ((g->flags & GOAL_HALF_TIME) == GOAL_HALF_TIME && self->result != QS_FAILED &&
                 self->time_msg == 0) {
-                menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[11]));
+                menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[11]));
                 self->time_msg = 1;
             }
             quest_goal_complete(self, i & 0xFFFF, GOAL_BY_REPEL);
@@ -308,14 +308,14 @@ s16 quest_goal_have(Quest *self, s32 id)
     if (i >= 2)
         return 0;
     if ((self->goal[i].flags & GOAL_PLAYER_ONLY) != 0) {
-        h = (u8 *)player_get(D_09A4F0C4, G_MY_SLOT);
+        h = (u8 *)player_get(g_players, G_MY_SLOT);
         for (k = 0; k < 4; k++)
             if (DELIVERED_ID(h, k) == (id & 0xFFFF))
                 return DELIVERED_N(h, k);
         return 0;
     }
     for (p = 0; p < 4; p++) {
-        h = (u8 *)player_get(D_09A4F0C4, p);
+        h = (u8 *)player_get(g_players, p);
         if (h == NULL)
             continue;
         for (k = 0; k < 4; k++)
@@ -416,12 +416,12 @@ static void send_event(u32 type)
     ev.zero = 0;
     ev.arg[0] = 0;
     ev.arg[1] = 0;
-    net_send(D_09A1DAEC, 6, &ev);
+    net_send(g_net, 6, &ev);
 }
 
 static void push_msg(u32 i)
 {
-    menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089AC5A0[i]));
+    menu_msg_push_text(g_menu, text_menu(g_game, D_089AC5A0[i]));
 }
 
 /* life of the recorded target and of its parts at the end of the quest */
@@ -449,9 +449,9 @@ s32 quest_script_run(Quest *self, u8 *h, s32 pc_arg)
         if (self->time_warnings > 0) {
             t = D_089A77C4[self->time_warnings][0];
             if (!(t < self->time_left)) {
-                sprintf(buf, text_menu(D_089CC438, D_089AC5A0[4]), t / 1800);
+                sprintf(buf, text_menu(g_game, D_089AC5A0[4]), t / 1800);
                 buf[0x7F] = 0;
-                menu_msg_push_copy(D_089CBBEC, buf);
+                menu_msg_push_copy(g_menu, buf);
                 self->time_warnings--;
             }
         }
@@ -527,7 +527,7 @@ s32 quest_script_run(Quest *self, u8 *h, s32 pc_arg)
             u8 *p = NULL;
 
             for (i = 0; i < 20; i++) {
-                p = (i >= 0 && i < 20) ? (u8 *)U32(D_09C121B0, 0x1220 + i * 4) : NULL;
+                p = (i >= 0 && i < 20) ? (u8 *)U32(g_monsters, 0x1220 + i * 4) : NULL;
                 if (p != NULL)
                     break;
             }
@@ -586,9 +586,9 @@ s32 quest_script_run(Quest *self, u8 *h, s32 pc_arg)
         case QC_TIME_UP:
             self->timeup_label = c->arg[0];
             v = quest_time(self, 1);
-            sprintf(buf, text_menu(D_089CC438, D_089AC5A0[7]), v / 1800);
+            sprintf(buf, text_menu(g_game, D_089AC5A0[7]), v / 1800);
             buf[0x7F] = 0;
-            menu_msg_push_copy(D_089CBBEC, buf);
+            menu_msg_push_copy(g_menu, buf);
             pc = (s16)(pc + 1);
             goto out;
         case QC_RETURN:
@@ -597,7 +597,7 @@ s32 quest_script_run(Quest *self, u8 *h, s32 pc_arg)
             pc = -1;
             push_msg(6);
             if ((GAME_FLAGS & 4) == 0)
-                menu_msg_push(D_089CBBEC, 0, 0xF, 0);
+                menu_msg_push(g_menu, 0, 0xF, 0);
             goto out;
         case QC_FAIL:
             pc = (s16)(pc + 1);
@@ -621,7 +621,7 @@ s32 quest_script_run(Quest *self, u8 *h, s32 pc_arg)
             goto out;
         case QC_CLEAR:
             target_time(self);
-            D_089CC438[0xC] = 0x81;
+            g_game[0xC] = 0x81;
             self->result = QS_CLEARING;
             G_QUEST_STATE = QS_CLEARING;
             pc = (s16)(pc + 1);
@@ -686,9 +686,9 @@ s32 quest_script_run(Quest *self, u8 *h, s32 pc_arg)
         }
     }
 out:
-    if (D_089CC438[0xC] == 0x80) {
-        D_089CC438[0xC] = 0;
-        func_08813594(D_089CBBE4, 0);
+    if (g_game[0xC] == 0x80) {
+        g_game[0xC] = 0;
+        func_08813594(g_camera, 0);
     }
     return pc;
 }
@@ -704,20 +704,20 @@ void quest_set_mon_flags(Quest *self, u8 *h)
     m = h[E_KIND];
     if (k == 5) {
         if (m == 0x24)
-            game_set_flag(D_089CC438, 0xD9);
+            game_set_flag(g_game, 0xD9);
         else if (m == 2)
-            game_set_flag(D_089CC438, 0xD8);
+            game_set_flag(g_game, 0xD8);
         else if (m == 0x3B)
-            game_set_flag(D_089CC438, 0xD7);
+            game_set_flag(g_game, 0xD7);
         else if (m == 0x41)
-            game_set_flag(D_089CC438, 0xD6);
+            game_set_flag(g_game, 0xD6);
         else if (m == 0x36)
-            game_set_flag(D_089CC438, 0xD5);
+            game_set_flag(g_game, 0xD5);
     } else if (k == 2) {
         if (m == 0x24)
-            game_set_flag(D_089CC438, 0xD4);
+            game_set_flag(g_game, 0xD4);
         else if (m == 2)
-            game_set_flag(D_089CC438, 0xD3);
+            game_set_flag(g_game, 0xD3);
     }
 }
 
@@ -748,7 +748,7 @@ void quest_mark_item(Quest *self, u32 id)
 /* rewards of the quest: up to 16 + 16 items in G_REWARDS */
 void quest_make_rewards(Quest *self)
 {
-    u32 h = player_get(D_09A4F0C4, G_MY_SLOT);
+    u32 h = player_get(g_players, G_MY_SLOT);
     u8 timed = 0;
     s32 i, j, n = 0, out = 0, k;
     QuestRewardRule *rule;
@@ -757,8 +757,8 @@ void quest_make_rewards(Quest *self)
     u32 c, sum, r, acc;
     u16 a, b;
 
-    U32(D_089CC438, 0x410) = 0;
-    U32(D_089CC438, 0x414) = 0;
+    U32(g_game, 0x410) = 0;
+    U32(g_game, 0x414) = 0;
     for (i = 0; i < 0x40; i++)
         G_REWARDS[i] = 0;
     for (rule = self->rewards; rule->cond != 0xFFFF; rule++) {
@@ -796,7 +796,7 @@ void quest_make_rewards(Quest *self)
 
                 if (hunter_felyne_skill(h, 0x13) != 0)
                     cnt = (u8)(cnt + 1);
-                else if (hunter_felyne_skill(h, 0x14) != 0 && (game_rand(D_08A631A0, 1) & 0xFFFF & 1) != 0)
+                else if (hunter_felyne_skill(h, 0x14) != 0 && (game_rand(g_sys, 1) & 0xFFFF & 1) != 0)
                     cnt = (u8)(cnt + 1);
                 k = 0;
                 for (; k < (s32)cnt; k++)
@@ -822,12 +822,12 @@ void quest_make_rewards(Quest *self)
         for (j = 0;; j++) {
             s8 cj = ch[j];
 
-            if (!((s32)(game_rand(D_08A631A0, 0) & 0xFFFF & 0x1F) < cj))
+            if (!((s32)(game_rand(g_sys, 0) & 0xFFFF & 0x1F) < cj))
                 break;
             sum = 0;
             for (e = l; U16(e, 0) != 0xFFFF; e += 6)
                 sum = (sum + U16(e, 0)) & 0xFFFF;
-            r = ((s32)(game_rand(D_08A631A0, 0) & 0xFFFF) % (s32)(sum & 0xFFFF)) & 0xFFFF;
+            r = ((s32)(game_rand(g_sys, 0) & 0xFFFF) % (s32)(sum & 0xFFFF)) & 0xFFFF;
             if (rule->cond == 0x8000 && j == 0)
                 r = 0;
             acc = 0;
@@ -842,8 +842,8 @@ void quest_make_rewards(Quest *self)
             }
             if (U16(e, 0) != 0) {
                 n++;
-                U16(D_089CC438, 0x390 + out) = U16(e, 0);
-                U16(D_089CC438, 0x392 + out) = U16(e, 2);
+                U16(g_game, 0x390 + out) = U16(e, 0);
+                U16(g_game, 0x392 + out) = U16(e, 2);
                 out += 4;
             }
             if (n >= 16)
@@ -885,7 +885,7 @@ s32 quest_goal_item_ok(Quest *self, QuestCmd *c)
 {
     s16 n = c->arg[1];
 
-    return n <= (s32)pouch_count(D_089CC438, (u16)c->arg[0]);
+    return n <= (s32)pouch_count(g_game, (u16)c->arg[0]);
 }
 
 /* monsters hunted of the kinds listed in the game table of the first large monster */
@@ -893,7 +893,7 @@ s16 quest_monsters_hunted(Quest *self)
 {
     u8 *base = self->base;
     QuestGroup *large = (QuestGroup *)(base + self->file->large);
-    u8 *p = game_table_ptr(D_089CC438, *(u8 *)(base + large->list1));
+    u8 *p = game_table_ptr(g_game, *(u8 *)(base + large->list1));
     s16 n = 0;
 
     for (; *p != 0xFF; p++)
@@ -947,21 +947,21 @@ void quest_event(Quest *self, u32 who, QuestEvent *pkt)
     }
     case 6:
         if (self->phase < (s16)pkt->arg[0]) {
-            u8 *m = D_09A4F0D0;
+            u8 *m = g_monster_models;
 
             self->phase = (s16)pkt->arg[0];
             U32(m, 0x210) = U32(m, 0x204);
             U32(m, 0x20C) = U32(m, 0x208);
             for (i = 0x15; i <= 0x2A; i++)
                 U16(m, i * 0xC) &= 0xFFFD;
-            func_088B87B0(D_089CC434, 1);
+            func_088B87B0(g_loader, 1);
         }
         break;
     case 7:
         quest_monster_event(self, pkt);
         break;
     case 9:
-        p = (u8 *)player_get(D_09A4F0C4, who & 0xFF);
+        p = (u8 *)player_get(g_players, who & 0xFF);
         if (p != NULL)
             quest_hunter_item_set(self, p, pkt->arg[0], (s16)pkt->arg[1]);
         break;
@@ -987,7 +987,7 @@ void quest_event(Quest *self, u32 who, QuestEvent *pkt)
         if (self->bonus_kind != 0) {
             self->bonus_kind = 0;
             push_msg(9);
-            sound_play(D_08A62D8C, 1, 0x77, 0, 0, 0, 0, 0, 0);
+            sound_play(g_sound, 1, 0x77, 0, 0, 0, 0, 0, 0);
         }
         break;
     case 0xF:
@@ -1013,7 +1013,7 @@ void quest_event(Quest *self, u32 who, QuestEvent *pkt)
         if ((s16)pkt->arg[3] != -1) {
             self->last_target = NULL;
             for (i = 0; i < 20; i++) {
-                p = (i >= 0 && i < 20) ? (u8 *)U32(D_09C121B0, 0x1220 + i * 4) : NULL;
+                p = (i >= 0 && i < 20) ? (u8 *)U32(g_monsters, 0x1220 + i * 4) : NULL;
                 if (p != NULL && S16(p, E_QINDEX) == (s16)pkt->arg[3]) {
                     self->last_target = p;
                     break;
@@ -1044,7 +1044,7 @@ void quest_monster_event(Quest *self, QuestEvent *pkt)
     if ((f & (QM_WAITING | QM_RESPAWN)) == 0)
         return;
     for (i = 0; i < 20; i++) {
-        p = (i >= 0 && i < 20) ? (u8 *)U32(D_09C121B0, 0x1220 + i * 4) : NULL;
+        p = (i >= 0 && i < 20) ? (u8 *)U32(g_monsters, 0x1220 + i * 4) : NULL;
         if (p == NULL || U16(p, E_SLOT) != m->slot || S16(p, E_QINDEX) != (u8)m->index)
             continue;
         if (p[E_KIND] != m->kind)

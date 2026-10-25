@@ -2,9 +2,9 @@
  * (Guessed names.) */
 #include "menu.h"
 
-extern void *D_089CBBE0;          /* VRAM manager */
+extern void *g_vram;          /* VRAM manager */
 extern u8 *D_08A62C60;
-extern void *D_09A1FDDC, *D_09A1DAEC, *D_09A0B544, *D_09A44C60;
+extern void *D_09A1FDDC, *g_net, *g_net_players, *D_09A44C60;
 extern u8 D_08A62C44, D_08A62C45;
 extern const u32 D_0899CD34[2][12];   /* GE lists that start a frame */
 extern const u32 D_0899CD94[];
@@ -60,10 +60,10 @@ void dl_end_frame(u8 *dl)
 {
     dl_wait_ge(dl);
     osk_update(D_08A62C60);
-    if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) != 0) {
+    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) != 0) {
         func_088ADF24(D_09A1FDDC);
-        func_088AB1CC(D_09A1DAEC);
-        func_08898980(D_09A0B544);
+        func_088AB1CC(g_net);
+        func_08898980(g_net_players);
     }
     func_088C0084(D_09A44C60);
     if (dl[0x801A0] == 0)
@@ -97,5 +97,5 @@ void dl_swap(u8 *dl)
 /* shows the frame buffer drawn in this frame */
 void dl_show(u8 *dl)
 {
-    sceDisplaySetFrameBuf((void *)vram_surface_addr(D_089CBBE0, U32(dl, 4) != 0), 0x200, 1, 1);
+    sceDisplaySetFrameBuf((void *)vram_surface_addr(g_vram, U32(dl, 4) != 0), 0x200, 1, 1);
 }

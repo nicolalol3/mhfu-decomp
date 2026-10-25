@@ -52,7 +52,7 @@ u32 *model_part_dtor(u32 *o, s32 flag)
     if (o != NULL) {
         o[0] = (u32)D_089BAB28;
         if ((s16)flag > 0)
-            func_0890BFA4(o);
+            op_delete(o);
     }
     return o;
 }
@@ -446,7 +446,7 @@ u32 *model_ctor(u32 *o);
 u32 *model_dtor(u32 *o, s32 flag);
 void func_0886454C(void *o);
 void func_088626E4(void *o);
-s32 func_0890C3D8(f32 *v);
+s32 vec3_nonzero(f32 *v);
 void func_0890C370(void *o);
 void rl_set_world_matrix(u8 *self, const f32 *m);
 void skin_draw_mesh(u32 *m, u8 *anim, u8 *tex, u32 i);
@@ -574,7 +574,7 @@ u32 *anim_model_ctor(u32 *o)
     v[0] = D_089A6048[0];
     v[1] = D_089A6048[1];
     v[2] = D_089A6048[2];
-    if (func_0890C3D8(v) != 0) {
+    if (vec3_nonzero(v) != 0) {
         F32(b, 0x3FC) = v[0];
         F32(b, 0x400) = v[1];
         F32(b, 0x404) = v[2];
@@ -626,7 +626,7 @@ void anim_model_reset(u8 *o)
     v[0] = D_089A6054[0];
     v[1] = D_089A6054[1];
     v[2] = D_089A6054[2];
-    if (func_0890C3D8(v) != 0) {
+    if (vec3_nonzero(v) != 0) {
         F32(o, 0x3FC) = v[0];
         F32(o, 0x400) = v[1];
         F32(o, 0x404) = v[2];
@@ -636,7 +636,7 @@ void anim_model_reset(u8 *o)
 /* update of a model: if it is visible, update then draw (vtable 6 and 7) */
 void anim_model_update(u8 *o)
 {
-    if (func_0890C3D8((f32 *)(o + 0x3FC)) == 0)
+    if (vec3_nonzero((f32 *)(o + 0x3FC)) == 0)
         return;
     func_0890C370(o);
     if (U32(o, 4) & 1) {

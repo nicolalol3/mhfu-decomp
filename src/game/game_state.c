@@ -1,10 +1,10 @@
-/* General game state (D_089CC438): flags, money, points, counters of the items.
+/* General game state (g_game): flags, money, points, counters of the items.
  * (Guessed names.) */
 #include "menu.h"
 #undef game_quest_locked
 
 extern u8 *D_08A62C60;
-extern u32 D_08A62C6C, D_08A62C74;   /* buttons pressed in this frame / held */
+extern u32 g_pad_pressed, g_pad_held;   /* buttons pressed in this frame / held */
 extern u8 *D_0899BF40[];
 extern const u16 D_0899C0A8[];       /* ids of the progress flags (end: 0xEA60) */
 
@@ -13,9 +13,9 @@ u32 game_group_count_total(u8 *g, u32 id);
 u8 *game_state_dtor(u8 *g, s32 flag)
 {
     if (g != NULL) {
-        D_089CC438 = NULL;
+        g_game = NULL;
         if ((s16)flag > 0)
-            func_0890BFA4(g);
+            op_delete(g);
     }
     return g;
 }
@@ -62,7 +62,7 @@ u32 game_buttons(void *g)
 {
     if (D_08A62C60[0x74] != 0)
         return 0;
-    return ((D_08A62C74 & 0xF0) | D_08A62C6C) & 0xFFFF;
+    return ((g_pad_held & 0xF0) | g_pad_pressed) & 0xFFFF;
 }
 
 /* money (zenny), between 0 and 9999999 */
@@ -561,7 +561,7 @@ void game_update_time(u8 *g)
     }
 }
 
-extern u8 *D_089CBBE4;            /* camera */
+extern u8 *g_camera;            /* camera */
 extern u8 *D_089CBFFC;            /* render lists */
 void camera_init(void *cam);
 void rl_begin_frame(u8 *self);
@@ -576,7 +576,7 @@ void game_quest_start(u8 *g)
     g[0xD] = 0;
     U16(g, 0x6AF12) = 1;
     U32(g, 0x6AF14) &= ~1;
-    camera_init(D_089CBBE4);
+    camera_init(g_camera);
     rl_begin_frame(D_089CBFFC);
 }
 
@@ -588,7 +588,7 @@ void game_fill_supply_box(u8 *g)
 
     for (i = 0; i < 0x40; i++)
         U16(g, 0x390 + i * 2) = 0;
-    s = quest_sub_data(D_08A62C7C);
+    s = quest_sub_data(g_quest);
     if (s[0] != 0) {
         for (i = 0;;) {
             U16(g, 0x390 + i * 4) = s[0];
@@ -612,25 +612,25 @@ extern u32 D_08A62C68;            /* buttons held */
 extern const s16 D_0899CA50[];
 extern const s8 D_0899BE20[14];   /* default options */
 extern s32 D_09A1DB50;
-extern void *D_08A62D8C;          /* sound */
+extern void *g_sound;          /* sound */
 extern const u32 D_0899C49C[], D_0899C514;
 u32 game_rand(void *a, int b);
 void func_088902A8(void *a);
 void func_08880760(void *snd, int v);
 void func_08880864(void *snd, int v);
 void func_08880874(void *snd, int v);
-s32 func_08890F70(void *font, const char *s);
+s32 font_text_width(void *font, const char *s);
 
 /* value of the table D_0899CA50 for (a, b), the column chosen by the d-pad (or at random) */
 s32 game_dpad_value(void *g, u32 a, u32 b)
 {
     u16 k;
 
-    game_rand(D_08A631A0, 1);
-    game_rand(D_08A631A0, 1);
-    game_rand(D_08A631A0, 1);
+    game_rand(g_sys, 1);
+    game_rand(g_sys, 1);
+    game_rand(g_sys, 1);
     if ((D_08A62C68 & 0xF0) == 0)
-        k = (u16)game_rand(D_08A631A0, 1) & 3;
+        k = (u16)game_rand(g_sys, 1) & 3;
     else if (D_08A62C68 & 0x10)
         k = 0;
     else if (D_08A62C68 & 0x40)
@@ -663,15 +663,15 @@ void game_reset_options(u8 *g, u32 apply)
     if ((u8)apply == 1) {
         s32 v = (s8)g[0x6ADD8];
 
-        *(s32 *)(D_08A631A0 + 0xF7A574) = v;
+        *(s32 *)(g_sys + 0xF7A574) = v;
         D_09A1DB50 = v;
-        func_088902A8(D_08A631A0);
+        func_088902A8(g_sys);
     } else {
         g[0x6ADD8] = lang;
     }
-    func_08880760(D_08A62D8C, (s8)g[0x6ADD9]);
-    func_08880864(D_08A62D8C, (s8)g[0x6ADDB]);
-    func_08880874(D_08A62D8C, (s8)g[0x6ADDA]);
+    func_08880760(g_sound, (s8)g[0x6ADD9]);
+    func_08880864(g_sound, (s8)g[0x6ADDB]);
+    func_08880874(g_sound, (s8)g[0x6ADDA]);
 }
 
 /* hunter rank, points and the points needed for the next rank */
@@ -736,12 +736,12 @@ s32 text_center_x(void *g, const char *s, s32 x_arg, s32 size_arg)
 {
     s16 x = x_arg, size = size_arg;
 
-    return (s16)(x - (size * func_08890F70(D_08A631A8, s)) / 4);
+    return (s16)(x - (size * font_text_width(g_font, s)) / 4);
 }
 
 s32 text_center_x2(void *g, const char *s, s32 x_arg, s32 size_arg)
 {
     s16 x = x_arg, size = size_arg;
 
-    return (s16)(x - (size * func_08890F70(D_08A631A8, s)) / 2);
+    return (s16)(x - (size * font_text_width(g_font, s)) / 2);
 }

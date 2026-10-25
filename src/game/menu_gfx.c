@@ -700,7 +700,7 @@ void gfx_draw_subwindow(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 alpha)
     gfx_draw_frame(self, x, y, w, h, alpha, 158);
 }
 
-extern void *D_08A62C54;          /* equipment data */
+extern void *g_equip_data;          /* equipment data */
 extern const u8 D_0893AA5C[];      /* item colors (r, g, b, -) */
 s32 func_088269C0(void *self, u32 id);
 u32 item_icon_sprite(void *self, s32 icon, int small);
@@ -762,7 +762,7 @@ void gfx_draw_item_icon_alpha(u8 *self, u32 id, u32 x, u32 y, u32 w, s32 h_arg, 
             gfx_draw_sprite_scaled_rgba(self, x, y, (s16)w, h, 255, 255, 255, alpha, w16 < 21 ? 238 : 132);
         } else if (w16 > 20) {
             u8 *hunter = *(u8 **)(self + 0x530);
-            s8 k = equip_rarity(D_08A62C54, hunter[0x4E9], U16(hunter, 0x4EA));
+            s8 k = equip_rarity(g_equip_data, hunter[0x4E9], U16(hunter, 0x4EA));
             u8 m6, m3;
             int bad = 0;
 
@@ -814,7 +814,7 @@ void gfx_draw_arrows(u8 *self, u32 x, u32 y, u32 dx, u32 r, u32 g, u32 b, u8 a)
 /* pulsing value 0..: sine of the frame counter (period 64 frames) */
 static s32 gfx_pulse(void)
 {
-    f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x3F) << 10) * (3.14159265f / 32768.0f));
+    f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(g_sys + 0xF7A554) & 0x3F) << 10) * (3.14159265f / 32768.0f));
 
     return (s8)(int)(48.0f * s) + 175;
 }
@@ -834,14 +834,14 @@ u32 gfx_blink_color(void)
 /* rectangle with a pulsing alpha; color = 0x00BBGGRR */
 void gfx_fill_rect_pulse(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 color)
 {
-    f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x3F) << 10) * (3.14159265f / 32768.0f));
+    f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(g_sys + 0xF7A554) & 0x3F) << 10) * (3.14159265f / 32768.0f));
     u32 v = ((color << 8) >> 8) | (((s8)(int)(48.0f * s) + 191) << 24);
 
     gfx_fill_rect_rgba(self, x, y, w, h, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, v >> 24);
 }
 
 extern const char D_08938540[];   /* "%d/%d" */
-void func_08890E40(void *font, int v);
+void font_set_height2(void *font, int v);
 void gfx_draw_window2(void *self, u32 x, u32 y, u32 w, u32 h, u32 alpha);
 
 /* builds the text box out from the description src (offset by dx, dy); with title != 0
@@ -882,7 +882,7 @@ void layout_draw_from(void *self, const u8 *src, int title, int a, int alpha, in
     Layout l;
 
     layout_build(&l, src, title, 0, 0);
-    func_0882F580(self, &l, title, a, alpha, c);
+    layout_draw_box(self, &l, title, a, alpha, c);
 }
 
 /* page number "n/total" and page arrows of the box l */
@@ -895,9 +895,9 @@ void layout_draw_pages(void *self, Layout *l, u32 cur, u32 total_arg, s32 color,
         s32 n;
 
         sprintf(buf, D_08938540, (cur & 0xFFFF) + 1, total);
-        n = func_08890E48(D_08A631A8, buf);
-        func_088915B0(D_08A631A8, (s16)((u16)l->x + (u16)l->w - 21 - (l->cw >> 1) * n), l->f[5],
-                      (s8)color, D_08938478, buf);
+        n = font_char_count(g_font, buf);
+        font_printf_at_color(g_font, (s16)((u16)l->x + (u16)l->w - 21 - (l->cw >> 1) * n), l->f[5],
+                      (s8)color, fmt_s, buf);
     }
     if ((s8)alt == 0)
         gfx_draw_arrows_blink(self, (u16)l->x, (u16)l->f[5], (u16)((u16)l->w - 14), 240);
@@ -921,9 +921,9 @@ void layout_draw(void *self, Layout *l, const char *text, u32 alpha)
         gfx_draw_window(self, (u16)l->x, (u16)l->y, (u16)l->w, (u16)l->h, alpha);
         break;
     }
-    func_08890DE8(D_08A631A8, l->cw, l->b9);
-    func_08890E40(D_08A631A8, (u8)l->lh);
-    func_08890E38(D_08A631A8, (s8)l->ba);
+    font_set_size(g_font, l->cw, l->b9);
+    font_set_height2(g_font, (u8)l->lh);
+    font_set_color(g_font, (s8)l->ba);
     if (text != NULL)
-        func_088920A8(D_08A631A8, l->tx, l->ty, D_08938478, text);
+        font_draw_at(g_font, l->tx, l->ty, fmt_s, text);
 }

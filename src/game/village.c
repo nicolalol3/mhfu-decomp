@@ -5,7 +5,7 @@
 
 extern u8 *D_08A62C60;
 extern u8 *D_08A8B1E8;
-extern void *D_09A4F0C4;
+extern void *g_players;
 extern void *D_089CC01C;          /* screen fade */
 extern u8 D_089BAB98[], D_089BAA94[];
 extern const f32 D_0899D174[3], D_0899D18C[3];
@@ -17,7 +17,7 @@ void options_backup(u8 *g);
 void osk_init(void *a);
 void *heap_alloc(u32 *h, u32 size, u32 align);
 u32 *func_08897290(u32 size, void *mem);
-s32 func_0890C3D8(f32 *v);
+s32 vec3_nonzero(f32 *v);
 void item_set_seen(void *a, u32 item);
 s32 hunter_has_skill(void *hunter, int id);
 s32 pouch_count(u8 *g, u32 id_arg);
@@ -32,9 +32,9 @@ void village_start(u8 *o)
     f32 v[3];
 
     sceRtcGetCurrentClockLocalTime(t);
-    func_08890080(D_08A631A0, t[0xA]);
-    game_reset_options(D_089CC438, 1);
-    options_backup(D_089CC438);
+    func_08890080(g_sys, t[0xA]);
+    game_reset_options(g_game, 1);
+    options_backup(g_game);
     osk_init(D_08A62C60);
     w = D_08A8B1E8;
     mem = heap_alloc((u32 *)(w + 0x14010), 0x34, 0x10);
@@ -50,7 +50,7 @@ void village_start(u8 *o)
             v[0] = D_0899D174[0];
             v[1] = D_0899D174[1];
             v[2] = D_0899D174[2];
-            if (func_0890C3D8(v) != 0) {
+            if (vec3_nonzero(v) != 0) {
                 ((f32 *)f)[1] = v[0];
                 ((f32 *)f)[2] = v[1];
                 ((f32 *)f)[3] = v[2];
@@ -73,7 +73,7 @@ void village_start(u8 *o)
     v[0] = D_0899D18C[0];
     v[1] = D_0899D18C[1];
     v[2] = D_0899D18C[2];
-    if (func_0890C3D8(v) != 0) {
+    if (vec3_nonzero(v) != 0) {
         F32(o, 4) = v[0];
         F32(o, 8) = v[1];
         F32(o, 0xC) = v[2];
@@ -89,7 +89,7 @@ void box_item_notify(void *a, u32 item)
 s32 pouch2_count(void *unused, u32 id_arg)
 {
     u16 id = id_arg;
-    u8 *p = D_089CC438 + 0x4A0;
+    u8 *p = g_game + 0x4A0;
     s16 i;
 
     for (i = 0; i < 0x18; i++) {
@@ -102,7 +102,7 @@ s32 pouch2_count(void *unused, u32 id_arg)
 s32 pouch2_room_or_full(void *unused, u32 id_arg)
 {
     u16 id = id_arg;
-    u8 *p = D_089CC438 + 0x4A0;
+    u8 *p = g_game + 0x4A0;
     s16 i, empty = 0;
 
     for (i = 0; i < 0x18; i++) {
@@ -126,8 +126,8 @@ int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag);
 /* number of the gathering points unlocked (kind 1: without tool, 3: with tool, else all) */
 u32 gather_count(void *p, u32 kind)
 {
-    u8 *g = D_089CC438 + 0x4A0;
-    void *h = (void *)player_get(D_09A4F0C4, D_089CC438[0x28]);
+    u8 *g = g_game + 0x4A0;
+    void *h = (void *)player_get(g_players, g_game[0x28]);
     const u8 *e = D_089A47D0;
     u16 n = 0;
     s32 i;
@@ -160,7 +160,7 @@ int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag)
         return 1;
     if ((u8)hunter_has_skill(hunter, 0xA0) == 1)
         return 1;
-    if (pouch_count(D_089CC438, 6) != 0)
+    if (pouch_count(g_game, 6) != 0)
         return 1;
     if ((u8)flag != 1)
         return 0;

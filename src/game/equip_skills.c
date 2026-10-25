@@ -2,7 +2,7 @@
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
-extern void *D_08A62C54;          /* equipment data */
+extern void *g_equip_data;          /* equipment data */
 
 u32 func_0885C83C(void *a, u8 type, u16 id);
 u32 equip_rarity_color(void *self, u8 a, int b, int c);
@@ -16,7 +16,7 @@ void equip_draw_icon(void *self, u8 *eq, u32 x_arg, u32 y_arg, u32 flags)
 {
     u16 x = x_arg;
     u16 y = y_arg;
-    u8 rarity = (u8)func_0885C83C(D_08A62C54, eq[1], *(u16 *)(eq + 2));
+    u8 rarity = (u8)func_0885C83C(g_equip_data, eq[1], *(u16 *)(eq + 2));
     u32 c;
 
     if ((flags & 8) == 0)
@@ -51,7 +51,7 @@ void equip_list_skill_points(void *self, u32 id, u8 *out)
         u32 s;
 
         for (s = 1; (int)s < 100; s++) {
-            s8 pts = (s8)equip_skill_points(D_08A62C54, id, s & 0xFF);
+            s8 pts = (s8)equip_skill_points(g_equip_data, id, s & 0xFF);
 
             if (pts != 0) {
                 out[0] = s;
