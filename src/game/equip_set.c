@@ -186,14 +186,14 @@ void equip_draw_sharpness(void *self, u8 *hunter, u8 *eq, s32 x_arg, s32 y_arg)
         s16 end = (s16)(int)((f32)*t * 0.2f);
 
         if (pos < end) {
-            func_0882D6F0(self, (s16)(x + 4) + pos, (s16)(y + 5), end - pos, 6, col[2], col[1], col[0]);
+            gfx_fill_rect(self, (s16)(x + 4) + pos, (s16)(y + 5), end - pos, 6, col[2], col[1], col[0]);
             pos = end;
         }
     }
     if ((int)nl < 6) {
         s16 p = (s16)(int)((f32)(int)(nl * 50 + 150) * 0.2f);
 
-        func_0882D6F0(self, (s16)(x + 4) + p, (s16)(y + 5), 90 - p, 6, 0, 0, 0);
+        gfx_fill_rect(self, (s16)(x + 4) + p, (s16)(y + 5), 90 - p, 6, 0, 0, 0);
     }
     gfx_draw_sprite(self, x, y, (u8)(c >> 16), (u8)(c >> 8), (u8)c, 0xB7, 0);
     gfx_draw_sprite_scaled_color(self, x + D_08939A40, y, (98 - D_08939A58) - D_08939A40, 16,
@@ -221,7 +221,7 @@ void equip_draw_skill_points(void *self, u32 id, s32 x, s32 y, u32 cmp, u32 flag
         color = 10;
         cmp = 0;
     }
-    func_088915B0(D_08A631A8, x, y, color, D_08938478, func_0885151C(D_089CC438, D_089AC9CC));
+    func_088915B0(D_08A631A8, x, y, color, D_08938478, text_menu(D_089CC438, D_089AC9CC));
     for (i = 0; i < 9; i++)
         col[i] = c0;
     equip_list_skill_points(self, id, pts);
@@ -244,12 +244,12 @@ void equip_draw_skill_points(void *self, u32 id, s32 x, s32 y, u32 cmp, u32 flag
         func_08890DFC(D_08A631A8, cx, ly);
         if (p[0] == 0) {
             if (i == 0)
-                func_0889134C(D_08A631A8, D_08938478, func_0885151C(D_089CC438, D_089AC9D2));
+                func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, D_089AC9D2));
             return;
         }
-        func_0889134C(D_08A631A8, D_08938478, func_0885151C(D_089CC438, D_089ACC70[p[0]]));
+        func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, D_089ACC70[p[0]]));
         if (p[0] != 1) {
-            func_08891474(D_08A631A8, (s16)(cx + 70), ly, D_08938478, func_0885151C(D_089CC438, D_089AC8AA));
+            func_08891474(D_08A631A8, (s16)(cx + 70), ly, D_08938478, text_menu(D_089CC438, D_089AC8AA));
             func_08890E38(D_08A631A8, col[i]);
             func_08891474(D_08A631A8, (s16)(cx + 84), ly, D_089385DC, (s8)p[1]);
         }

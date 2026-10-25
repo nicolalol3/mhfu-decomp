@@ -81,7 +81,7 @@ u16 menu_cursor_items(void *self, u8 *pos, u32 keys)
     u16 id;
 
     menu_cursor_pages(self, pos, keys, 24);
-    id = *func_08856884(D_089CC438, *pos);
+    id = *pouch_slot(D_089CC438, *pos);
     S16(self, 0x5FC) = id + 0x18;
     menu_item_toggle_sub(self, id, (keys & 0xFFFF) & 0x8000);
     return id;
@@ -299,7 +299,7 @@ int menu_open_use_list(void *self)
 {
     u16 tmp;
 
-    if ((s8)func_088239FC(self) != 1)
+    if ((s8)menu_special_mode(self) != 1)
         return -1;
     tmp = 0xFFFF;
     if ((s8)menu_repeat_tick(self, &tmp) == 0)
@@ -319,7 +319,7 @@ int menu_open_use_list(void *self)
 int menu_open_info(void *self)
 {
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0)
-        func_08829674(self);
+        menu_get_mode(self);
     menu_info_available(self);
     U8(self, 0x57F) = 0;
     U8(self, 0x581) = (*(u32 *)(D_089CC438 + 0x6AF14) & 1) ? 3 : 4;

@@ -2,6 +2,20 @@
  * on-line notices). Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 #include "vfpu.h"
+#undef menu_quest_data
+#undef menu_draw_give
+#undef menu_draw_sprite
+#undef gfx_draw_window
+#undef gfx_draw_subwindow
+#undef gfx_draw_item_icon_alpha
+#undef gfx_fill_rect_pulse
+#undef layout_draw_from
+#undef layout_build
+#undef layout_draw_pages
+#undef layout_draw
+#undef menu_draw_main_page
+#undef hud_notice_clear
+#undef pouch_count
 
 extern void *D_08A62D8C;          /* sound */
 extern u32 D_08A62C6C;            /* buttons pressed in this frame */
@@ -276,7 +290,7 @@ void hud_draw_objective(u8 *self, s32 layer)
     s16 k;
 
     if ((h[0x299] != 16 && (u8)func_08838AB4(self, h[0x298], h[0x299]) == 1) || h[0x298] != 0
-        || (u8)func_0882A864(self, 0) == 0 || (h[0x298] == 0 && (u32)(h[0x299] - 13) < 2)) {
+        || (u8)menu_input_ready(self, 0) == 0 || (h[0x298] == 0 && (u32)(h[0x299] - 13) < 2)) {
         self[0x535] = 40;
         return;
     }
@@ -676,18 +690,18 @@ void hud_draw_item_need(u8 *self, s32 x_arg, s32 y, s32 id_arg, s32 need_arg)
     func_08890DFC(D_08A631A8, (s16)(x + D_0893B2A4), y);
     need = (s16)need_arg;
     if (have + box < need) {
-        func_08892004(D_08A631A8, D_0893B310, func_08851528(D_089CC438, (u16)id));
+        func_08892004(D_08A631A8, D_0893B310, text_item_name(D_089CC438, (u16)id));
         func_08890DFC(D_08A631A8, (s16)(x + D_0893B2A4 + 112), y);
         func_08892004(D_08A631A8, D_0893B300, have, sa, box, sb, need);
     } else if (have < D_0899D19B[id * 0x18]) {
-        func_08892004(D_08A631A8, D_0893B2A8, func_08851528(D_089CC438, (u16)id));
+        func_08892004(D_08A631A8, D_0893B2A8, text_item_name(D_089CC438, (u16)id));
         func_08890DFC(D_08A631A8, (s16)(x + D_0893B2A4 + 112), y);
         if (box_room(D_08A62C50, (u16)id) == 0)
             func_08892004(D_08A631A8, D_0893B2E8, have, sa, box, sb, need);
         else
             func_08892004(D_08A631A8, D_0893B300, have, sa, box, sb, need);
     } else {
-        func_08892004(D_08A631A8, D_0893B2A8, func_08851528(D_089CC438, (u16)id));
+        func_08892004(D_08A631A8, D_0893B2A8, text_item_name(D_089CC438, (u16)id));
         func_08890DFC(D_08A631A8, (s16)(x + D_0893B2A4 + 112), y);
         if (box_room(D_08A62C50, (u16)id) == 0)
             func_08892004(D_08A631A8, D_0893B2B0, have, sa, box, sb, need);
@@ -773,7 +787,7 @@ void hud_draw_equip_trial(u8 *self, u8 *hunter, s32 dx, s32 dy, u32 page)
     char title[64];
     Layout l, t;
 
-    sprintf(title, D_0893B218, func_0885151C(D_089CC438, D_089AC8CE));
+    sprintf(title, D_0893B218, text_menu(D_089CC438, D_089AC8CE));
     layout_build(&l, D_0893B318, (int)title, dx, dy);
     if (ov[0x1E] == 0) {
         t.x = D_0893B32C.x;
@@ -790,13 +804,13 @@ void hud_draw_equip_trial(u8 *self, u8 *hunter, s32 dx, s32 dy, u32 page)
         t.ba = D_0893B32C.ba;
         func_0882F580(self, &l, (int)title, -1, 255, 0);
         t.ba = 10;
-        layout_draw(self, &t, func_0885151C(D_089CC438, D_089AC8C6), 255);
+        layout_draw(self, &t, text_menu(D_089CC438, D_089AC8C6), 255);
     } else {
         func_0882F580(self, &l, (int)title, -1, 255, 0);
         if (ov[0x20] > 1)
             layout_draw_pages(self, &l, page & 0xF, ov[0x20], 0, 0);
         menu_draw_resist_table(self, l.tx, l.ty, page & 0xF, ov[0x1F], 9, ov[0x13]);
-        layout_draw(self, (Layout *)&D_0893B32C, func_0885151C(D_089CC438, D_089AC8C6), 255);
+        layout_draw(self, (Layout *)&D_0893B32C, text_menu(D_089CC438, D_089AC8C6), 255);
         hud_draw_skill_compare(self, hunter, ov + 0x12, D_0893B32C.tx, (s16)(D_0893B32C.ty + (s16)D_0893B32C.lh));
     }
 }
@@ -1011,7 +1025,7 @@ void hud_draw_card_page(u8 *self)
                             func_09A7B790(D_09B22D70, ((const u16 *)0x09B05D10)[U16(self, 0x5FC)]), 255);
                 func_088920A8(D_08A631A8, (s16)(D_0893B368.x + D_0893B36C - 148),
                               (s16)(D_0893B36A + D_0893B36E - 22), D_0893B220,
-                              func_0885151C(D_089CC438, D_089AC588[self[0x537]]));
+                              text_menu(D_089CC438, D_089AC588[self[0x537]]));
             }
         }
         st = self[0x57E];
@@ -1312,7 +1326,7 @@ void hud_draw_choice_grid(u8 *self)
         for (r = 0; r < 3; r++)
             func_08891474(D_08A631A8, (s16)(D_0893B3F0 + D_0893B3F4 * (s16)c),
                           (s16)(D_0893B3F2 + D_0893B3F6 * (s16)r),
-                          func_0885151C(D_089CC438, D_089AD030[c + r * 4]));
+                          text_menu(D_089CC438, D_089AD030[c + r * 4]));
 }
 
 /* input of the "invite a player" page */
@@ -1382,7 +1396,7 @@ void hud_request_trade(u8 *self, u8 *p)
         return;
     }
     if (pouch2_room_or_full(D_08A62C50, req[0]) < 1) {
-        menu_msg_push_text(D_089CBBEC, func_0885151C(D_089CC438, D_089ACA8C));
+        menu_msg_push_text(D_089CBBEC, text_menu(D_089CC438, D_089ACA8C));
         sound_play(D_08A62D8C, 0, 21, 0, 0, 0, 0, 0, 0);
         U8((u8 *)player_get(D_09A4F0C4, D_089CC438[0x28]), 0x62C) = 90;
     } else if (pouch2_room_or_full(D_08A62C50, req[0]) < req[1]) {
@@ -1697,7 +1711,7 @@ void hud_draw_player_card(u8 *self, u32 page, u8 *card)
     }
     func_0882F580(self, &l, (int)title, -1, 255, 1);
     layout_draw_pages(self, &l, page & 0xFFFF, 2, 0, 0);
-    layout_draw(self, (Layout *)D_0893B3B0, func_0885151C(D_089CC438, D_089AC8C4[page]), 255);
+    layout_draw(self, (Layout *)D_0893B3B0, text_menu(D_089CC438, D_089AC8C4[page]), 255);
     if (page == 1) {
         u8 *g, *h, *ga;
         u8 sv[5][12];
@@ -1708,7 +1722,7 @@ void hud_draw_player_card(u8 *self, u32 page, u8 *card)
         equip_draw_icon_rarity(self, card[0x41], S16(card, 0x42), D_0893B3C4, D_0893B3C6, D_0893B3C8,
                                D_0893B3C8, 255, 0);
         func_088920A8(D_08A631A8, (s16)(D_0893B3C4 + D_0893B3CC), (s16)(D_0893B3C6 + D_0893B3CE),
-                      func_0885151C(D_089CC438, D_089AC8E0),
+                      text_menu(D_089CC438, D_089AC8E0),
                       equip_name(D_08A62C54, card[0x41], U16(card, 0x42)));
         for (i = 0; i < 5; i++) {
             u32 t = D_0893AEB8[i];
@@ -1718,7 +1732,7 @@ void hud_draw_player_card(u8 *self, u32 page, u8 *card)
                                    255, 0);
             func_088920A8(D_08A631A8, (s16)(D_0893B3C4 + D_0893B3CC),
                           (s16)(D_0893B3C6 + D_0893B3CE + D_0893B3CA * ((s16)i + 1)),
-                          func_0885151C(D_089CC438, D_089AC8E0),
+                          text_menu(D_089CC438, D_089AC8E0),
                           equip_name(D_08A62C54, t & 0xFF, U16(base + t * 0xC, 0x2E)));
         }
         g = D_089CC438;
@@ -1873,7 +1887,9 @@ extern void *D_089CBBE0;
 void gfx_draw_window(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 alpha);
 void game_set_bit62(void *game, u8 v);
 void func_088197A0(void *self, u8 a, u32 b, int c, int d);
+#define menu_draw_item_list func_088197A0
 void func_08819128(void *self, int a, u16 id, int b);
+#define menu_draw_desc func_08819128
 void layout_draw_from(void *self, const u8 *src, int title, int a, int alpha, int c);
 void temp_free(void *a, int b);
 s32 func_08898898(void *a, u32 b);
@@ -1964,7 +1980,7 @@ void hud_draw_item_get(u8 *self)
     t[4] = D_0893B488[4];
     if (st < 3 || st == 7)
         return;
-    func_088197A0(self, self[0x586], D_0893AA94[st], 16, 0);
+    menu_draw_item_list(self, self[0x586], D_0893AA94[st], 16, 0);
     if (S8(self, 0x592) == 0) {
         Layout c;
         s32 w, h2, u;
@@ -1980,31 +1996,31 @@ void hud_draw_item_get(u8 *self)
         c.tx = U16(D_0893B0F4, 12);
         c.ty = U16(D_0893B0F4, 14);
         *(u32 *)&c.lh = U32(D_0893B0F4, 16);
-        w = func_08890E48(D_08A631A8, func_0885151C(D_089CC438, D_089AC84C));
+        w = func_08890E48(D_08A631A8, text_menu(D_089CC438, D_089AC84C));
         c.tx = 240 - (s16)((s32)(w * c.cw) >> 2);
         h2 = (s32)(w * c.cw) >> 1;
         u = ((h2 + 32) / 16) * 16;
         c.w = u;
         c.x = 240 - (s16)((s32)(u & 0xFFFF) >> 1);
-        layout_draw(self, &c, func_0885151C(D_089CC438, D_089AC84C), 255);
+        layout_draw(self, &c, text_menu(D_089CC438, D_089AC84C), 255);
         U32(*(u8 **)(self + 0x530), 0x614) &= ~1;
         id = U16(self, 0x58E);
     } else {
         s8 n = self[0x593];
 
         if (n < 2) {
-            layout_draw(self, (Layout *)D_0893B108, func_08851528(D_089CC438, U16(self, 0x590)), 255);
+            layout_draw(self, (Layout *)D_0893B108, text_item_name(D_089CC438, U16(self, 0x590)), 255);
             id = U16(self, 0x58E);
         } else {
             char buf[64];
-            const char *f = func_0885151C(D_089CC438, D_089AC84E);
+            const char *f = text_menu(D_089CC438, D_089AC84E);
 
-            sprintf(buf, f, func_08851528(D_089CC438, U16(self, 0x590)), n);
+            sprintf(buf, f, text_item_name(D_089CC438, U16(self, 0x590)), n);
             layout_draw(self, (Layout *)D_0893B11C, buf, 255);
             id = U16(self, 0x58E);
         }
     }
-    func_08819128(self, 1, id, -1);
+    menu_draw_desc(self, 1, id, -1);
     st = self[0x52F];
     if ((s8)st == 5) {
         layout_draw_from(self, D_0893B130, 0, self[0x537], 255, 0);
@@ -2014,7 +2030,7 @@ void hud_draw_item_get(u8 *self)
 
         if ((s8)st == 4 && self[0x5DA] == 0) {
             menu_draw_sprite(self, 0x10E, 0x50, 0x35);
-            func_088915B0(D_08A631A8, 0x120, 0x52, 0, func_0885151C(D_089CC438, D_089AC9FE));
+            func_088915B0(D_08A631A8, 0x120, 0x52, 0, text_menu(D_089CC438, D_089AC9FE));
         }
         layout_build(&l, (const u8 *)t, 0, 0, 0);
         l.color = D_0893AAB0[self[0x52F]];
@@ -2022,9 +2038,9 @@ void hud_draw_item_get(u8 *self)
         col = box_room(D_08A62C50, U16(self, 0x590)) < (s8)self[0x593] ? 10 : 0;
         func_088915B0(D_08A631A8, l.tx, l.ty, col, func_09A7B790(D_09B22D70, D_09B04E06));
         func_088915B0(D_08A631A8, l.tx, (s16)(l.ty + l.lh), 0,
-                      func_0885151C(D_089CC438, *(const u16 *)D_089AC600));
+                      text_menu(D_089CC438, *(const u16 *)D_089AC600));
         func_088915B0(D_08A631A8, l.tx, (s16)(l.ty + l.lh * 2), 0,
-                      func_0885151C(D_089CC438, *(const u16 *)(D_089AC600 + 2)));
+                      text_menu(D_089CC438, *(const u16 *)(D_089AC600 + 2)));
     }
 }
 
@@ -2239,8 +2255,8 @@ void hud_draw_clock(u8 *self)
 
     if (U32(self, 0x1194) & 1)
         return;
-    S32(self, 0x558) = func_0886A35C(D_08A62C7C, 0);
-    total = (s32)func_0886A35C(D_08A62C7C, 1);
+    S32(self, 0x558) = quest_time(D_08A62C7C, 0);
+    total = (s32)quest_time(D_08A62C7C, 1);
     S32(self, 0x55C) = total;
     left = S32(self, 0x558);
     if (left >= 9001) {

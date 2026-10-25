@@ -2,6 +2,8 @@
  * (QuestCmd, commands QC_*), the rewards and the events received from the other players.
  * (Guessed names.) */
 #include "quest.h"
+#undef text_menu
+#undef pouch_count
 
 extern void *D_09A1DAEC;
 extern u8 *D_09C121B0;

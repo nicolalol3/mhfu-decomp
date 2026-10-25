@@ -33,6 +33,7 @@ void gfx_draw_sprite_scaled_color(void *self, u16 x, u16 y, int w, int h, u8 r, 
 u32 equip_icon(void *self, void *p, int a);
 void func_0889183C(void *font, int x, int y, int v, const char *fmt, ...);
 void func_0882D8DC(void *self, u16 x, u16 y, int w, int h, int a, int r, int g, int b);
+#define gfx_fill_rect_rgba func_0882D8DC
 
 void menu_draw_skills(void *self, u8 *hunter, int x, int y);
 void menu_draw_unique_list(void *self, const u8 *list, void *p, int x, int y, s32 step);
@@ -48,16 +49,16 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
     int y2, x, i;
     s16 y;
 
-    sprintf(buf, D_0893854C, func_0885151C(D_089CC438, *(u16 *)0x089AC884));
-    func_0882FA24(&l, D_0893B018, (int)buf, 0, 0);
+    sprintf(buf, D_0893854C, text_menu(D_089CC438, *(u16 *)0x089AC884));
+    layout_build(&l, D_0893B018, (int)buf, 0, 0);
     if (page == 0) {
         l.h = 0xE0;
         l.e = 0xB;
         l.ptr = D_089AC888;
     }
     func_0882F580(self, &l, (int)buf, -1, 0xFF, 0);
-    func_0882FB38(self, &l, (u8)page, (u8)(n + 2), 0, 0);
-    func_0882FC50(self, D_0893B02C, func_0885151C(D_089CC438, D_089AC8C4[page != 0]), 0xFF);
+    layout_draw_pages(self, &l, (u8)page, (u8)(n + 2), 0, 0);
+    layout_draw(self, D_0893B02C, text_menu(D_089CC438, D_089AC8C4[page != 0]), 0xFF);
     y2 = (s16)(D_0893B03A + D_0893B03C);
     if (page == 1) {
         menu_draw_equipment(self, hunter, 0);
@@ -77,17 +78,17 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
     func_08890DE8(D_08A631A8, 14, 14);
     y = l.ty;
     for (i = 7; i != 0; i--) {
-        func_08891474(D_08A631A8, (s16)(l.tx + 0x38), y, func_0885151C(D_089CC438, *(u16 *)0x089AC8AA));
+        func_08891474(D_08A631A8, (s16)(l.tx + 0x38), y, text_menu(D_089CC438, *(u16 *)0x089AC8AA));
         y += l.lh;
     }
     for (i = 4; i != 0; i--) {
-        func_08891474(D_08A631A8, (s16)(l.tx + 0x3C), y, func_0885151C(D_089CC438, *(u16 *)0x089AC8AA));
+        func_08891474(D_08A631A8, (s16)(l.tx + 0x3C), y, text_menu(D_089CC438, *(u16 *)0x089AC8AA));
         y += l.lh;
     }
     y = l.ty + l.lh * 7;
     for (i = 0; i < 5; i++) {
-        func_08891474(D_08A631A8, (s16)(l.tx + 0x7C), y, func_0885151C(D_089CC438, D_089AC8A0[i]));
-        func_08891474(D_08A631A8, (s16)(l.tx + 0xC2), y, func_0885151C(D_089CC438, *(u16 *)0x089AC8AA));
+        func_08891474(D_08A631A8, (s16)(l.tx + 0x7C), y, text_menu(D_089CC438, D_089AC8A0[i]));
+        func_08891474(D_08A631A8, (s16)(l.tx + 0xC2), y, text_menu(D_089CC438, *(u16 *)0x089AC8AA));
         y += l.lh;
     }
     func_08890E38(D_08A631A8, 0);
@@ -97,7 +98,7 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
     menu_draw_weapon_type(self, x, (s16)(l.ty + l.lh), hunter + 0x4E8);
     func_08890DFC(D_08A631A8, x, (s16)(l.ty + l.lh * 6));
     if ((*(u32 *)(D_08A631A0 + 0xF7A57C) & 1) == 0) {
-        func_0889134C(D_08A631A8, D_08938478, func_0885151C(D_089CC438, *(u16 *)0x089AD048));
+        func_0889134C(D_08A631A8, D_08938478, text_menu(D_089CC438, *(u16 *)0x089AD048));
     } else {
         menu_quest_slot_name(self, S8(self, 0x536), buf);
         func_0889134C(D_08A631A8, D_08938478, buf);
@@ -111,7 +112,7 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
         u8 w;
         u16 base;
 
-        func_08891474(D_08A631A8, x, (s16)(l.ty + l.lh * 2), func_0885151C(g, *(u16 *)0x089AC8CA),
+        func_08891474(D_08A631A8, x, (s16)(l.ty + l.lh * 2), text_menu(g, *(u16 *)0x089AC8CA),
                       U32(g, 0x696F0));
         game_hr_points(D_089CC438, &rank, &a, &b);
         func_08891474(D_08A631A8, x, (s16)(l.ty + l.lh * 3), D_08938548, rank);
@@ -119,9 +120,9 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
         if (b - a < 0)
             func_0889134C(D_08A631A8, D_08938548, a);
         else
-            func_0889134C(D_08A631A8, func_0885151C(D_089CC438, *(u16 *)0x089AC8C8), a, b - a);
+            func_0889134C(D_08A631A8, text_menu(D_089CC438, *(u16 *)0x089AC8C8), a, b - a);
         g = D_089CC438;
-        func_08891474(D_08A631A8, x, (s16)(l.ty + l.lh * 5), func_0885151C(g, *(u16 *)0x089AC8CC),
+        func_08891474(D_08A631A8, x, (s16)(l.ty + l.lh * 5), text_menu(g, *(u16 *)0x089AC8CC),
                       U32(g, 0x696E8));
 
         x = (s16)(l.tx + 0x4A);
@@ -148,7 +149,7 @@ void menu_draw_weapon_type(void *self, int x, int y, const u8 *eq)
 {
     u8 t = (u8)equip_rarity(D_08A62C54, eq[1], *(u16 *)(eq + 2));
 
-    func_08891474(D_08A631A8, x, y, D_08938478, func_0885151C(D_089CC438, D_089AC8AC[t]));
+    func_08891474(D_08A631A8, x, y, D_08938478, text_menu(D_089CC438, D_089AC8AC[t]));
 }
 
 /* equipment list (weapon + 5 armor pieces) with icons */
@@ -159,7 +160,7 @@ void menu_draw_equipment(void *self, u8 *hunter, int col)
 
     equip_draw_icon_rarity(self, U8(hunter, 0x4E9), S16(hunter, 0x4EA), D_08938598[col][0], 0x44, D_08939704, D_08939706,
                   0xFF, 0);
-    func_088920A8(D_08A631A8, D_08938598[col][1], 0x4A, func_0885151C(D_089CC438, *(u16 *)0x089AC8E0),
+    func_088920A8(D_08A631A8, D_08938598[col][1], 0x4A, text_menu(D_089CC438, *(u16 *)0x089AC8E0),
                   equip_name(D_08A62C54, U8(hunter, 0x4E9), U16(hunter, 0x4EA)));
     ix = 0x5E;
     y = 100;
@@ -168,7 +169,7 @@ void menu_draw_equipment(void *self, u8 *hunter, int col)
         u8 *e = hunter + slot * 0xC;
 
         equip_draw_icon_rarity(self, slot, S16(e, 0x4F6), D_08938598[col][0], ix, D_08939704, D_08939706, 0xFF, 0);
-        func_088920A8(D_08A631A8, D_08938598[col][1], y, func_0885151C(D_089CC438, *(u16 *)0x089AC8E2),
+        func_088920A8(D_08A631A8, D_08938598[col][1], y, text_menu(D_089CC438, *(u16 *)0x089AC8E2),
                       equip_name(D_08A62C54, U8(e, 0x4F5), U16(e, 0x4F6)));
         ix += 0x1A;
         y = (s16)(y + 0x1A);
@@ -193,7 +194,7 @@ void menu_draw_skills_ex(void *self, u8 *hunter, int x, int y, const s8 *colors)
     func_08890DE8(D_08A631A8, 14, 13);
     if (U8(hunter, 0x67A) == 0 && U8(hunter, 0x679) == 0 && U8(hunter, 0x678) == 0 && U8(hunter, 0x676) == 0 &&
         U8(hunter, 0x677) == 0) {
-        func_088915B0(D_08A631A8, x, y, 0, D_08938478, func_0885151C(D_089CC438, D_089ACD38[0]));
+        func_088915B0(D_08A631A8, x, y, 0, D_08938478, text_menu(D_089CC438, D_089ACD38[0]));
         return;
     }
     for (i = 0; (int)i <= 5; i++) {
@@ -207,7 +208,7 @@ void menu_draw_skills_ex(void *self, u8 *hunter, int x, int y, const s8 *colors)
             c = colors[i];
         else
             c = 9;
-        func_088915B0(D_08A631A8, x, y, c, D_08938478, func_0885151C(D_089CC438, D_089ACD38[skill]));
+        func_088915B0(D_08A631A8, x, y, c, D_08938478, text_menu(D_089CC438, D_089ACD38[skill]));
         if (colors[i] == 0xE || colors[i] == 2)
             gfx_draw_sprite_mode(self, (s16)x - 8, (s16)y + 1, 6, 0xC, 0xD0, 0xD0, 0xD0, 0xC0, 0x8E, 0);
         y = (s16)(y + 0xE);
@@ -239,11 +240,11 @@ void menu_draw_unique_list(void *self, const u8 *list, void *p, int x, int y, s3
         seen[n] = list[i];
         n = (n + 1) & 0xFF;
         func_088915B0(D_08A631A8, x, y, (u8)(s8)skill_applies_to_weapon(self, p, v, list) == 1 ? 0 : 10, D_08938478,
-                      func_0885151C(D_089CC438, D_089ACEEC[v]));
+                      text_menu(D_089CC438, D_089ACEEC[v]));
         y = (s16)(y + step);
     }
     if (n == 0)
-        func_08891474(D_08A631A8, x, y, D_08938478, func_0885151C(D_089CC438, D_089ACEEC[0]));
+        func_08891474(D_08A631A8, x, y, D_08938478, text_menu(D_089CC438, D_089ACEEC[0]));
 }
 
 /* table of resistances/skill points (rows of 0x12 bytes at self+0x684) */
@@ -259,7 +260,7 @@ void menu_draw_resist_table(void *self, int x, int y, u32 page_arg, s32 bar_arg,
 
     func_08890DE8(D_08A631A8, 12, 14);
     func_08890E38(D_08A631A8, 5);
-    func_08891474(D_08A631A8, x, y, D_08938478, func_0885151C(D_089CC438, *(u16 *)0x089AC8D8));
+    func_08891474(D_08A631A8, x, y, D_08938478, text_menu(D_089CC438, *(u16 *)0x089AC8D8));
     ix = (s16)x + 0x45;
     if (sel < 7) {
         f32 s = vfpu_sinf((f32)(int)(((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x1F) << 11) & 0xFFFF) *
@@ -269,10 +270,10 @@ void menu_draw_resist_table(void *self, int x, int y, u32 page_arg, s32 bar_arg,
         gfx_draw_sprite_scaled_color(self, (s16)(ix - 3 + D_089385A0[sel] * 24), (s16)(sy - 2) + 1, 23, 17, c, c,
                       (s8)(int)(s * 32.0f) + 32, 0x1A6);
     }
-    func_0882A9DC(self, ix, sy - 2, equip_icon(self, (u8 *)self + 0xE1C, 1));
+    menu_draw_sprite(self, ix, sy - 2, equip_icon(self, (u8 *)self + 0xE1C, 1));
     for (i = 0; i < 5; i++) {
         ix += 0x18;
-        func_0882A9DC(self, ix, sy - 2, D_0893AEB1[D_0893AEB8[i]]);
+        menu_draw_sprite(self, ix, sy - 2, D_0893AEB1[D_0893AEB8[i]]);
     }
     ry = sy + 0x10;
     e = (u8 *)self + page * rows * 0x12 + 0x684;
@@ -288,7 +289,7 @@ void menu_draw_resist_table(void *self, int x, int y, u32 page_arg, s32 bar_arg,
                 normal++;
                 func_08890DE8(D_08A631A8, 12, 14);
                 func_088915B0(D_08A631A8, x, cy, (e[2] & 1) ? 3 : 0, D_08938478,
-                              func_0885151C(D_089CC438, D_089ACC70[e[3]]));
+                              text_menu(D_089CC438, D_089ACC70[e[3]]));
                 func_08890DE8(D_08A631A8, 14, 14);
                 cx = (s16)((s16)x + 0x42);
                 for (j = 0; j < 6; j++) {
@@ -303,13 +304,13 @@ void menu_draw_resist_table(void *self, int x, int y, u32 page_arg, s32 bar_arg,
                 dim++;
                 func_08890E38(D_08A631A8, -1);
                 func_08890DE8(D_08A631A8, 12, 14);
-                func_088920A8(D_08A631A8, x, cy, D_08938478, func_0885151C(D_089CC438, D_089ACC70[e[3]]));
+                func_088920A8(D_08A631A8, x, cy, D_08938478, text_menu(D_089CC438, D_089ACC70[e[3]]));
                 func_08890DE8(D_08A631A8, 14, 14);
                 cx = (s16)x + 0x42;
                 for (j = 0; j < 6; j++) {
                     if (e[j + 4] != 0)
                         func_08891474(D_08A631A8, cx, cy, D_08938478,
-                                      func_0885151C(D_089CC438, *(u16 *)0x089AC8DC));
+                                      text_menu(D_089CC438, *(u16 *)0x089AC8DC));
                     cx += 0x18;
                 }
             }
@@ -322,12 +323,12 @@ void menu_draw_resist_table(void *self, int x, int y, u32 page_arg, s32 bar_arg,
             s16 cx = (s16)x + 0x40;
 
             for (j = 7; j > 0; j--) {
-                func_0882D6F0(self, cx, ry, 1, 0xB, 0x50, 0x50, 0x50);
+                gfx_fill_rect(self, cx, ry, 1, 0xB, 0x50, 0x50, 0x50);
                 cx += 0x18;
             }
             ry += 0x10;
         }
         if (bar == 1)
-            func_0882D8DC(self, (s16)x + 0x71, sy + 0xE, 0x17, ((u16)normal & 0xFFF) << 4, 0, 0x3E, 0x74, 0xB2);
+            gfx_fill_rect_rgba(self, (s16)x + 0x71, sy + 0xE, 0x17, ((u16)normal & 0xFFF) << 4, 0, 0x3E, 0x74, 0xB2);
     }
 }

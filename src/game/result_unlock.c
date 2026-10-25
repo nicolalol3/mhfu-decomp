@@ -1,6 +1,10 @@
 /* Result screens at the end of the quest (2): unlocked contents, size records, special
  * conditions; helpers of all the result screens. The object is D_08A62CB4. (Guessed names.) */
 #include "quest.h"
+#undef menu_draw_sprite
+#undef gfx_draw_window
+#undef text_menu
+#undef pouch_slot
 
 extern void *D_09A44C5C;
 extern const char D_089A8870[];    /* "%s" */

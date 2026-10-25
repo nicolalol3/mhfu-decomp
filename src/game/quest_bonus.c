@@ -2,6 +2,8 @@
  * the monsters, bonus rewards (gathering in the area, Felyne comrade) and unlock checks.
  * (Guessed names.) */
 #include "quest.h"
+#undef text_menu
+#undef friend_marked
 
 extern void *D_09A0B540;
 extern const u16 D_089AC5A0[];      /* IDs of the quest messages */

@@ -2,6 +2,10 @@
  * waves of large monsters, end of the quest, bonuses and phase steps. (Guessed names.) */
 #include "quest.h"
 #include "vfpu.h"
+#undef text_menu
+#undef pouch_count
+#undef quest_time
+#undef quest_text
 
 extern s32 D_08A5C464;              /* = QFILE->tables */
 extern u8 D_08A62C8C[15];           /* random seeds received online */

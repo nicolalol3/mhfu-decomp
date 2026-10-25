@@ -6,6 +6,17 @@
  * commands are then linked in the layer self[0x534] by dl_link. */
 #include "menu.h"
 #include "vfpu.h"
+#undef menu_draw_sprite
+#undef gfx_fill_rect
+#undef gfx_draw_window
+#undef gfx_draw_subwindow
+#undef gfx_draw_frame
+#undef gfx_draw_item_icon_alpha
+#undef gfx_fill_rect_pulse
+#undef layout_draw_from
+#undef layout_build
+#undef layout_draw_pages
+#undef layout_draw
 
 extern u8 *D_08A62C40;            /* display list manager */
 extern const s16 D_089391A8[][6];  /* menu sprites: s16 u, v, w, h, u16 texture[2] */

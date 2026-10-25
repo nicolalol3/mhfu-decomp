@@ -1,6 +1,10 @@
 /* Menu: emblems, box with the name of an equipment piece, icons and colors of the
  * pieces by kind and rarity. Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
+#undef gfx_draw_window
+#undef equip_draw_name_box
+#undef equip_rarity_text_color
+#undef menu_reset_messages
 
 extern u8 *D_08A62C40;            /* display list manager */
 extern void *D_08A62C54;          /* equipment data */
@@ -116,7 +120,7 @@ int equip_draw_name_box(u8 *self, u8 *a, u32 x, u32 y, u32 flags, u8 *b, s32 idx
     if (a != NULL && U16(a, 2) >= 1501) {
         func_08890E38(D_08A631A8, col);
         func_08891474(D_08A631A8, (s16)((s16)x + 42), (s16)((s16)y + 8), D_08938478,
-                      func_0885151C(D_089CC438, D_089AC8E4));
+                      text_menu(D_089CC438, D_089AC8E4));
         return 0;
     }
     if ((flags & 0x80) == 0) {

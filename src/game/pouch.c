@@ -1,6 +1,9 @@
 /* Item pouch of the hunter (24 slots at g+0x6AEA6), saving state, Felyne kitchen,
  * conversions of equipment kinds. (Guessed names.) */
 #include "menu.h"
+#undef pouch_slot
+#undef pouch_count
+#undef friend_marked
 
 extern u8 *D_08A62C40;            /* display list manager */
 extern void *D_08A62D8C;          /* sound */

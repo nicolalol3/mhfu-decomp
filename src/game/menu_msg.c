@@ -2,6 +2,10 @@
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 #include "vfpu.h"
+#undef menu_special_mode
+#undef menu_item_category
+#undef menu_draw_sprite
+#undef layout_draw
 
 extern void *D_08A62C40;          /* display list manager */
 extern void *D_08A62D8C;          /* sound */
@@ -117,7 +121,7 @@ void menu_draw_money(void *self, u32 grey, int low)
         r[1] += 28;
         r[5] += 28;
     }
-    func_0882DCA0(self, r[0], r[1], (u16)r[2], (u16)r[3], 255);
+    gfx_draw_window(self, r[0], r[1], (u16)r[2], (u16)r[3], 255);
     sprintf(buf, D_08938620, *(u32 *)(D_089CC438 + 0x696F0));
     func_08890DE8(D_08A631A8, 14, 14);
     func_08890E38(D_08A631A8, (s8)((u8)grey != 0 ? 10 : 0));
@@ -149,7 +153,7 @@ const char *menu_item_category(void *self, u8 *item)
 {
     if (item == NULL)
         return NULL;
-    return func_0885151C(D_089CC438, D_089AD020[item[5]]);
+    return text_menu(D_089CC438, D_089AD020[item[5]]);
 }
 
 /* per-frame update of a counter of the hunter */
@@ -201,8 +205,8 @@ void menu_draw_compare(void *self, u32 a, u32 b, s32 x, s32 y, u32 flags, s32 bi
     int n = big == 0 ? 1 : 2;
     f32 s;
 
-    func_08830078(self, a, x, y, (flags | 0x20) & ~8, b, n);
-    func_08830078(self, b, x, (s16)((s16)y + 120 + D_08938690[big]), flags, a, n);
+    equip_draw_name_box(self, a, x, y, (flags | 0x20) & ~8, b, n);
+    equip_draw_name_box(self, b, x, (s16)((s16)y + 120 + D_08938690[big]), flags, a, n);
     s = vfpu_sinf((f32)(u16)((*(u32 *)(D_08A631A0 + 0xF7A554) & 0x1F) << 11) * (3.14159265f / 32768.0f));
     gfx_draw_sprite(self, (s16)x + 104, (s16)y + 112 + D_08938690[big],
                   (s8)(int)(s * 95.0f) + 159, (s8)(int)(s * 63.0f) + 191, 255, 0x9C, 0);
@@ -430,9 +434,9 @@ void menu_draw_typewriter(u8 *self)
     }
     if (S8(self, 0x5F0) & 2)
         func_088920A8(D_08A631A8, 16, y, D_08938478,
-                      func_0885151C(D_089CC438, D_089AC868[(S8(self, 0x5F0) & 4) == 0]));
+                      text_menu(D_089CC438, D_089AC868[(S8(self, 0x5F0) & 4) == 0]));
     if (S8(self, 0x5F0) & 8)
-        func_088915B0(D_08A631A8, 114, y, 2, D_08938478, func_0885151C(D_089CC438, D_089AC86C));
+        func_088915B0(D_08A631A8, 114, y, 2, D_08938478, text_menu(D_089CC438, D_089AC86C));
 }
 
 /* 1 if the menu cannot take input (game busy, text running or locked) */

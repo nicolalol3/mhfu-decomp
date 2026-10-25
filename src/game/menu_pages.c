@@ -189,7 +189,7 @@ void menu_set_hunter_name(void *self, u8 *hunter)
 /* first value of the list of slot v */
 s32 menu_slot_first(void *self, u32 v)
 {
-    return (s16)*func_08856884(D_089CC438, (u8)v);
+    return (s16)*pouch_slot(D_089CC438, (u8)v);
 }
 
 u8 *pouch_item_data(void *a, u16 id);
@@ -201,7 +201,7 @@ extern void *D_08A62C54;
 /* chooses the quantity of an item with the arrows (0x80 min, 0x20 max, 0x10 +1, 0x40 -1) */
 void menu_select_count(u8 *self, u32 keys)
 {
-    u8 max = ((u8 *)func_08856884(D_089CC438, 0))[self[0x586] * 4 + 2];
+    u8 max = ((u8 *)pouch_slot(D_089CC438, 0))[self[0x586] * 4 + 2];
     u8 c;
     u16 old;
 
@@ -262,9 +262,9 @@ int menu_slot_usable(void *self, u32 id_arg)
 {
     u16 id = id_arg;
 
-    if (S16(func_08856884(D_089CC438, id), 2) < 1)
+    if (S16(pouch_slot(D_089CC438, id), 2) < 1)
         return 0;
-    if (*(s16 *)func_08856884(D_089CC438, id) == 0)
+    if (*(s16 *)pouch_slot(D_089CC438, id) == 0)
         return 0;
     if (pouch_item_data(D_08A62C50, id)[1] != 1)
         return 0;

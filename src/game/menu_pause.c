@@ -2,6 +2,11 @@
  * options, quit. Same class as menu_box.c / hud.c. (Guessed names.) */
 #include "menu.h"
 #include "vfpu.h"
+#undef menu_quest_data
+#undef gfx_draw_window
+#undef gfx_draw_item_icon_alpha
+#undef layout_draw
+#undef hud_draw_quest_info
 
 extern u8 *D_08A62CB4;            /* quest data */
 extern void *D_08A62D8C;          /* sound */
@@ -117,7 +122,7 @@ void hud_draw_quest_rewards(u8 *self)
                                      (D_0893B72A + D_0893B732 * row) & 0xFFFF, D_0893B734, D_0893B736, 1,
                                      0xFF);
             func_08891474(D_08A631A8, (s16)(D_0893B72C + D_0893B730 * col),
-                          (s16)(D_0893B72E + D_0893B732 * row), func_08851528(D_089CC438, e[0]));
+                          (s16)(D_0893B72E + D_0893B732 * row), text_item_name(D_089CC438, e[0]));
             func_08891474(D_08A631A8, (s16)(D_0893B740 + D_0893B730 * col),
                           (s16)(D_0893B742 + D_0893B732 * row), TXT(D_089B5412),
                           *(const s32 *)&D_0899D198[e[0] * 0x18 + 0x10], (s16)e[1]);
@@ -289,7 +294,7 @@ int hud_save_open(u8 *self)
 {
     if (ONLINE)
         return -1;
-    if ((u8)func_0884FA5C(D_089CC438, 0) != 0)
+    if ((u8)game_quest_locked(D_089CC438, 0) != 0)
         return -1;
     save_start(D_089CC438);
     if ((u8)save_in_progress(D_089CC438) == 1) {
@@ -430,7 +435,7 @@ void hud_draw_settings(u8 *self)
     s16 y;
     int i;
 
-    func_0882FA24(&l, D_0893AFC8, 1, 0, 0);
+    layout_build(&l, D_0893AFC8, 1, 0, 0);
     l.ptr = D_089B54F8 + self[0x5DC] * 0x12;
     sprintf(buf, D_0893B758, TXT(D_089B54F2));
     func_0882F580(self, &l, (int)buf, -1, 0xFF, 4);
@@ -466,7 +471,7 @@ void hud_draw_settings(u8 *self)
 /* page "quit the quest" */
 int hud_quit_open(u8 *self)
 {
-    if ((u8)func_0884FA5C(D_089CC438, 0) == 1)
+    if ((u8)game_quest_locked(D_089CC438, 0) == 1)
         return -1;
     self[0x57E] = 0;
     self[0x537] = 1;
@@ -476,7 +481,7 @@ int hud_quit_open(u8 *self)
 
 u32 hud_quit_input(u8 *self, u32 keys)
 {
-    if ((u8)func_0884FA5C(D_089CC438, 0) == 1)
+    if ((u8)game_quest_locked(D_089CC438, 0) == 1)
         return 8;
     if (self[0x1115] == 1)
         return keys;
@@ -498,7 +503,7 @@ void hud_draw_quit(u8 *self)
     const char *s;
 
     layout_draw(self, (Layout *)&D_0893B090, TXT(D_089B5560), 0xFF);
-    s = func_0885151C(D_089CC438, D_089AC588[self[0x537]]);
+    s = text_menu(D_089CC438, D_089AC588[self[0x537]]);
     func_088920A8(D_08A631A8,
                   (s16)text_center_x(D_089CC438, s, (s16)(D_0893B090 + (D_0893B094 >> 1)), 14),
                   (s16)(D_0893B09E + 0x96), D_0893B650, s);
@@ -509,7 +514,9 @@ extern const u16 D_089B5578[], D_089B5588, D_089B558A, D_089B558C, D_089B558E, D
 extern const u16 D_089AC710[];    /* monster names */
 extern const char D_0893B64C[], D_0893B780[], D_0893B78C[], D_0893B794[];
 void func_0881A8F8(void *self, s32 x, s32 y, int a);
+#define menu_draw_time func_0881A8F8
 void func_0881A8E0(void *self, s32 x, s32 y, u32 v);
+#define menu_draw_number func_0881A8E0
 void func_08890DFC(void *font, int x, int y);
 void func_0889134C(void *font, const char *fmt, ...);
 s32 quest_goal_kind(void *q, int i);
@@ -533,8 +540,8 @@ void hud_draw_quest_info(u8 *self)
     s32 i;
 
     func_088915B0(D_08A631A8, 0xFC, 0xE0, 5, D_0893B650, TXT(D_089B558C));
-    func_08890E38(D_08A631A8, ((u8)func_0884FA5C(D_089CC438, 0) == 1) ? 10 : 0);
-    func_0881A8F8(self, (s16)(D_0893B760[lang] + 0x142), 0xE0, 0);
+    func_08890E38(D_08A631A8, ((u8)game_quest_locked(D_089CC438, 0) == 1) ? 10 : 0);
+    menu_draw_time(self, (s16)(D_0893B760[lang] + 0x142), 0xE0, 0);
     func_088915B0(D_08A631A8, 0xFC, 0x60, 5, D_0893B650, TXT(D_089B5578[self[0x584]]));
     func_08890E38(D_08A631A8, 0);
     switch (self[0x584]) {
@@ -543,7 +550,7 @@ void hud_draw_quest_info(u8 *self)
             u8 *q = D_08A62C7C;
             u16 m = (s8)q[0x77C];
 
-            func_08891474(D_08A631A8, 0xFC, 0x70, TXT(D_089B5592), func_0885151C(D_089CC438, D_089AC710[m]));
+            func_08891474(D_08A631A8, 0xFC, 0x70, TXT(D_089B5592), text_menu(D_089CC438, D_089AC710[m]));
             q = D_08A62C7C;
             if (S8(q, 0x7B2) == 0 || m == S8(q, 0x7A8)) {
                 u8 *e;
@@ -559,7 +566,7 @@ void hud_draw_quest_info(u8 *self)
                 func_08890DFC(D_08A631A8, 0x188, 0x70);
                 hud_quest_count(self, a, 0);
                 func_08891474(D_08A631A8, 0xFC, 0x80, TXT(D_089B5592),
-                              func_0885151C(D_089CC438, D_089AC710[m2]));
+                              text_menu(D_089CC438, D_089AC710[m2]));
                 q = D_08A62C7C;
                 a = q[0x7AD] - S8(*(u8 **)(q + 0x794), 4);
                 func_08890DFC(D_08A631A8, 0x188, 0x80);
@@ -587,7 +594,7 @@ void hud_draw_quest_info(u8 *self)
                     a = b - quest_goal_left_i(D_08A62C7C, i);
                 }
                 id = quest_goal_target(D_08A62C7C, i);
-                func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), func_0885151C(D_089CC438, D_089AC710[id]));
+                func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), text_menu(D_089CC438, D_089AC710[id]));
                 func_08890DFC(D_08A631A8, 0x188, y);
                 hud_quest_count(self, a, b);
                 y += 16;
@@ -605,7 +612,7 @@ void hud_draw_quest_info(u8 *self)
                     continue;
                 a = got - S8(*(u8 **)(q + 0x768 + i * 4), 4);
                 m = (s8)q[0x77C + i];
-                func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), func_0885151C(D_089CC438, D_089AC710[m]));
+                func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), text_menu(D_089CC438, D_089AC710[m]));
                 func_08890DFC(D_08A631A8, 0x188, y);
                 hud_quest_count(self, a, got);
                 y += 16;
@@ -622,7 +629,7 @@ void hud_draw_quest_info(u8 *self)
             if (quest_goal_kind(D_08A62C7C, i) != 1)
                 continue;
             id = quest_goal_target(D_08A62C7C, i);
-            func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), func_08851528(D_089CC438, id));
+            func_08891474(D_08A631A8, 0xFC, y, TXT(D_089B5592), text_item_name(D_089CC438, id));
             func_08890DFC(D_08A631A8, 0x181, y);
             a = quest_hunter_item_get(D_08A62C7C, id, 0);
             hud_quest_count(self, a, (u16)quest_goal_count(D_08A62C7C, id, (u16)i));
@@ -650,8 +657,8 @@ void hud_draw_quest_info(u8 *self)
     y2 = (rows + 1) * 16 + 0x40;
     func_08891474(D_08A631A8, 0xFC, y2, D_0893B650, TXT(D_089B558A));
     func_08890E38(D_08A631A8, 0);
-    func_0881A8E0(self, (s16)(D_0893B770[lang] + 0x142), y1, U32(menu_quest_data(self), 8));
-    func_0881A8E0(self, (s16)(D_0893B770[lang] + 0x142), y2, U32(D_08A62C7C, 0x14));
+    menu_draw_number(self, (s16)(D_0893B770[lang] + 0x142), y1, U32(menu_quest_data(self), 8));
+    menu_draw_number(self, (s16)(D_0893B770[lang] + 0x142), y2, U32(D_08A62C7C, 0x14));
 }
 
 /* counter "a/b" of a quest target (only "a" for the hunt-a-number quests) */

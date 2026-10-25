@@ -21,12 +21,12 @@ void menu_draw_trade_info(void *self)
     s16 y;
     int i;
 
-    sprintf(title, D_0893854C, func_0885151C(D_089CC438, *(u16 *)0x089AC608));
-    func_0882FA24(l1, D_0893B0A4, 1, 0, 0);
+    sprintf(title, D_0893854C, text_menu(D_089CC438, *(u16 *)0x089AC608));
+    layout_build(l1, D_0893B0A4, 1, 0, 0);
     if (U32(self, 0x5A8) == 0)
         return;
     func_0882F580(self, l1, (int)title, S8(self, 0x5C3), 0xFF, 0);
-    func_0882FB38(self, l1, U8(self, 0x5C4), U8(self, 0x5C5), 0, 0);
+    layout_draw_pages(self, l1, U8(self, 0x5C4), U8(self, 0x5C5), 0, 0);
     e = (u16 *)((u8 *)self + 0x5C8);
     y = S16(l1, 14);
     for (i = 0; i < 8; i++, e++) {
@@ -38,41 +38,41 @@ void menu_draw_trade_info(void *self)
             break;
         if (v & 0x4000) {
             col = 10;
-            s = func_0885151C(D_089CC438, D_089AC834[3]);
+            s = text_menu(D_089CC438, D_089AC834[3]);
         } else {
             col = (v & 0x8000) ? 2 : 0;
-            s = func_08851528(D_089CC438, v & 0x3FFF);
+            s = text_item_name(D_089CC438, v & 0x3FFF);
         }
         func_088915B0(D_08A631A8, S16(l1, 12), y, col, D_08938478, s);
         y += S16(l1, 16);
     }
-    func_0882FA24(l2, D_0893B0B8, 1, 0, 0);
+    layout_build(l2, D_0893B0B8, 1, 0, 0);
     func_0882F580(self, l2, (int)D_08938580, -1, 0xFF, 0);
     p = (u8 *)U32(self, 0x5A8);
     func_088920A8(D_08A631A8, S16(l2, 0x24), S16(l2, 0x26),
-                  func_0885151C(D_089CC438, D_089AC630[(p[7] & 1) ? 2 : 0]), U8(self, 0x5BB) + 1);
+                  text_menu(D_089CC438, D_089AC630[(p[7] & 1) ? 2 : 0]), U8(self, 0x5BB) + 1);
     if ((s8)combo_known(D_08A62C50, U32(self, 0x5A8), 1, 0) == 1) {
         p = (u8 *)U32(self, 0x5A8);
         c3 = c4 = c6 = c1 = 0;
         c5 = D_0893AF2C[(s8)p[4]];
-        t1 = func_08851528(D_089CC438, U16(p, 2));
-        t3 = func_08851528(D_089CC438, U16(self, 0x5AC));
-        t4 = func_08851528(D_089CC438, U16(self, 0x5AE));
-        t5 = func_0885151C(D_089CC438, D_089AC620[(s8)((u8 *)U32(self, 0x5A8))[4]]);
-        t6 = func_08825104(self, U32(self, 0x5A8));
+        t1 = text_item_name(D_089CC438, U16(p, 2));
+        t3 = text_item_name(D_089CC438, U16(self, 0x5AC));
+        t4 = text_item_name(D_089CC438, U16(self, 0x5AE));
+        t5 = text_menu(D_089CC438, D_089AC620[(s8)((u8 *)U32(self, 0x5A8))[4]]);
+        t6 = menu_item_category(self, U32(self, 0x5A8));
     } else {
         c6 = c5 = c4 = c3 = c1 = 10;
-        t1 = func_0885151C(D_089CC438, D_089AC834[3]);
+        t1 = text_menu(D_089CC438, D_089AC834[3]);
         if ((((u8 *)U32(self, 0x5A8))[7] & 4) == 0) {
             c3 = 0;
-            t3 = func_08851528(D_089CC438, U16(self, 0x5AC));
+            t3 = text_item_name(D_089CC438, U16(self, 0x5AC));
         } else {
             t3 = t1;
         }
         t4 = t5 = t6 = t1;
         if ((((u8 *)U32(self, 0x5A8))[7] & 8) == 0) {
             c4 = 0;
-            t4 = func_08851528(D_089CC438, U16(self, 0x5AE));
+            t4 = text_item_name(D_089CC438, U16(self, 0x5AE));
         }
     }
     func_088915B0(D_08A631A8, S16(l2, 12), (s16)(S16(l2, 14) + S16(l2, 16)), c1, D_08938478, t1);
@@ -99,11 +99,11 @@ s16 menu_draw_rating_icon(void *self, const u8 *ent, s32 x_arg, s32 y_arg, s32 v
     else
         r = 1;
     if (r == 0) {
-        func_0882A9DC(self, x, y, 0x1F);
-        func_0882A9DC(self, x + 5, y + 4, 0x1A5);
+        menu_draw_sprite(self, x, y, 0x1F);
+        menu_draw_sprite(self, x + 5, y + 4, 0x1A5);
     } else {
-        func_0882A9DC(self, x, y, 0x20);
-        func_0882A9DC(self, x + 5, y + 4, lo < v ? 0x1A5 : 0x1A4);
+        menu_draw_sprite(self, x, y, 0x20);
+        menu_draw_sprite(self, x + 5, y + 4, lo < v ? 0x1A5 : 0x1A4);
     }
     return r + 1;
 }
@@ -121,9 +121,9 @@ void menu_draw_time(void *self, int x, int y, s32 which_arg)
     int t;
 
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) && (u8)which == 1)
-        t = U32(func_088298E4(self), 0x10);
+        t = U32(menu_quest_data(self), 0x10);
     else
-        t = func_0886A35C(D_08A62C7C, (u8)which);
+        t = quest_time(D_08A62C7C, (u8)which);
     func_08891474(D_08A631A8, x, y, D_08938588, (t / 30) / 60, (t / 30) % 60);
 }
 
@@ -135,9 +135,9 @@ void menu_draw_stars(void *self, int n)
     u16 q;
 
     buf[0] = 0;
-    q = U16(func_088298E4(self), 0x18);
+    q = U16(menu_quest_data(self), 0x18);
     if ((q < 10000 || q >= 12000) && n > 8) {
-        strcat(p, func_0885151C(D_089CC438, *(u16 *)0x089AC57A));
+        strcat(p, text_menu(D_089CC438, *(u16 *)0x089AC57A));
         p = buf + 1;    /* (as in the original) */
         n -= 8;
     }

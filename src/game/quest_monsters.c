@@ -2,6 +2,7 @@
  * points of the area (20 GatherSpot after the area object D_09A4F060) and the monsters
  * placed by the quest file. (Guessed names.) */
 #include "quest.h"
+#undef pouch_slot
 
 extern u8 *D_09A4F060;             /* area: +4 = gathering points */
 extern s8 D_08A62C9C[20];          /* active gathering points, in order of creation */

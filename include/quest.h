@@ -3,6 +3,9 @@
 #ifndef QUEST_H
 #define QUEST_H
 #include "game.h"
+/* the real functions (menu.h has aliases for the callers there) */
+#undef quest_time
+#undef quest_text
 
 /* ---- quest file (loaded at D_08A5C440; all the offsets are relative to its start) ---- */
 

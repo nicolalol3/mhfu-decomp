@@ -2,6 +2,7 @@
  * Fields: 0 active, 1 kind, 2 state, 3, 4 f32 y, 8 / 0xA ids, 0xC x, 0xE width, 0x14 height,
  * 0x16 text x, 0x18 timer, 0x20 text (kinds 4 and 6). (Guessed names.) */
 #include "menu.h"
+#undef layout_draw
 
 extern void *D_08A62D8C;          /* sound */
 extern const u16 D_089ACA0C[], D_089ACA40[], D_089ACA68[], D_089ACA7C[], D_089AD058[];
@@ -21,7 +22,7 @@ void heap_free(u32 *h, u8 *p);
 s32 func_0890C3D8(f32 *v);
 void func_08897298(void *p);
 
-#define TEXT(id) func_0885151C(D_089CC438, id)
+#define TEXT(id) text_menu(D_089CC438, id)
 
 /* opens the popup: builds the text and computes the size of the window */
 void popup_open(u8 *m)
@@ -40,10 +41,10 @@ void popup_open(u8 *m)
         sprintf(buf, D_0899D114, TEXT(D_089ACA0C[S16(m, 0xA)]));
         break;
     case 1:
-        sprintf(buf, TEXT(D_089ACA40[S16(m, 0xA)]), func_08851528(D_089CC438, U16(m, 8)));
+        sprintf(buf, TEXT(D_089ACA40[S16(m, 0xA)]), text_item_name(D_089CC438, U16(m, 8)));
         break;
     case 2:
-        sprintf(buf, D_0899D118, TEXT(D_089ACA68[S16(m, 0xA)]), func_08851528(D_089CC438, U16(m, 8)));
+        sprintf(buf, D_0899D118, TEXT(D_089ACA68[S16(m, 0xA)]), text_item_name(D_089CC438, U16(m, 8)));
         break;
     case 3:
         sprintf(buf, D_0899D118, D_0899D120, TEXT(D_089ACA7C[S16(m, 0xA)]));
@@ -53,7 +54,7 @@ void popup_open(u8 *m)
         sprintf(buf, D_0899D114, (const char *)U32(m, 0x20));
         break;
     case 5: {
-        const char *a = func_08851528(D_089CC438, U16(m, 0xA));
+        const char *a = text_item_name(D_089CC438, U16(m, 0xA));
         const char *b = TEXT(D_089ACA84);
 
         sprintf(buf, D_0899D12C, a, b, S16(m, 8), TEXT(D_089ACA86));
@@ -243,7 +244,7 @@ void popup_draw(u8 *m)
         break;
     case 1:
         func_08890E38(D_08A631A8, 0);
-        func_088920A8(D_08A631A8, x, y, TEXT(D_089ACA40[S16(m, 0xA)]), func_08851528(D_089CC438, U16(m, 8)));
+        func_088920A8(D_08A631A8, x, y, TEXT(D_089ACA40[S16(m, 0xA)]), text_item_name(D_089CC438, U16(m, 8)));
         break;
     case 2: {
         s16 w;
@@ -252,7 +253,7 @@ void popup_draw(u8 *m)
         func_08891474(D_08A631A8, x, y, D_0899D114, TEXT(D_089ACA68[S16(m, 0xA)]));
         w = func_08890E48(D_08A631A8, TEXT(D_089ACA68[S16(m, 0xA)]));
         func_08890E38(D_08A631A8, 2);
-        func_08891474(D_08A631A8, (s16)(x + w * 7), y, D_0899D114, func_08851528(D_089CC438, U16(m, 8)));
+        func_08891474(D_08A631A8, (s16)(x + w * 7), y, D_0899D114, text_item_name(D_089CC438, U16(m, 8)));
         break;
     }
     case 3:
@@ -269,7 +270,7 @@ void popup_draw(u8 *m)
         func_088920A8(D_08A631A8, x, y, D_0899D114, (const char *)U32(m, 0x20));
         break;
     case 5: {
-        const char *a = func_08851528(D_089CC438, U16(m, 0xA));
+        const char *a = text_item_name(D_089CC438, U16(m, 0xA));
         const char *b = TEXT(D_089ACA84);
 
         func_088920A8(D_08A631A8, x, y, D_0899D158, a, b, S16(m, 8), TEXT(D_089ACA86));

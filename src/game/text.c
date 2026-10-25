@@ -2,6 +2,9 @@
  * (a list of offsets to the tables, each table a list of offsets to the strings),
  * plus small helpers of the hunter data. (Guessed names.) */
 #include "menu.h"
+#undef text_menu
+#undef text_item_name
+#undef text_item_info
 
 extern u8 D_089CC440[];           /* text file */
 extern const u16 D_0899A1FC[], D_0899AAF8[], D_0899ADBC[], D_0899B124[], D_0899B46C[], D_0899B7A4[],

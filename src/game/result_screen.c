@@ -1,6 +1,9 @@
 /* Result screens at the end of the quest: reward money, sold items (with the counting
  * animation). The object is D_08A62CB4. (Guessed names.) */
 #include "quest.h"
+#undef menu_draw_sprite
+#undef gfx_draw_item_icon_alpha
+#undef text_item_name
 
 extern u8 *D_08A62CB4;
 extern u8 *D_08A62D8C;             /* sound */

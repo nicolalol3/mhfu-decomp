@@ -1,6 +1,7 @@
 /* General game state (D_089CC438): flags, money, points, counters of the items.
  * (Guessed names.) */
 #include "menu.h"
+#undef game_quest_locked
 
 extern u8 *D_08A62C60;
 extern u32 D_08A62C6C, D_08A62C74;   /* buttons pressed in this frame / held */

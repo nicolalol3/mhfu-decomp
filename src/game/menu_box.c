@@ -42,7 +42,7 @@ void *menu_dtor(void *self, s32 del_arg)
 {
     s16 del = del_arg;
     if (self != NULL) {
-        func_08832838(self);
+        menu_free_data(self);
         func_0890BE54((u8 *)self + 0xE28, (void *)0x08816B24, 0x24, 0x14);
         D_089CBBEC = NULL;
         if (del > 0)
@@ -66,7 +66,7 @@ void menu_open(void *self)
     U8(self, 0x57C) = 0;
     D_089CC438[0x10] = 0;
     U8(self, 0x554) = 0;
-    func_0883D274(self);
+    hud_notice_clear(self);
     U8(self, 0x604) = 0;
     U32(self, 0x600) = 0;
     U32(self, 0x5E8) &= ~0x82;
@@ -120,16 +120,16 @@ void menu_open(void *self)
         U8(self, 0x5E0) = U8(D_089CC438, 0x6ADE2);
         U8(self, 0x5E2) = U8(D_089CC438, 0x6ADE4);
         U8(self, 0x5E3) = U8(D_089CC438, 0x6ADE5);
-        U32(self, 0x558) = func_0886A35C(D_08A62C7C, 0);
-        U32(self, 0x55C) = func_0886A35C(D_08A62C7C, 1);
-        func_08829674(self);
+        U32(self, 0x558) = quest_time(D_08A62C7C, 0);
+        U32(self, 0x55C) = quest_time(D_08A62C7C, 1);
+        menu_get_mode(self);
         U32(self, 0x528) &= ~0x20;
         U8(self, 0x11AE) = 0;
     } else {
         U8(self, 0x608) = U8(g, 0x6ADE3);
         U8(g, 0x422) = 0;
     }
-    func_088306DC(self);
+    menu_reset_messages(self);
     U8(self, 0x112C) = 0;
     U8(self, 0x1138) = 0;
     U8(self, 0x1144) = 0;
@@ -147,7 +147,7 @@ static void draw_title_text(void *self)
 {
     func_08890DE8(D_08A631A8, 14, 14);
     func_088920A8(D_08A631A8, (s16)(D_0893B164 + 98), (s16)(D_0893B166 + D_0893B168 * 2), D_08938478,
-                  func_0885151C(D_089CC438, D_089AC588[U8(self, 0x537)]));
+                  text_menu(D_089CC438, D_089AC588[U8(self, 0x537)]));
 }
 
 /* confirm/choice window */
@@ -158,12 +158,12 @@ void menu_draw_choice(void *self)
     u32 flags = 0, color = 0;
     int v;
 
-    func_0882FA24(layout, D_0893AFDC, 0, 0, 0);
+    layout_build(layout, D_0893AFDC, 0, 0, 0);
     if ((U32((u8 *)U32(self, 0x530), 0x614) & 4) == 0) {
         v = 4;
     } else {
-        v = (u8)func_08829928(self) != 1;
-        if ((u8)func_08829A48(self, *func_08856884(D_089CC438, U8(self, 0x586))) != 1)
+        v = (u8)menu_item_giftable(self) != 1;
+        if ((u8)menu_item_for_quest(self, *pouch_slot(D_089CC438, U8(self, 0x586))) != 1)
             v += 2;
     }
     U32(layout, 20) = (u32)(D_089AC5D8 + v * 8);
@@ -181,17 +181,17 @@ void menu_draw_choice(void *self)
             break;
         case 2:
             if (U8(self, 0x589) == 0)
-                func_08832E34(self, 0xF0, 0x68, U8(self, 0x58A), U8(self, 0x58A) + 1 - U8(self, 0x58B), 0);
+                gfx_draw_count_box(self, 0xF0, 0x68, U8(self, 0x58A), U8(self, 0x58A) + 1 - U8(self, 0x58B), 0);
             else if (U8(self, 0x589) == 1)
-                func_0882F9A8(self, D_0893B004, 0, U8(self, 0x537), 0xFF, 0);
+                layout_draw_from(self, D_0893B004, 0, U8(self, 0x537), 0xFF, 0);
             break;
         case 1:
-            func_08829B58(self, 0);
+            menu_draw_give(self, 0);
             break;
         case 0:
             U32(layout, 24) = 0x80808080;
             func_0882F580(self, layout, 0, 0, 0xFF, 0);
-            func_0882F9A8(self, D_0893AFF0, 0, U8(self, 0x537), 0xFF, 0);
+            layout_draw_from(self, D_0893AFF0, 0, U8(self, 0x537), 0xFF, 0);
             break;
         }
         break;
@@ -215,8 +215,8 @@ void menu_draw_choice(void *self)
         u32 row = U8(self, 0x586) >> 3;
 
         if (row == (u32)(U8(self, 0x595) >> 3)) {
-            func_0882FA24(layout2, D_0893B0E0, 1, 0, 0);
-            func_0882F4A4(self, U16(layout2, 28),
+            layout_build(layout2, D_0893B0E0, 1, 0, 0);
+            gfx_fill_rect_pulse(self, U16(layout2, 28),
                           (u16)(U16(layout2, 30) + U16(layout2, 16) * (U8(self, 0x586) - row * 8)),
                           U16(layout2, 32), U16(layout2, 34), 0x400000);
         }
@@ -239,7 +239,7 @@ void menu_draw_item_name(void *self, int x, int y, s32 avail_arg, u32 id_arg, s3
         color = 10;
     else
         color = 0;
-    func_088915B0(D_08A631A8, x, y, color, D_08938478, func_08851528(D_089CC438, id_arg));   /* the original passes the received value */
+    func_088915B0(D_08A631A8, x, y, color, D_08938478, text_item_name(D_089CC438, id_arg));   /* the original passes the received value */
 }
 
 /* searches the list "slots" for item id and sets the text color */
@@ -249,7 +249,7 @@ static void set_color_for_slot(void *self, u16 *slots, s16 id)
 
     for (i = 0; i < 0x18; i++) {
         if (id == slots[i * 2]) {
-            s16 r = (s16)func_08828F3C(self, slots + i * 2);
+            s16 r = (s16)menu_combo_room(self, slots + i * 2);
 
             if (r >= 0) {
                 if (r == 1)
@@ -278,19 +278,19 @@ void menu_draw_trade(void *self)
     if ((U32(D_089CC438, 0x6AF14) & 0x200) == 0)
         slots = (u16 *)(D_089CC438 + 0x43C8);
     else
-        slots = func_08856884(D_089CC438, 0);
+        slots = pouch_slot(D_089CC438, 0);
 
     st = U8(self, 0x5B8);
     if (st < 3 && (U32(self, 0x528) & 0x10) == 0) {
-        func_0882FC50(self, st == 2 ? D_089384CC : D_0893847C, func_0885151C(D_089CC438, D_089AC834[0]), 0xFF);
+        layout_draw(self, st == 2 ? D_089384CC : D_0893847C, text_menu(D_089CC438, D_089AC834[0]), 0xFF);
         c = U8(self, 0x5B8);
         if (c == 0) {
             u8 s;
 
             func_088915B0(D_08A631A8, (s16)(D_08938488 + D_0893848C * 3 + xoff[lang]), D_0893848A, 3,
-                          D_08938478, func_0885151C(D_089CC438, D_089AC834[9]));
+                          D_08938478, text_menu(D_089CC438, D_089AC834[9]));
             s = U8(self, 0x586);
-            if ((u8)func_088286E4(self, s, slots[s * 2]) != 1)
+            if ((u8)menu_slot_has_item(self, s, slots[s * 2]) != 1)
                 menu_draw_item_name(self, D_08938488, (s16)(D_0893848A + D_0893848C), -1, slots[U8(self, 0x586) * 2], 0);
             else
                 menu_draw_item_name(self, D_08938488, (s16)(D_0893848A + D_0893848C), U8(self, 0x586),
@@ -302,15 +302,15 @@ void menu_draw_trade(void *self)
         }
         c = U8(self, 0x5B8);
         if (c != 0) {
-            func_0882FC50(self, c == 2 ? D_089384E0 : D_08938490, func_0885151C(D_089CC438, D_089AC834[1]), 0xFF);
+            layout_draw(self, c == 2 ? D_089384E0 : D_08938490, text_menu(D_089CC438, D_089AC834[1]), 0xFF);
             c = U8(self, 0x5B8);
             if (c == 1) {
                 u8 s;
 
                 func_088915B0(D_08A631A8, (s16)(D_0893849C + D_089384A0 * 3 + xoff[lang]), D_0893849E, 3,
-                              D_08938478, func_0885151C(D_089CC438, D_089AC834[9]));
+                              D_08938478, text_menu(D_089CC438, D_089AC834[9]));
                 s = U8(self, 0x586);
-                if (func_0885B5B8(D_08A62C50, S16(self, 0x5AC), (s16)slots[s * 2], 0, 0, 0) == 0)
+                if (combo_find(D_08A62C50, S16(self, 0x5AC), (s16)slots[s * 2], 0, 0, 0) == 0)
                     menu_draw_item_name(self, D_0893849C, (s16)(D_0893849E + D_089384A0), -1,
                                         slots[U8(self, 0x586) * 2], 0);
                 else
@@ -357,21 +357,21 @@ void menu_draw_trade(void *self)
             b[i] = D_08938530[i];
         D_089384B8 = 0xF8 - a[LANG];
         D_089384C0 = b[LANG] + 9;
-        func_0882FA24(layout, &D_089384B8, 0, 0, 0);
+        layout_build(layout, &D_089384B8, 0, 0, 0);
         func_0882F580(self, layout, 0, U8(self, 0x5B9), 0xFF, 0);
         func_088915B0(D_08A631A8, S16(layout, 12), S16(layout, 14), U8(self, 0x5BA) ? 10 : 0, D_08938478,
-                      func_0885151C(D_089CC438, D_089AC834[6]));
+                      text_menu(D_089CC438, D_089AC834[6]));
         /* prosegue */
     case 3:
     case 4:
-        func_0882FC50(self, &D_089384A4, func_0885151C(D_089CC438, D_089AC834[2]), 0xFF);
+        layout_draw(self, &D_089384A4, text_menu(D_089CC438, D_089AC834[2]), 0xFF);
         if (S16(self, 0x5B4) < 1) {
             const char *s1, *s2;
 
             func_08890E38(D_08A631A8, 10);
-            s1 = func_0885151C(D_089CC438, D_089AC834[3]);
+            s1 = text_menu(D_089CC438, D_089AC834[3]);
             func_08891474(D_08A631A8, D_089384B0, (s16)(D_089384B2 + D_089384B4), D_08938478, s1);
-            s2 = func_0885151C(D_089CC438, D_089AC834[5]);
+            s2 = text_menu(D_089CC438, D_089AC834[5]);
             func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 2), D_08938478, s2);
             func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938478, s1);
             func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938478, s1);
@@ -381,16 +381,16 @@ void menu_draw_trade(void *self)
 
             func_08890E38(D_08A631A8, 0);
             func_08891474(D_08A631A8, D_089384B0, (s16)(D_089384B2 + D_089384B4), D_08938478,
-                          func_08851528(D_089CC438, U16((u8 *)U32(self, 0x5A8), 2)));
-            rank = (s8)func_0885BE08(D_08A62C50, U32(self, 0x5A8), 0);
-            func_08890E38(D_08A631A8, D_0893AF2C[(u8)func_0885C718(rank)]);
+                          text_item_name(D_089CC438, U16((u8 *)U32(self, 0x5A8), 2)));
+            rank = (s8)combo_rate_of(D_08A62C50, U32(self, 0x5A8), 0);
+            func_08890E38(D_08A631A8, D_0893AF2C[(u8)combo_rate_class(rank)]);
             func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 2),
-                          func_0885151C(D_089CC438, D_089AC834[4]), (int)rank);
+                          text_menu(D_089CC438, D_089AC834[4]), (int)rank);
             func_08890E38(D_08A631A8, 0);
             func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938478,
-                          func_08825104(self, U32(self, 0x5A8)));
+                          menu_item_category(self, U32(self, 0x5A8)));
             set_color_for_slot(self, slots, S16(self, 0x5B4));
-            have = (u16)func_088568AC(D_089CC438, S16(self, 0x5B4));
+            have = (u16)pouch_count(D_089CC438, S16(self, 0x5B4));
             func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938540, have,
                           D_0899D19B[S16(self, 0x5B4) * 0x18]);
             func_08890E38(D_08A631A8, 0);
@@ -409,12 +409,12 @@ void menu_draw_trade(void *self)
             n = U8(self, 0x5E5);
             t = 7;
         }
-        func_0882FC50(self, &D_089384A4, func_0885151C(D_089CC438, D_089AC834[t]), 0xFF);
-        have = (u16)func_088568AC(D_089CC438, S16(self, 0x5B6));
+        layout_draw(self, &D_089384A4, text_menu(D_089CC438, D_089AC834[t]), 0xFF);
+        have = (u16)pouch_count(D_089CC438, S16(self, 0x5B6));
         max = D_0899D19B[S16(self, 0x5B6) * 0x18];
         func_08890E38(D_08A631A8, 0);
         func_08891474(D_08A631A8, D_089384B0, (s16)(D_089384B2 + D_089384B4), D_08938478,
-                      func_08851528(D_089CC438, U16(self, 0x5B6)));
+                      text_item_name(D_089CC438, U16(self, 0x5B6)));
         func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 3), D_08938548, n);
         set_color_for_slot(self, slots, S16(self, 0x5B4));
         func_08891474(D_08A631A8, x2, (s16)(D_089384B2 + D_089384B4 * 4), D_08938540, have, max);

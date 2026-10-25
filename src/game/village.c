@@ -1,6 +1,7 @@
 /* Village: start of the village scene, second item pouch (g+0x43C8), gathering lists.
  * (Guessed names.) */
 #include "menu.h"
+#undef pouch_count
 
 extern u8 *D_08A62C60;
 extern u8 *D_08A8B1E8;

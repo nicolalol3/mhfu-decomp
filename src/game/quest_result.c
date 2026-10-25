@@ -1,6 +1,7 @@
 /* End of the quest (object D_08A62CB4): size records, items sold at the end, timers of
  * the result screen. (Guessed names.) */
 #include "quest.h"
+#undef pouch_slot
 
 extern u8 *D_08A62CB4;
 extern u8 *D_08A62D8C;

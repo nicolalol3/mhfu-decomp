@@ -4,6 +4,8 @@
  * Skill entry: u16 sort key, u8 flags, u8 skill id, s8 points[6] (weapon, 4 armor
  * pieces, ...), s8 total, u8 colors[7]. */
 #include "menu.h"
+#undef menu_slot_has_item
+#undef menu_combo_room
 
 extern void *D_08A62C54;          /* equipment data */
 extern void *D_089CBBE8;          /* text converter */
@@ -370,9 +372,9 @@ int menu_slot_has_item(void *self, s32 s_arg, s32 id_arg)
 
     if (s == -1)
         return 0;
-    if (S16(func_08856884(D_089CC438, s), 2) == 0)
+    if (S16(pouch_slot(D_089CC438, s), 2) == 0)
         return 0;
-    if (id != *(s16 *)func_08856884(D_089CC438, s))
+    if (id != *(s16 *)pouch_slot(D_089CC438, s))
         return 0;
     return (u8)func_0885B3A0(D_08A62C50, id, 0, 0) != 0;
 }
@@ -387,10 +389,10 @@ int menu_slot_combine(u8 *self, s32 a_arg, s32 b_arg)
 
     if (a == -1 || b == a)
         return 0;
-    if (S16(func_08856884(D_089CC438, a), 2) == 0)
+    if (S16(pouch_slot(D_089CC438, a), 2) == 0)
         return 0;
-    ib = *(s16 *)func_08856884(D_089CC438, b);
-    e = (u8 *)func_0885B5B8(D_08A62C50, ib, *(s16 *)func_08856884(D_089CC438, a), 0, 0, 0);
+    ib = *(s16 *)pouch_slot(D_089CC438, b);
+    e = (u8 *)combo_find(D_08A62C50, ib, *(s16 *)pouch_slot(D_089CC438, a), 0, 0, 0);
     U32(self, 0x5A8) = (u32)e;
     if (e == NULL)
         return 0;

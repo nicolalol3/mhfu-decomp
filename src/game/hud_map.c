@@ -2,6 +2,10 @@
  * Same class as menu_box.c / hud.c. (Guessed names.) */
 #include "menu.h"
 #include "vfpu.h"
+#undef menu_draw_sprite
+#undef gfx_fill_rect
+#undef gfx_draw_window
+#undef layout_draw
 
 extern u8 *D_08A62C40;            /* display list manager */
 extern const u8 D_0893914C[];     /* map icon of each kind of object (0xFF = none) */
@@ -361,7 +365,7 @@ void hud_draw_item_bar(u8 *self)
 
         func_08890DE8(D_08A631A8, 14, 14);
         func_08890E38(D_08A631A8, 0);
-        pouch = func_08856884(D_089CC438, 0);
+        pouch = pouch_slot(D_089CC438, 0);
         item = pouch[U16(h, 0x648) * 2];
         if ((s16)pouch[U16(h, 0x648) * 2 + 1] > 0 && D_0899D19B[item * 0x18] >= 2) {
             if ((s16)pouch[U16(h, 0x648) * 2 + 1] >= D_0899D19B[item * 0x18])
@@ -369,9 +373,9 @@ void hud_draw_item_bar(u8 *self)
             func_08891474(D_08A631A8, D_0893B648, D_0893B64A, D_0893B64C,
                           (s16)pouch[U16(h, 0x648) * 2 + 1]);
         }
-        x = D_0893B644 - ((func_08890E48(D_08A631A8, func_08851528(D_089CC438, item)) * 14) >> 2);
+        x = D_0893B644 - ((func_08890E48(D_08A631A8, text_item_name(D_089CC438, item)) * 14) >> 2);
         func_08890E38(D_08A631A8, 0);
-        func_08891474(D_08A631A8, (s16)x, D_0893B646, D_0893B650, func_08851528(D_089CC438, item));
+        func_08891474(D_08A631A8, (s16)x, D_0893B646, D_0893B650, text_item_name(D_089CC438, item));
     }
     if (S8(self, 0x598) > 0)
         S8(self, 0x598)--;
@@ -402,7 +406,7 @@ void hud_draw_item_bar_single(u8 *self)
     menu_draw_sprite(self, D_0893B66C[0], (u16)(D_0893B66C[1] + dy), 0x35);
     menu_draw_sprite(self, D_0893B670[0], D_0893B670[1], 0x36);
     if ((u8)menu_slot_usable(self, U16(h, 0x648)) == 1) {
-        u16 *e = func_08856884(D_089CC438, U16(h, 0x648));
+        u16 *e = pouch_slot(D_089CC438, U16(h, 0x648));
 
         gfx_draw_item_icon(self, e[0], D_0893B674[0], D_0893B674[1], D_0893B674[2], D_0893B674[3], 0);
     }
@@ -445,7 +449,7 @@ int hud_count_usable_items(void)
     s16 i, n = 0;
 
     for (i = 0; i < 0x18; i++) {
-        if ((s16)func_08856884(D_089CC438, i)[1] > 0 && func_08856884(D_089CC438, i)[0] != 0
+        if ((s16)pouch_slot(D_089CC438, i)[1] > 0 && pouch_slot(D_089CC438, i)[0] != 0
             && pouch_item_data(D_08A62C50, i)[1] == 1)
             n++;
     }
@@ -473,7 +477,7 @@ void hud_draw_item_slot(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 slot_arg)
     if (slot == 0xFF) {
         c = 0xFF808080;
     } else {
-        u16 *e = func_08856884(D_089CC438, slot);
+        u16 *e = pouch_slot(D_089CC438, slot);
 
         c = *(const u32 *)&D_0893AA5C[D_0899D19E[e[0] * 0x18] * 4];
     }
@@ -486,7 +490,7 @@ void hud_draw_item_slot(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 slot_arg)
         return;
     }
     gfx_draw_sprite_scaled(self, x, y, (u16)D_08939374, h, 0x25);
-    if (slot == 0xFF || func_08856884(D_089CC438, slot)[0] == 0x80)
+    if (slot == 0xFF || pouch_slot(D_089CC438, slot)[0] == 0x80)
         return;
     gfx_draw_sprite_scaled_color(self, (xx + 1) & 0xFFFF, y, 0x10, h, cp[0], cp[1], cp[2], 0x19C);
     if (slot == (*(u8 **)(self + 0x530))[0x5F6]) {
@@ -517,11 +521,11 @@ int hud_draw_item_name(u8 *self, u32 slot_arg, s32 y)
 
     if (slot == 0xFF)
         return 0;
-    item = func_08856884(D_089CC438, slot)[0];
+    item = pouch_slot(D_089CC438, slot)[0];
     it = &D_0899D198[item * 0x18];
     if ((it[1] & 6) == 0)
         return 0;
-    n = ((u8 *)func_08856884(D_089CC438, slot))[2];
+    n = ((u8 *)pouch_slot(D_089CC438, slot))[2];
     if (n == 0)
         return 0;
     if (h[0x1E8] == 10)
@@ -530,12 +534,12 @@ int hud_draw_item_name(u8 *self, u32 slot_arg, s32 y)
         color = (it[8] == h[0x689]) ? 0 : 5;
     func_08890E38(D_08A631A8, color);
     if (item == 0x80) {
-        sprintf(buf, D_0893B650, func_08851528(D_089CC438, item));
+        sprintf(buf, D_0893B650, text_item_name(D_089CC438, item));
         sh = 4;
     } else if (it[3] == 0xFF) {
-        sprintf(buf, func_0885151C(D_089CC438, D_089AC848), func_08851528(D_089CC438, item));
+        sprintf(buf, text_menu(D_089CC438, D_089AC848), text_item_name(D_089CC438, item));
     } else {
-        sprintf(buf, D_0893B6F4, func_08851528(D_089CC438, item), n);
+        sprintf(buf, D_0893B6F4, text_item_name(D_089CC438, item), n);
     }
     func_08891474(D_08A631A8,
                   (s16)(D_0893B6F2 - sh - ((func_08890E48(D_08A631A8, buf) * 14) >> 2)), y,
@@ -591,7 +595,7 @@ void hud_draw_supply_box(u8 *self)
         taken = 0xFFFFFFFF;
     else
         taken = U32(game, 0x410);
-    layout_draw(self, (Layout *)D_0893B6FC, func_0885151C(game, D_089AC854[0]), 0xFF);
+    layout_draw(self, (Layout *)D_0893B6FC, text_menu(game, D_089AC854[0]), 0xFF);
     for (i = 0; i < 32; i++)
         gfx_fill_rect(self, BOX_X(i) & 0xFFFF, BOX_Y(i) & 0xFFFF, 22, 22, 0, 0, 0);
     gfx_set_filter(self, 1);
@@ -646,7 +650,7 @@ void hud_draw_supply_box(u8 *self)
     else
         item = U16(D_089CC438, slot * 4 + 0x390);
     if (item == 0) {
-        str = func_08851528(D_089CC438, 0);
+        str = text_item_name(D_089CC438, 0);
     } else {
         s16 n = S16(game, slot * 4 + 0x392);
         s16 have = pouch_room_or_full(D_089CC438, item);
@@ -656,16 +660,16 @@ void hud_draw_supply_box(u8 *self)
             k = 1;
         else if (have < n)
             k = 2;
-        else if (have == 0xFF && func_088568AC(D_089CC438, item) != 0)
+        else if (have == 0xFF && pouch_count(D_089CC438, item) != 0)
             k = 2;
         if (k >= 0)
-            func_088915B0(D_08A631A8, 0xE8, 0xB2, 2, D_0893B650, func_0885151C(D_089CC438, D_089AC854[k]));
+            func_088915B0(D_08A631A8, 0xE8, 0xB2, 2, D_0893B650, text_menu(D_089CC438, D_089AC854[k]));
         if (D_0899D19B[item * 0x18] == 0xFF) {
-            sprintf(buf, func_0885151C(D_089CC438, D_089AC85A), func_08851528(D_089CC438, item));
+            sprintf(buf, text_menu(D_089CC438, D_089AC85A), text_item_name(D_089CC438, item));
         } else if (D_0899D19B[item * 0x18] == 1) {
-            sprintf(buf, func_08851528(D_089CC438, item));
+            sprintf(buf, text_item_name(D_089CC438, item));
         } else {
-            sprintf(buf, func_0885151C(D_089CC438, D_089AC85C), func_08851528(D_089CC438, item), n);
+            sprintf(buf, text_menu(D_089CC438, D_089AC85C), text_item_name(D_089CC438, item), n);
         }
         str = buf;
     }

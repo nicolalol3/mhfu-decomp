@@ -135,7 +135,7 @@ void text_draw_list(void *self, s32 x, s32 y, const s16 *ids, s32 lh_arg, const 
     while (*ids != -1) {
         if (col != NULL)
             func_08890E38(D_08A631A8, *col++);
-        func_088920A8(D_08A631A8, x, y, D_08938478, func_0885151C(D_089CC438, *ids));
+        func_088920A8(D_08A631A8, x, y, D_08938478, text_menu(D_089CC438, *ids));
         ids++;
         y = (s16)(y + lh);
     }
@@ -168,6 +168,10 @@ void equip_draw_icon_color(void *self, u32 type, u32 id, u32 x, u32 y, const u8 
 }
 
 #include "vfpu.h"
+#undef menu_draw_sprite
+#undef gfx_draw_subwindow
+#undef menu_free_data
+#undef gfx_draw_count_box
 
 /* horizontal gradient: transparent at the edges, alpha a in the middle */
 void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u32 b, u8 a)
@@ -391,7 +395,7 @@ void menu_quest_slot_name(void *self, s32 n, char *out)
     u16 k = ((f & 8) != 0 || (f & 4) != 0) ? 2 : 1;
 
     sprintf(num, D_089386E8, n + 1);
-    sprintf(out, D_08938784, func_0885151C(D_089CC438, D_089AD048[k]), num);
+    sprintf(out, D_08938784, text_menu(D_089CC438, D_089AD048[k]), num);
 }
 
 extern const s16 D_08939E18, D_08939E1A, D_08939908, D_0893990A;
@@ -456,7 +460,7 @@ void gfx_draw_button_hint(u8 *self, u32 i)
 
     menu_draw_sprite(self, e[0], e[1], 56);
     func_08890DE8(D_08A631A8, 14, 14);
-    func_088915B0(D_08A631A8, (s16)e[2], (s16)e[3], 0, func_0885151C(D_089CC438, D_089ACAD8));
+    func_088915B0(D_08A631A8, (s16)e[2], (s16)e[3], 0, text_menu(D_089CC438, D_089ACAD8));
 }
 
 /* number n with the up/down arrows (n < max: up, n != 1: down) */
@@ -484,6 +488,6 @@ void gfx_draw_count_box(u8 *self, u32 x, u32 y, u32 n, u32 max, u32 flags)
 {
     gfx_draw_subwindow(self, x & 0xFFFF, y & 0xFFFF, 88, 48, 255);
     func_08890DE8(D_08A631A8, 14, 14);
-    func_088915B0(D_08A631A8, (s16)((s16)x + 8), (s16)((s16)y + 8), 5, func_0885151C(D_089CC438, D_089ACA08));
+    func_088915B0(D_08A631A8, (s16)((s16)x + 8), (s16)((s16)y + 8), 5, text_menu(D_089CC438, D_089ACA08));
     gfx_draw_counter(self, (s16)((s16)x + 52), (s16)((s16)y + 18), n, max, flags);
 }

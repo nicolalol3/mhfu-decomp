@@ -1,6 +1,12 @@
 /* Item combinations (list D_089A47D0, indexed by the first item) and removal of items
  * from the item box of the house (g+0x3428). (Guessed names.) */
 #include "menu.h"
+#undef pouch_slot
+#undef pouch_count
+#undef combo_find
+#undef combo_rate_of
+#undef item_pairs_sort
+#undef combo_rate_class
 
 extern void *D_09A4F0C4;
 extern const u8 D_089A47D0[];     /* combinations: s16 a, s16 b(=result), ..., 10 bytes each */

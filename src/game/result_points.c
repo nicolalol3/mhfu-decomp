@@ -2,6 +2,10 @@
  * friends, Felyne comrade experience, training points. The object is D_08A62CB4.
  * (Guessed names.) */
 #include "quest.h"
+#undef menu_draw_sprite
+#undef gfx_draw_window
+#undef text_menu
+#undef friend_marked
 
 extern u8 *D_08A62CB4;
 extern u8 *D_08A62D8C;

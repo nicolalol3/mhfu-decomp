@@ -1,6 +1,13 @@
 /* Menu: item pouch (compaction), game mode of the menu, list of the other players.
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
+#undef menu_get_mode
+#undef menu_quest_data
+#undef menu_item_giftable
+#undef menu_item_for_quest
+#undef menu_draw_give
+#undef menu_input_ready
+#undef menu_draw_sprite
 
 extern u8 *D_09A0B544;            /* player data (overlay) */
 extern const u8 D_0899D19A[];
@@ -39,7 +46,7 @@ void menu_pouch_compact(void *self, u32 box_arg)
     s32 i, rem, n;
 
     if (box == 0)
-        list = (s16 *)func_08856884(D_089CC438, 0);
+        list = (s16 *)pouch_slot(D_089CC438, 0);
     else
         list = (s16 *)(D_089CC438 + 0x43C8);
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && (*(u32 *)(D_089CC438 + 0x6AF14) & 8) == 0) {
@@ -53,13 +60,13 @@ void menu_pouch_compact(void *self, u32 box_arg)
         func_088D8000(hunter);
         U8(hunter, 0x67C) = k1;
         U8(hunter, 0x5F6) = k2;
-        sel = *func_08856884(D_089CC438, U16(hunter, 0x648));
+        sel = *pouch_slot(D_089CC438, U16(hunter, 0x648));
         if (U8(hunter, 0x686) == 0xFF)
             a = 0;
         else
-            a = *func_08856884(D_089CC438, U8(hunter, 0x686));
+            a = *pouch_slot(D_089CC438, U8(hunter, 0x686));
         if (U8(hunter, 0x5F6) != 0xFF)
-            b = *func_08856884(D_089CC438, U8(hunter, 0x5F6));
+            b = *pouch_slot(D_089CC438, U8(hunter, 0x5F6));
     }
     rem = 24;
     n = 0;
@@ -87,21 +94,21 @@ void menu_pouch_compact(void *self, u32 box_arg)
             } while (rem != 0);
         }
     }
-    func_0885C5DC(list, n);
+    item_pairs_sort(list, n);
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0 && (*(u32 *)(D_089CC438 + 0x6AF14) & 8) == 0) {
         u16 *s;
         u32 j;
 
         if (box != 0)
             return;
-        s = func_08856884(D_089CC438, 0);
+        s = pouch_slot(D_089CC438, 0);
         for (j = 0; j < 24; j++, s += 2) {
             if (*s == sel) {
                 U16(hunter, 0x648) = j;
                 break;
             }
         }
-        s = func_08856884(D_089CC438, 0);
+        s = pouch_slot(D_089CC438, 0);
         for (j = 0; j < 24; j++, s += 2) {
             if (*s == a) {
                 U16(hunter, 0x686) = j & 0xFF;
@@ -110,7 +117,7 @@ void menu_pouch_compact(void *self, u32 box_arg)
         }
         if (U8(hunter, 0x5F6) == 0xFF)
             return;
-        s = func_08856884(D_089CC438, 0);
+        s = pouch_slot(D_089CC438, 0);
         for (j = 0; j < 24; j++, s += 2) {
             if (*s == b) {
                 U8(hunter, 0x5F6) = j;
@@ -128,11 +135,11 @@ s32 menu_pouch_cursor(void *self, u8 *hunter)
     u16 i;
     u16 n;
 
-    if (*func_08856884(D_089CC438, U16(hunter, 0x648)) != 0)
+    if (*pouch_slot(D_089CC438, U16(hunter, 0x648)) != 0)
         return U16(hunter, 0x648);
     i = U16(hunter, 0x648);
     for (n = 24; n > 0; n--) {
-        if (*func_08856884(D_089CC438, i) != 0) {
+        if (*pouch_slot(D_089CC438, i) != 0) {
             U16(hunter, 0x648) = i;
             return i;
         }
@@ -277,15 +284,15 @@ void menu_draw_give(u8 *self, int alt)
     s16 y;
 
     if (self[0x589] == 0) {
-        func_08832E34(self, 0xF0, 0x68, self[0x58A], self[0x58A] + 1 - self[0x58B], 0);
+        gfx_draw_count_box(self, 0xF0, 0x68, self[0x58A], self[0x58A] + 1 - self[0x58B], 0);
         return;
     }
     if (self[0x589] != 1)
         return;
     if (alt == 0)
-        func_0882FA24(&l, D_089386C0, 0, 0, 0);
+        layout_build(&l, D_089386C0, 0, 0, 0);
     else
-        func_0882FA24(&l, D_089386D4, 0, 0, 0);
+        layout_build(&l, D_089386D4, 0, 0, 0);
     if ((*(u32 *)(D_089CC438 + 0x6AF14) & 1) == 0) {
         me = D_089CC438[0x28];
         k = 0;

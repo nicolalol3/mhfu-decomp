@@ -1,6 +1,10 @@
 /* Menu: main update/draw loop, opening and closing of the menu, page indicator.
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
+#undef menu_draw_sprite
+#undef layout_build
+#undef layout_draw_pages
+#undef menu_draw_main_page
 
 
 extern void *D_08A62D8C;          /* sound */
@@ -301,7 +305,7 @@ void menu_draw_main_page(u8 *self, int dim)
     const u16 *ids;
     int i;
 
-    sprintf(title, D_0893B218, func_0885151C(D_089CC438, D_089AC850));
+    sprintf(title, D_0893B218, text_menu(D_089CC438, D_089AC850));
     layout_build(&l, D_0893AFA0, (int)title, 0, 0);
     if ((s8)dim != 0)
         l.color = 0x80808080;

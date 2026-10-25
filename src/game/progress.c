@@ -11,6 +11,7 @@ int game_has_progress(u8 *g, u32 id);
 void game_add_money(u8 *g, s32 n);
 void box_item_notify(void *a, u32 item);
 void func_08816730(void *a, void *dst, int n, const char *s);
+#define utf8_to_utf16 func_08816730
 void guild_card_update(u8 *g);
 u64 func_08904350(u32 a, u32 b, u32 c, u32 d);
 void log_add(u8 *g, int a, u32 b);
@@ -129,7 +130,7 @@ void hunter_card_init(u8 *g)
     U16(g, 0x677F2) = 0;
     U16(g, 0x677F4) = 0;
     U16(g, 0x677F6) = 0;
-    func_08816730(D_089CBBE8, g + 0x6778C, 0x62, func_0885151C(g, D_089ACAE8));
+    utf8_to_utf16(D_089CBBE8, g + 0x6778C, 0x62, text_menu(g, D_089ACAE8));
     guild_card_update(g);
 }
 
