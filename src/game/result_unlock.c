@@ -1,6 +1,7 @@
 /* Result screens at the end of the quest (2): unlocked contents, size records, special
  * conditions; helpers of all the result screens. The object is g_result. (Guessed names.) */
 #include "quest.h"
+#include "result.h"
 #undef menu_draw_sprite
 #undef gfx_draw_window
 #undef text_menu
@@ -91,7 +92,7 @@ static void draw_bottom(u8 *self, char *buf, int show)
         menu_draw_sprite(g_menu, 0x17E, 0xBF, 0x33);
     }
     font_set_pos(g_font, 0x40, 0xC0);
-    font_draw(g_font, RTEXT(D_089B53EC), S16(self, 0xAC) / 30);
+    font_draw(g_font, RTEXT(D_089B53EC), S16(self, RES_XAC) / 30);
 }
 
 /* screen of the new unlocked contents */
@@ -117,7 +118,7 @@ void result_unlock_draw(u8 *self)
         result_text_center(self, (s16)((n + 4) * 0x10 + 0x40), buf);
         n++;
     }
-    draw_bottom(self, buf, self[0xC1] == 0);
+    draw_bottom(self, buf, self[RES_SND1] == 0);
 }
 
 static void set_rating_color(u8 *self, u8 *em, s32 v)
@@ -135,7 +136,7 @@ static void set_rating_color(u8 *self, u8 *em, s32 v)
 /* screen of a new size record (largest / smallest) of a monster */
 void result_record_draw(u8 *self)
 {
-    u8 *e = self + 0xD0 + self[0x1F] * 4;
+    u8 *e = self + RES_RECORDS + self[RES_RECORD_SHOWN] * 4;
     u8 *em = emblem_find(g_menu, e[0]);
     s16 t[7];
     char buf[0x100];
@@ -172,11 +173,11 @@ void result_record_draw(u8 *self)
     font_printf_at(g_font, D_089A887C, D_089A887E, RTEXT(D_089B53B6), (s32)f,
                   (s32)(10.0f * f) % 10);
     font_set_color(g_font, 0);
-    if (self[0xC1] == 0 && S16(self, 0xA8) <= 0) {
+    if (self[RES_SND1] == 0 && S16(self, RES_STEP_TIMER) <= 0) {
         font_printf_at(g_font, D_089A8884, D_089A8886, RTEXT(D_089B53AE));
         menu_draw_sprite(g_menu, (u16)(D_089A8884 - 0x12), (u16)(D_089A8886 - 1), 0x33);
     }
-    font_draw_at(g_font, D_089A8880, D_089A8882, RTEXT(D_089B53EC), S16(self, 0xAC) / 30);
+    font_draw_at(g_font, D_089A8880, D_089A8882, RTEXT(D_089B53EC), S16(self, RES_XAC) / 30);
     gfx_draw_sprite_scaled(g_menu, (u16)D_089A8888, (u16)D_089A888A, 0x50, 0x40, 0xAF);
     gfx_draw_sprite_scaled(g_menu, (u16)D_089A8898, (u16)D_089A889A, (u16)D_089A889C,
                            (u16)D_089A889E, 0x9C);
@@ -189,7 +190,7 @@ void result_record_draw(u8 *self)
 /* special conditions reached in this quest (shown at the end) */
 u32 result_special_check(u8 *self, u32 i)
 {
-    u16 q = U16(g_game, 0x6AF12);
+    u16 q = G_QUEST_ID;
 
     if (game_test_flag_696e4(g_game) != 0)
         return 0;
@@ -251,9 +252,9 @@ u32 result_any_special(u8 *self)
 
 void result_unlock_init_timers(u8 *self)
 {
-    U16(self, 0xA8) = 0x5A;
-    U16(self, 0xAA) = 1;
-    U16(self, 0xAC) = 900;
+    U16(self, RES_STEP_TIMER) = 0x5A;
+    U16(self, RES_TIMER) = 1;
+    U16(self, RES_XAC) = 900;
     result_init_sounds(self);
 }
 
@@ -280,7 +281,7 @@ void result_special_draw(u8 *self)
         if (n >= 2)
             break;
     }
-    draw_bottom(self, buf, self[0xC1] == 0 && S16(self, 0xAC) < 0x32B);
+    draw_bottom(self, buf, self[RES_SND1] == 0 && S16(self, RES_XAC) < 0x32B);
     font_set_color(g_font, 5);
     sprintf(buf, D_089A8870, RTEXT(D_089B53EE));
     result_text_center(self, y, buf);
@@ -288,9 +289,9 @@ void result_special_draw(u8 *self)
 
 void result_special_init_timers(u8 *self)
 {
-    U16(self, 0xA8) = 0x5A;
-    U16(self, 0xAA) = 1;
-    U16(self, 0xAC) = 900;
+    U16(self, RES_STEP_TIMER) = 0x5A;
+    U16(self, RES_TIMER) = 1;
+    U16(self, RES_XAC) = 900;
     result_init_sounds(self);
 }
 
@@ -304,7 +305,7 @@ void result_text_draw(u8 *self)
     font_set_size(g_font, 0x10, 0x10);
     draw_title(self, buf);
     text_draw_lines_block(g_menu, 0xF0, 0x60, RTEXT(D_089B53F2), 0x10, 0x10);
-    draw_bottom(self, buf, self[0xC1] == 0 && S16(self, 0xAC) < 0x32B);
+    draw_bottom(self, buf, self[RES_SND1] == 0 && S16(self, RES_XAC) < 0x32B);
 }
 
 /* total value of the 32 rewards */
@@ -333,7 +334,7 @@ s32 result_rewards_count(void)
 /* end of the quest: items used up, hunting counters, records, rank */
 void result_finish(u8 *self)
 {
-    u32 h = player_get(g_players, g_game[0x28]);
+    u32 h = player_get(g_players, G_MY_SLOT);
     Quest *q;
     u8 t[24];
     s32 i, j;
@@ -375,8 +376,8 @@ void result_finish(u8 *self)
             game_add_count_b(g_game, i & 0xFF, q->captures[i]);
     }
     result_size_records(self);
-    self[0xC0] = game_rank(g_game);
-    self[0xC1] = 0;
+    self[RES_RANK] = game_rank(g_game);
+    self[RES_SND1] = 0;
 }
 
 /* text centered on the screen */

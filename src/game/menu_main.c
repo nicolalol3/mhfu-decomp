@@ -116,7 +116,7 @@ void menu_frame(u8 *self)
     } else if (self[0x52C] == 0) {
         self[0x52C] = 1;
 run:
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 1) {
+        if ((OPT_FLAGS & 1) == 1) {
             self[0x606] = 0;
             if ((s32)U32(self, 0x600) > 0)
                 U32(self, 0x600) -= 1;
@@ -320,7 +320,7 @@ void menu_draw_main_page(u8 *self, int dim)
     col[0] = 0;
     if (page == 0) {
         ids = (const u16 *)0x09B051A0;
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
+        if ((OPT_FLAGS & 1) == 0) {
             col[3] = 10;
             col[4] = 10;
             col[6] = 10;
@@ -329,7 +329,7 @@ void menu_draw_main_page(u8 *self, int dim)
             col[1] = 10;
     } else {
         ids = (const u16 *)0x09B051AE;
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
+        if ((OPT_FLAGS & 1) == 0) {
             col[4] = 10;
             col[5] = 10;
         } else {
@@ -404,8 +404,8 @@ void skill_update_hunter(void *self, void *hunter);
 s32 menu_select_entry(u8 *self, u32 i_arg)
 {
     u8 i = i_arg;
-    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
-    int online = (*(u32 *)(g_sys + 0xF7A57C) & 1) != 0;
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
+    int online = (OPT_FLAGS & 1) != 0;
     s32 r = 1;
 
     switch (i) {
@@ -534,11 +534,11 @@ u16 menu_page_input_dispatch(u8 *self, u32 page, u32 keys)
     switch ((u8)page) {
     case 0:
         r = func_0881CB2C(self, keys);
-        pouch_backup_deliveries((void *)player_get(g_players, g_game[0x28]));
+        pouch_backup_deliveries((void *)player_get(g_players, G_MY_SLOT));
         return r;
     case 1:
         r = func_0881DB5C(self, keys);
-        pouch_backup_deliveries((void *)player_get(g_players, g_game[0x28]));
+        pouch_backup_deliveries((void *)player_get(g_players, G_MY_SLOT));
         break;
     case 2: r = menu_info_input(self, keys); break;
     case 3: r = hud_grid_input(self, keys); break;

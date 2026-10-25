@@ -179,7 +179,7 @@ void menu_set_hunter_name(void *self, u8 *hunter)
 {
     void *name;
 
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+    if ((OPT_FLAGS & 1) == 0)
         name = g_game + 0x4A0;
     else
         name = g_net_players + hunter[0x1E6] * 200 + 0xBC8;

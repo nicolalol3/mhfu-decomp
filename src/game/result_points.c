@@ -2,6 +2,7 @@
  * friends, Felyne comrade experience, training points. The object is g_result.
  * (Guessed names.) */
 #include "quest.h"
+#include "result.h"
 #undef menu_draw_sprite
 #undef gfx_draw_window
 #undef text_menu
@@ -80,19 +81,19 @@ void result_points_init(u8 *self)
     u32 a, b, c;
     s32 lv0, lv1;
 
-    U16(self, 0xA4) = 0;
-    U16(self, 0xA6) = 0;
-    U16(self, 0xAA) = 3600;
-    U16(self, 0xA8) = 10;
+    U16(self, RES_STEP) = 0;
+    U16(self, RES_XA6) = 0;
+    U16(self, RES_TIMER) = 3600;
+    U16(self, RES_STEP_TIMER) = 10;
     if (quest_state(QUEST, 1) == 1)
-        U32(g_result, 0x14) = QUEST->file->hrp;
+        U32(g_result, RES_VALUE) = QUEST->file->hrp;
     else
-        U32(g_result, 0x14) = QUEST->file->hrp_other;
-    U32(g_result, 0x18) = U32(g_result, 0x14);
-    h = player_get(g_players, g_game[0x28]);
-    U32(g_result, 0x14) -= ((u8 *)h)[0x113E] * 10;
-    if ((s32)U32(g_result, 0x14) < 0)
-        U32(g_result, 0x14) = 0;
+        U32(g_result, RES_VALUE) = QUEST->file->hrp_other;
+    U32(g_result, RES_VALUE_START) = U32(g_result, RES_VALUE);
+    h = player_get(g_players, G_MY_SLOT);
+    U32(g_result, RES_VALUE) -= ((u8 *)h)[0x113E] * 10;
+    if ((s32)U32(g_result, RES_VALUE) < 0)
+        U32(g_result, RES_VALUE) = 0;
 
     if ((OPT_FLAGS & 1) != 0 && quest_state(QUEST, 1) == 1) {
         n = *(s8 *)(g_net_players + 0xBBD);
@@ -100,9 +101,9 @@ void result_points_init(u8 *self)
         if ((q->flags & QF_TREASURE) != 0)
             pts = (q->points[0] + q->points[1]) / 400;
         else if ((q->flags & QF_TRAINING) != 0)
-            pts = U32(self, 0x120) / 200;
-        else if (!is_training(U16(g_game, 0x6AF12)))
-            pts = U32(g_result, 0x14) / 20;
+            pts = U32(self, RES_POINTS_TOTAL) / 200;
+        else if (!is_training(G_QUEST_ID))
+            pts = U32(g_result, RES_VALUE) / 20;
         g = g_game;
         s3 = g + 0x4A0;
         if (n >= 2) {
@@ -112,7 +113,7 @@ void result_points_init(u8 *self)
                     continue;
                 for (j = 0; j < n; j++) {
                     pl = g_net_players + j * 200;
-                    if (g_game[(u8)j * 0x8C + 0x30] == 0)
+                    if (G_PLAYER_HERE((u8)j) == 0)
                         continue;
                     if (memcmp(s5 + 0x248, pl + 0xBE0 + 0x71, 8) != 0)
                         continue;
@@ -145,9 +146,9 @@ void result_points_init(u8 *self)
     if (quest_comrade_allowed(QUEST) == 0)
         return;
     f = friend_marked(g_game);
-    h = player_get(g_players, g_game[0x28]);
-    if (!is_training(U16(g_game, 0x6AF12))) {
-        u32 base = U32(g_result, 0x18);
+    h = player_get(g_players, G_MY_SLOT);
+    if (!is_training(G_QUEST_ID)) {
+        u32 base = U32(g_result, RES_VALUE_START);
 
         a = base / 10;
         b = base / 100;
@@ -195,55 +196,55 @@ s32 result_points_update(u8 *self)
     s32 n;
     u32 h;
 
-    player_get(g_players, g_game[0x28]);
-    if (S16(self, 0xAA) > 0)
-        S16(self, 0xAA)--;
-    switch (S16(self, 0xA4)) {
+    player_get(g_players, G_MY_SLOT);
+    if (S16(self, RES_TIMER) > 0)
+        S16(self, RES_TIMER)--;
+    switch (S16(self, RES_STEP)) {
     case 0:
     case 1:
     case 2:
     case 3:
-        S16(self, 0xA8)--;
-        if (S16(self, 0xA8) < 0) {
+        S16(self, RES_STEP_TIMER)--;
+        if (S16(self, RES_STEP_TIMER) < 0) {
             static const u8 se[4] = {0x10, 0x11, 0x11, 0x13};
 
-            n = S16(self, 0xA4);
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+            n = S16(self, RES_STEP);
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(se[n]);
         }
         break;
     case 4:
-        S16(self, 0xA8)--;
-        if (S16(self, 0xA8) < 0) {
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
-            U16(self, 0xAE) = 0;
+        S16(self, RES_STEP_TIMER)--;
+        if (S16(self, RES_STEP_TIMER) < 0) {
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
+            U16(self, RES_SOUND_ON) = 0;
         }
         break;
     case 5:
-        if ((s32)U32(g_result, 0x14) <= 0) {
-            func_088854A0(g_sound, U32(self, 0xC8), 0);
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+        if ((s32)U32(g_result, RES_VALUE) <= 0) {
+            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(0x19);
             break;
         }
         n = 1;
         if (((u16)game_buttons(g_game) & 0x4000) != 0)
-            n = U32(g_result, 0x14);
-        U32(g_result, 0x14) -= n;
+            n = U32(g_result, RES_VALUE);
+        U32(g_result, RES_VALUE) -= n;
         game_add_money2(g_game, n);
-        if (S16(self, 0xAE) == 0) {
+        if (S16(self, RES_SOUND_ON) == 0) {
             h = SE(8);
-            U32(self, 0xC8) = h;
-            S16(self, 0xAE)++;
+            U32(self, RES_SOUND) = h;
+            S16(self, RES_SOUND_ON)++;
         }
         break;
     case 6:
-        if (S16(self, 0xAA) > 0 && ((u16)game_buttons(g_game) & 0x4000) == 0)
+        if (S16(self, RES_TIMER) > 0 && ((u16)game_buttons(g_game) & 0x4000) == 0)
             return 0;
-        S16(self, 0xA4)++;
+        S16(self, RES_STEP)++;
         SE(0x13);
         return 1;
     default:
@@ -263,14 +264,14 @@ void result_points_draw(u8 *self)
     U8(g_menu, 0x534) = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(g_menu);
-    h = (u8 *)player_get(g_players, g_game[0x28]);
+    h = (u8 *)player_get(g_players, G_MY_SLOT);
     result_draw_windows(self);
     font_set_color(g_font, 0);
     font_set_size(g_font, 0x10, 0x10);
     for (i = 0; i < 7; i++)
         t[i] = D_089A88FC[i];
     lang = LANG;
-    switch (S16(self, 0xA4)) {
+    switch (S16(self, RES_STEP)) {
     default:
         x = t[lang];
         menu_draw_sprite(g_menu, (u16)(x + 0x1C), 0xF0, 0x33);
@@ -280,7 +281,7 @@ void result_points_draw(u8 *self)
     case 4:
     case 5:
         font_draw_centered(0xF4, D_089A88F6, RTEXT(D_089B53CC), 0x10);
-        font_printf_at(g_font, 0xF4, D_089A88F6, D_089A891C, U32(self, 0x14));
+        font_printf_at(g_font, 0xF4, D_089A88F6, D_089A891C, U32(self, RES_VALUE));
         /* fall through */
     case 3:
         sprintf(buf, RTEXT(D_089B53CE), -(h[0x113E] * 10));
@@ -291,7 +292,7 @@ void result_points_draw(u8 *self)
         }
         /* fall through */
     case 2:
-        sprintf(buf, RTEXT(D_089B53D6), U32(g_result, 0x18));
+        sprintf(buf, RTEXT(D_089B53D6), U32(g_result, RES_VALUE_START));
         font_draw_centered(0xF4, D_089A88F2, buf, 0x10);
         font_set_pos(g_font, D_089A88F8, D_089A88F2);
         if (quest_state(QUEST, 1) == 1)
@@ -309,7 +310,7 @@ void result_points_draw(u8 *self)
         /* fall through */
     case 0:
         font_set_pos(g_font, 0xFC, 0xF2);
-        font_draw(g_font, RTEXT(D_089B53C6), S16(self, 0xAA) / 30);
+        font_draw(g_font, RTEXT(D_089B53C6), S16(self, RES_TIMER) / 30);
         for (i = 0; i < 7; i++)
             t[i] = D_089A890C[i];
         x = t[lang] + 0xF4;
@@ -326,26 +327,26 @@ void result_training_init(u8 *self)
 {
     Quest *q = QUEST;
 
-    U16(self, 0xA4) = 0;
-    U16(self, 0xA6) = 0;
-    U16(self, 0xAA) = 3600;
-    U16(self, 0xA8) = 10;
-    if (g_game[0x28] == 0) {
-        U32(self, 0xB0) = q->points[0];
-        U32(self, 0xB4) = QUEST->points[1];
+    U16(self, RES_STEP) = 0;
+    U16(self, RES_XA6) = 0;
+    U16(self, RES_TIMER) = 3600;
+    U16(self, RES_STEP_TIMER) = 10;
+    if (G_MY_SLOT == 0) {
+        U32(self, RES_POINTS_A) = q->points[0];
+        U32(self, RES_POINTS_B) = QUEST->points[1];
     } else {
-        U32(self, 0xB0) = q->points[1];
-        U32(self, 0xB4) = QUEST->points[0];
+        U32(self, RES_POINTS_A) = q->points[1];
+        U32(self, RES_POINTS_B) = QUEST->points[0];
     }
-    U32(self, 0xBC) = 0;
-    U32(self, 0xB8) = 0;
-    U32(self, 0x120) = U32(self, 0xB0) + U32(self, 0xB4);
-    U32(self, 0x14) = hrp_scale(self, U32(self, 0xB0) + U32(self, 0xB4), 0);
-    if (U32(g_game, 0x6397C + U16(g_game, 0x6AF12) * 4) < U32(self, 0x120)) {
-        U16(self, 0xAC) = 1;
-        record_add_best(g_game, QUEST->log, 10, U32(self, 0x120), 0);
+    U32(self, RES_XBC) = 0;
+    U32(self, RES_XB8) = 0;
+    U32(self, RES_POINTS_TOTAL) = U32(self, RES_POINTS_A) + U32(self, RES_POINTS_B);
+    U32(self, RES_VALUE) = hrp_scale(self, U32(self, RES_POINTS_A) + U32(self, RES_POINTS_B), 0);
+    if (U32(g_game, 0x6397C + G_QUEST_ID * 4) < U32(self, RES_POINTS_TOTAL)) {
+        U16(self, RES_XAC) = 1;
+        record_add_best(g_game, QUEST->log, 10, U32(self, RES_POINTS_TOTAL), 0);
     } else {
-        U16(self, 0xAC) = 0;
+        U16(self, RES_XAC) = 0;
     }
 }
 
@@ -368,122 +369,122 @@ s32 result_training_update(u8 *self)
     u32 q;
     s32 v;
 
-    if (S16(self, 0xAA) > 0)
-        S16(self, 0xAA)--;
-    switch (S16(self, 0xA4)) {
+    if (S16(self, RES_TIMER) > 0)
+        S16(self, RES_TIMER)--;
+    switch (S16(self, RES_STEP)) {
     case 0:
-        if (--S16(self, 0xA8) <= 0) {
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+        if (--S16(self, RES_STEP_TIMER) <= 0) {
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(0x10);
         }
         break;
     case 1:
-        if (--S16(self, 0xA8) <= 0) {
-            S16(self, 0xA4)++;
-            if ((s32)U32(self, 0xB4) < (s32)U32(self, 0xB0))
-                S16(self, 0xA8) = (s32)U32(self, 0xB0) / 60;
+        if (--S16(self, RES_STEP_TIMER) <= 0) {
+            S16(self, RES_STEP)++;
+            if ((s32)U32(self, RES_POINTS_B) < (s32)U32(self, RES_POINTS_A))
+                S16(self, RES_STEP_TIMER) = (s32)U32(self, RES_POINTS_A) / 60;
             else
-                S16(self, 0xA8) = (s32)U32(self, 0xB4) / 60;
+                S16(self, RES_STEP_TIMER) = (s32)U32(self, RES_POINTS_B) / 60;
             SE(0x11);
-            U16(self, 0xAE) = 0;
+            U16(self, RES_SOUND_ON) = 0;
         }
         break;
     case 2:
-        if (!((s32)U32(self, 0xB8) < (s32)U32(self, 0xB0)) &&
-            !((s32)U32(self, 0xBC) < (s32)U32(self, 0xB4))) {
-            func_088854A0(g_sound, U32(self, 0xC8), 0);
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+        if (!((s32)U32(self, RES_XB8) < (s32)U32(self, RES_POINTS_A)) &&
+            !((s32)U32(self, RES_XBC) < (s32)U32(self, RES_POINTS_B))) {
+            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(0x11);
             return 0;
         }
-        U32(self, 0xB8) += S16(self, 0xA8);
-        if ((s32)U32(self, 0xB0) < (s32)U32(self, 0xB8))
-            U32(self, 0xB8) = U32(self, 0xB0);
-        U32(self, 0xBC) += S16(self, 0xA8);
-        if ((s32)U32(self, 0xB4) < (s32)U32(self, 0xBC))
-            U32(self, 0xBC) = U32(self, 0xB4);
-        if (S16(self, 0xAE) == 0) {
-            U32(self, 0xC8) = SE(8);
-            S16(self, 0xAE)++;
+        U32(self, RES_XB8) += S16(self, RES_STEP_TIMER);
+        if ((s32)U32(self, RES_POINTS_A) < (s32)U32(self, RES_XB8))
+            U32(self, RES_XB8) = U32(self, RES_POINTS_A);
+        U32(self, RES_XBC) += S16(self, RES_STEP_TIMER);
+        if ((s32)U32(self, RES_POINTS_B) < (s32)U32(self, RES_XBC))
+            U32(self, RES_XBC) = U32(self, RES_POINTS_B);
+        if (S16(self, RES_SOUND_ON) == 0) {
+            U32(self, RES_SOUND) = SE(8);
+            S16(self, RES_SOUND_ON)++;
         }
         break;
     case 3:
-        if (--S16(self, 0xA8) <= 0) {
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+        if (--S16(self, RES_STEP_TIMER) <= 0) {
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(0x11);
         }
         break;
     case 4:
-        if (--S16(self, 0xA8) > 0)
+        if (--S16(self, RES_STEP_TIMER) > 0)
             break;
-        if (S16(self, 0xAC) != 1) {
-            S16(self, 0xA4) += 2;
-            U16(self, 0xA8) = 10;
+        if (S16(self, RES_XAC) != 1) {
+            S16(self, RES_STEP) += 2;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(0x10);
-            U16(self, 0xAE) = 0;
+            U16(self, RES_SOUND_ON) = 0;
             break;
         }
         /* new record of the training quest: time and names of the two hunters */
-        S16(self, 0xA4)++;
-        U16(self, 0xA8) = 0x5A;
+        S16(self, RES_STEP)++;
+        U16(self, RES_STEP_TIMER) = 0x5A;
         result_init_sounds(self);
-        self[0xC1] = 1;
+        self[RES_SND1] = 1;
         src = NULL;
         if ((OPT_FLAGS & 1) != 0)
-            src = g_game[0x28] == 0 ? g_net_players + 0xC90 : g_net_players + 0xBC8;
-        v = U32(self, 0x120);
-        q = U16(g_game, 0x6AF12);
+            src = G_MY_SLOT == 0 ? g_net_players + 0xC90 : g_net_players + 0xBC8;
+        v = U32(self, RES_POINTS_TOTAL);
+        q = G_QUEST_ID;
         if (v >= 1000000)
             v = 999999;
         U32(g_game, 0x6397C + q * 4) = v;
         if (src != NULL) {
             memcpy(g_game + 0x6781C + (q - 0xFA1) * 0x12, src, 0x12);
-            U16(self, 0xAE) = 0;
+            U16(self, RES_SOUND_ON) = 0;
             return 0;
         }
         g_game[0x55ECA + q * 0x12] = 0;
-        U16(self, 0xAE) = 0;
+        U16(self, RES_SOUND_ON) = 0;
         break;
     case 5:
-        S16(self, 0xA8)--;
-        if (self[0xC1] == 0 && S16(self, 0xA8) <= 0) {
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+        S16(self, RES_STEP_TIMER)--;
+        if (self[RES_SND1] == 0 && S16(self, RES_STEP_TIMER) <= 0) {
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
             SE(0x10);
         }
         break;
     case 6:
-        if (U32(self, 0x14) == 0) {
-            func_088854A0(g_sound, U32(self, 0xC8), 0);
-            S16(self, 0xA4)++;
+        if (U32(self, RES_VALUE) == 0) {
+            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            S16(self, RES_STEP)++;
             SE(0x19);
             break;
         }
-        if (S16(self, 0xAE) == 0) {
-            U32(self, 0xC8) = SE(8);
-            S16(self, 0xAE)++;
+        if (S16(self, RES_SOUND_ON) == 0) {
+            U32(self, RES_SOUND) = SE(8);
+            S16(self, RES_SOUND_ON)++;
         }
         if ((g_pad_pressed & 0x4000) != 0) {
-            game_add_points(g_game, U32(self, 0x14));
-            U32(self, 0x14) = 0;
+            game_add_points(g_game, U32(self, RES_VALUE));
+            U32(self, RES_VALUE) = 0;
         } else {
             game_add_points(g_game, 1);
-            U32(self, 0x14)--;
+            U32(self, RES_VALUE)--;
         }
         break;
     case 7:
-        if (--S16(self, 0xA8) <= 0) {
-            S16(self, 0xA4)++;
-            U16(self, 0xA8) = 10;
+        if (--S16(self, RES_STEP_TIMER) <= 0) {
+            S16(self, RES_STEP)++;
+            U16(self, RES_STEP_TIMER) = 10;
         }
         break;
     case 8:
-        if (S16(self, 0xAA) > 0 && ((u16)game_buttons(g_game) & 0x4000) == 0)
+        if (S16(self, RES_TIMER) > 0 && ((u16)game_buttons(g_game) & 0x4000) == 0)
             return 0;
-        S16(self, 0xA4)++;
+        S16(self, RES_STEP)++;
         SE(0x13);
         return 1;
     default:
@@ -494,35 +495,35 @@ s32 result_training_update(u8 *self)
 
 void result_flags_init(u8 *self)
 {
-    U16(self, 0xA4) = 0;
-    U16(self, 0xA6) = 0;
-    U16(self, 0xAA) = 900;
-    U16(self, 0xA8) = 10;
+    U16(self, RES_STEP) = 0;
+    U16(self, RES_XA6) = 0;
+    U16(self, RES_TIMER) = 900;
+    U16(self, RES_STEP_TIMER) = 10;
     result_init_sounds(self);
 }
 
 /* screen of the new flags (unlocked items, ...): 1 when closed */
 s32 result_flags_update(u8 *self)
 {
-    if (S16(self, 0xAA) > 0)
-        S16(self, 0xAA)--;
-    if (S16(self, 0xA4) == 1) {
-        if (self[0xC1] != 0)
+    if (S16(self, RES_TIMER) > 0)
+        S16(self, RES_TIMER)--;
+    if (S16(self, RES_STEP) == 1) {
+        if (self[RES_SND1] != 0)
             return 0;
-        if (S16(self, 0xAA) > 0) {
+        if (S16(self, RES_TIMER) > 0) {
             if (((u16)game_buttons(g_game) & 0x4000) == 0)
                 return 0;
-            if (S16(self, 0xAA) > 0x32A)
+            if (S16(self, RES_TIMER) > 0x32A)
                 return 0;
         }
-        S16(self, 0xA4)++;
+        S16(self, RES_STEP)++;
         SE(0x13);
         return 1;
     }
-    if (S16(self, 0xA4) != 0)
+    if (S16(self, RES_STEP) != 0)
         return 0;
-    if (--S16(self, 0xA8) <= 0)
-        S16(self, 0xA4)++;
+    if (--S16(self, RES_STEP_TIMER) <= 0)
+        S16(self, RES_STEP)++;
     return 0;
 }
 
@@ -543,19 +544,19 @@ void result_flags_draw(u8 *self)
     result_text_center(self, 0x40, RTEXT(D_089B53F0));
     result_text_center(self, 0x60, RTEXT(D_089B53F4));
     for (i = 0; i < 0x30; i++) {
-        if ((U32(self, 0xFC) & hi) != 0 || (U32(self, 0xF8) & lo) != 0) {
+        if ((U32(self, RES_MASK_HI) & hi) != 0 || (U32(self, RES_MASK_LO) & lo) != 0) {
             result_text_center(self, (s16)((n + 3) * 0x10 + 0x40), text_menu(g_game, D_089AD058[i]));
             n++;
         }
         hi = hi << 1 | lo >> 31;
         lo <<= 1;
     }
-    if (self[0xC1] == 0 && S16(self, 0xAA) < 0x32B) {
+    if (self[RES_SND1] == 0 && S16(self, RES_TIMER) < 0x32B) {
         sprintf(buf, RTEXT(D_089B53AE));
         font_set_pos(g_font, 400, 0xC0);
         font_draw(g_font, D_089A8870, buf);
         menu_draw_sprite(g_menu, 0x17E, 0xBF, 0x33);
     }
     font_set_pos(g_font, 0x40, 0xC0);
-    font_draw(g_font, RTEXT(D_089B53EC), S16(self, 0xAA) / 30);
+    font_draw(g_font, RTEXT(D_089B53EC), S16(self, RES_TIMER) / 30);
 }

@@ -127,7 +127,7 @@ int gather_has_tool(void *p, void *hunter, u8 *e, u32 flag);
 u32 gather_count(void *p, u32 kind)
 {
     u8 *g = g_game + 0x4A0;
-    void *h = (void *)player_get(g_players, g_game[0x28]);
+    void *h = (void *)player_get(g_players, G_MY_SLOT);
     const u8 *e = D_089A47D0;
     u16 n = 0;
     s32 i;

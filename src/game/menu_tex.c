@@ -273,14 +273,14 @@ s32 menu_give_items(u8 *self, u8 *hunter, u32 id, s32 key_arg, u32 flags_arg, u3
         self[0x52F] = 1;
         S16(self, 0x58E) = id;
         self[0x593] = n;
-        if ((flags & 2) && U16(hunter, 0x1E6) == g_game[0x28])
+        if ((flags & 2) && U16(hunter, 0x1E6) == G_MY_SLOT)
             func_088860A0(D_08A62D90, id);
         self[0x58D] = 0xFF;
     } else if (r == 3 || r == 2) {
         if (flags & 1)
             menu_msg_push(self, 1, 3, (s16)id);
     } else if (r == 1 || r == 0) {
-        if ((flags & 2) && U16(hunter, 0x1E6) == g_game[0x28])
+        if ((flags & 2) && U16(hunter, 0x1E6) == G_MY_SLOT)
             func_088860A0(D_08A62D90, id);
         if (flags & 1)
             menu_msg_push(self, 1, 0, (s16)id);

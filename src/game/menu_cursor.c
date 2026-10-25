@@ -280,7 +280,7 @@ int menu_open_item_list(void *self)
     U8(self, 0x588) = 0;
     U8(self, 0x587) = 0;
     if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0) {
-        if (S8(self, 0x587) == g_game[0x28])
+        if (S8(self, 0x587) == G_MY_SLOT)
             U8(self, 0x587)++;
     }
     f = U32(self, 0x528);

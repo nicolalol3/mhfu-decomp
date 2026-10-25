@@ -1,12 +1,7 @@
-/* Camera: initial settings, shakes and transitions.
- * The camera structure is not yet rebuilt: fields are indicated
- * with their offset. (Guessed names.) */
-#include "libc.h"
-
-#define F32(p, off) (*(f32 *)((u8 *)(p) + (off)))
-#define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
-#define S16(p, off) (*(s16 *)((u8 *)(p) + (off)))
-#define U8(p, off)  (*(u8 *)((u8 *)(p) + (off)))
+/* Camera: initial settings, shakes, transitions, matrices and zones.
+ * The fields are the named offsets of include/camera.h. (Guessed names.) */
+#include "game.h"
+#include "camera.h"
 
 f32 sinf(f32 x);
 extern f32 *D_08A62C40;               /* (pointer to a global scale factor) */
@@ -43,11 +38,11 @@ static inline f32 dist3(const f32 *a, const f32 *b)
 /* default projection parameters (near 30, far 65000, aspect, fov) */
 void camera_reset_projection(void *cam)
 {
-    U32(cam, 0x0) = 0x41f00000;   /* 30.0 */
-    U32(cam, 0x4) = 0x477de800;   /* 65000.0 */
-    U32(cam, 0xC) = 0x3f5f49f5;
-    U32(cam, 0x8) = 0x3fe1e1e2;   /* 480/272 */
-    U32(cam, 0xB34) = 0;
+    U32(cam, CAM_NEAR) = 0x41f00000;   /* 30.0 */
+    U32(cam, CAM_FAR) = 0x477de800;   /* 65000.0 */
+    U32(cam, CAM_FOV) = 0x3f5f49f5;
+    U32(cam, CAM_ASPECT) = 0x3fe1e1e2;   /* 480/272 */
+    U32(cam, CAM_ROLL) = 0;
     camera_apply_projection(cam);
 }
 
@@ -63,35 +58,35 @@ void camera_init(void *cam)
     for (i = 0; i < 4; i++)
         b[i] = D_08933A80[i];
     *(u32 *)D_08A62C40 = 0x3f800000; /* 1.0 */
-    U32(cam, 0x0) = 0x41f00000;
-    U32(cam, 0x4) = 0x477de800;
-    U32(cam, 0xC) = 0x3f5f49f5;
-    U32(cam, 0x8) = 0x3fe1e1e2;
+    U32(cam, CAM_NEAR) = 0x41f00000;
+    U32(cam, CAM_FAR) = 0x477de800;
+    U32(cam, CAM_FOV) = 0x3f5f49f5;
+    U32(cam, CAM_ASPECT) = 0x3fe1e1e2;
     func_08816264(cam);
     camera_look_at(cam, (f32 *)a, (f32 *)zero, b);
-    U32(cam, 0xDC0) = 0;
-    U8(cam, 0xAA9) = 0;
+    U32(cam, CAM_XDC0) = 0;
+    U8(cam, CAM_XAA9) = 0;
     camera_reset_projection(cam);
-    U8(cam, 0x14) = 3;
-    U8(cam, 0xA80) = 0;
-    U32(cam, 0xA7C) = 0;
+    U8(cam, CAM_X014) = 3;
+    U8(cam, CAM_MODE) = 0;
+    U32(cam, CAM_MODE_TARGET) = 0;
 }
 
 void camera_reset_state(void *cam)
 {
-    U32(cam, 0xB10) = 0;
-    U8(cam, 0xB3C) = 1;
+    U32(cam, CAM_XB10) = 0;
+    U8(cam, CAM_XB3C) = 1;
     camera_reset_projection(cam);
-    U32(cam, 0xB10) = 0;
-    U32(cam, 0xA84) = player_get(g_players, g_game[0x28]);
-    U8(cam, 0xB00) = 0;
-    U8(cam, 0xAE0) = 0;
-    U8(cam, 0xAC0) = 0;
-    U8(cam, 0xA81) = 0;
-    U8(cam, 0xA8A) = 0;
-    U8(cam, 0xA88) = 0;
-    U32(cam, 0xA7C) = 0;
-    U8(cam, 0xA80) = 0;
+    U32(cam, CAM_XB10) = 0;
+    U32(cam, CAM_PLAYER) = player_get(g_players, G_MY_SLOT);
+    U8(cam, CAM_SHAKE + 2 * SHAKE_SIZE + SHAKE_ACTIVE) = 0;
+    U8(cam, CAM_SHAKE + SHAKE_SIZE + SHAKE_ACTIVE) = 0;
+    U8(cam, CAM_SHAKE + SHAKE_ACTIVE) = 0;
+    U8(cam, CAM_XA81) = 0;
+    U8(cam, CAM_XA8A) = 0;
+    U8(cam, CAM_XA88) = 0;
+    U32(cam, CAM_MODE_TARGET) = 0;
+    U8(cam, CAM_MODE) = 0;
     camera_load_area_limits(cam);
     func_08812BD0(cam);
 }
@@ -103,87 +98,87 @@ void camera_apply_shake(void *cam, u8 *shake)
     u32 type;
     f32 amp, wave, falloff;
 
-    if (shake[16] == 0)
+    if (shake[SHAKE_ACTIVE] == 0)
         return;
-    type = shake[17] & 0x7f;
+    type = shake[SHAKE_TYPE] & 0x7f;
     amp = type < 2 ? 10.0f : 12.0f;
-    wave = sinf((((f32)S16(shake, 18) / (f32)D_08933A98[type]) * 90.0f) / 360.0f * 6.2831855f);
-    if ((shake[17] & 0x80) == 0) {
-        f32 d = dist3((f32 *)shake, &F32(cam, 0xB40));
-        f32 r = D_08933AA8[shake[20]];
+    wave = sinf((((f32)S16(shake, SHAKE_TIMER) / (f32)D_08933A98[type]) * 90.0f) / 360.0f * 6.2831855f);
+    if ((shake[SHAKE_TYPE] & 0x80) == 0) {
+        f32 d = dist3((f32 *)shake, &F32(cam, CAM_EYE));
+        f32 r = D_08933AA8[shake[SHAKE_RANGE]];
 
         falloff = r <= d ? 0.0f : 1.0f - d / r;
     } else {
         falloff = 1.0f;
     }
     amp = amp * wave * falloff;
-    if (S16(shake, 18) & 2)
+    if (S16(shake, SHAKE_TIMER) & 2)
         amp = -amp;
-    F32(cam, 0xB44) += amp;
-    F32(cam, 0xB54) += amp;
+    F32(cam, CAM_EYE + 4) += amp;
+    F32(cam, CAM_TARGET + 4) += amp;
 }
 
 /* starts a shake of type "type", from the position of object obj */
 static inline void start_shake(void *cam, int base, int type, u8 *obj, u8 flag)
 {
     if (entity_in_area(obj)) {
-        U8(cam, base + 0x10) = 1;
-        U8(cam, base + 0x11) = type;
-        S16(cam, base + 0x12) = D_08933A98[type];
-        U32(cam, base + 0x0) = U32(obj, 0x200);
-        U32(cam, base + 0x4) = U32(obj, 0x204);
-        U32(cam, base + 0x8) = U32(obj, 0x208);
-        U32(cam, base + 0xC) = U32(obj, 0x20C);
-        U8(cam, base + 0x14) = flag;
+        U8(cam, base + SHAKE_ACTIVE) = 1;
+        U8(cam, base + SHAKE_TYPE) = type;
+        S16(cam, base + SHAKE_TIMER) = D_08933A98[type];
+        U32(cam, base + SHAKE_POS + 0x0) = U32(obj, 0x200);    /* position of the entity */
+        U32(cam, base + SHAKE_POS + 0x4) = U32(obj, 0x204);
+        U32(cam, base + SHAKE_POS + 0x8) = U32(obj, 0x208);
+        U32(cam, base + SHAKE_POS + 0xC) = U32(obj, 0x20C);
+        U8(cam, base + SHAKE_RANGE) = flag;
     }
 }
 
 void camera_start_shake(void *cam, int type, u8 *obj)
 {
-    start_shake(cam, 0xAB0, type, obj, 0);
+    start_shake(cam, CAM_SHAKE, type, obj, 0);
 }
 
 void camera_start_shake_ex(void *cam, int type, u8 *obj, u32 flag_arg)
 {
     u8 flag = flag_arg;
-    start_shake(cam, 0xAB0, type, obj, flag);
+    start_shake(cam, CAM_SHAKE, type, obj, flag);
 }
 
 void camera_start_shake2(void *cam, int type, u8 *obj)
 {
-    start_shake(cam, 0xAD0, type, obj, 0);
+    start_shake(cam, CAM_SHAKE + SHAKE_SIZE, type, obj, 0);
 }
 
 /* step of a transition between camera points */
 void camera_transition_step(void *cam, int finish)
 {
-    u8 *t = (u8 *)cam + 0x7E0;
+    u8 *t = (u8 *)cam + CAM_TRANS;
     int i;
 
-    U8(cam, 0x810) = 3;
-    S16(cam, 0x814) = 0xf;
+    U8(cam, CAM_TRANS_STEP) = 3;
+    S16(cam, CAM_TRANS_TIME) = 0xf;
     if (finish == 0) {
-        i = U32(cam, 0x834) - 1;
-        if (t[U32(cam, 0x834) + 0x30] == 5 && S16(cam, 0x816) != 0) {
-            f32 d1 = dist3(&F32(cam, 0x730), (f32 *)(t + i * 0x10 + 0x70));
-            f32 d2 = dist3(&F32(cam, 0x740), (f32 *)(t + i * 0x10 + 0xA0));
+        i = U32(cam, CAM_TRANS_COUNT) - 1;
+        if (t[U32(cam, CAM_TRANS_COUNT) + 0x30] == 5 && S16(cam, CAM_TRANS_TIME2) != 0) {
+            f32 d1 = dist3(&F32(CAM_VIEW(cam, 4), VIEW_EYE), (f32 *)(t + i * 0x10 + 0x70));
+            f32 d2 = dist3(&F32(CAM_VIEW(cam, 4), VIEW_TARGET), (f32 *)(t + i * 0x10 + 0xA0));
             s16 n = (s16)(int)(D_08933A90 * (d1 + d2)) + 1;
 
-            S16(cam, 0x816) = n;
-            S16(cam, 0x814) = n;
+            S16(cam, CAM_TRANS_TIME2) = n;
+            S16(cam, CAM_TRANS_TIME) = n;
         }
     } else {
-        i = U32(cam, 0x834) - 1;
-        U32(cam, 0x834) = i;
+        i = U32(cam, CAM_TRANS_COUNT) - 1;
+        U32(cam, CAM_TRANS_COUNT) = i;
         if (i == 0) {
             *t = 0;
-            U8(cam, 0x810) = 0;
-            S16(cam, 0x816) = 0;
+            U8(cam, CAM_TRANS_STEP) = 0;
+            S16(cam, CAM_TRANS_TIME2) = 0;
         } else {
             *t = 1;
-            U8(cam, 0x810) = 2;
-            S16(cam, 0x816) = 0xf;
-            S16(cam, 0x814) = 0xf;
+            U8(cam, CAM_TRANS_STEP) = 2;
+            S16(cam, CAM_TRANS_TIME2) = 0xf;
+            S16(cam, CAM_TRANS_TIME) = 0xf;
         }
     }
 }
@@ -194,39 +189,39 @@ void camera_set_mode(void *cam, u32 mode_arg, u32 target, u32 arg_arg)
 {
     u8 mode = mode_arg;
     u8 arg = arg_arg;
-    U8(cam, 0xAAA) = 0;
-    U8(cam, 0xA80) = mode;
-    U32(cam, 0xA7C) = target;
-    U8(cam, 0xA7A) = arg;
+    U8(cam, CAM_CULLING) = 0;
+    U8(cam, CAM_MODE) = mode;
+    U32(cam, CAM_MODE_TARGET) = target;
+    U8(cam, CAM_MODE_ARG) = arg;
 }
 
 /* like camera_set_mode, but only if there is no mode already */
 void camera_request_mode(void *cam, u32 mode_arg, u32 target)
 {
     u8 mode = mode_arg;
-    U8(cam, 0xAAA) = 0;
-    if (U8(cam, 0xA80) == 0) {
-        U8(cam, 0xA80) = mode;
-        U32(cam, 0xA7C) = target;
+    U8(cam, CAM_CULLING) = 0;
+    if (U8(cam, CAM_MODE) == 0) {
+        U8(cam, CAM_MODE) = mode;
+        U32(cam, CAM_MODE_TARGET) = target;
     }
 }
 
 int camera_is_cutscene_active(void *cam)
 {
-    u8 s = U8(cam, 0x9BE);
+    u8 s = U8(cam, CAM_CUTSCENE_ID);
 
     return s == 5 || s == 4 || s == 3;
 }
 
 void camera_set_mode2(void *cam)
 {
-    if (U8(cam, 0xA8D) != 2)
+    if (U8(cam, CAM_VIEW_SEL) != 2)
         camera_set_mode(cam, 2, 0, 0);
 }
 
 void camera_set_mode1(void *cam)
 {
-    if (g_game[0x6AF10] != 12)
+    if (G_MAP != 12)
         camera_set_mode(cam, 1, 0, 0);
 }
 
@@ -249,57 +244,57 @@ void camera_mode_for_area(void *cam)
 
 void camera_clear_cutscene(void *cam)
 {
-    U8(cam, 0x968) = 0;
-    S16(cam, 0x964) = 0;
-    U8(cam, 0x9BE) = 0;
-    U8(cam, 0x9BF) = 0;
-    U32(cam, 0x9C0) = 0;
-    U8(cam, 0xA0B) = 0;
-    U8(cam, 0xAAA) = 1;
-    U8(cam, 0xA80) = 0;
-    U8(cam, 0xA0A) = 0;
+    U8(cam, CAM_X968) = 0;
+    S16(cam, CAM_CUTSCENE_TIMER) = 0;
+    U8(cam, CAM_CUTSCENE_ID) = 0;
+    U8(cam, CAM_CUTSCENE_STATE) = 0;
+    U32(cam, CAM_X9C0) = 0;
+    U8(cam, CAM_XA0B) = 0;
+    U8(cam, CAM_CULLING) = 1;
+    U8(cam, CAM_MODE) = 0;
+    U8(cam, CAM_CUTSCENE_FLAG) = 0;
 }
 
 int camera_cutscene_state(void *cam)
 {
-    if (U8(cam, 0x9BF) != 0)
-        return (s8)U8(cam, 0x9BF);
-    if (U8(cam, 0xA80) != 0 || U8(cam, 0x9BE) != 0)
+    if (U8(cam, CAM_CUTSCENE_STATE) != 0)
+        return (s8)U8(cam, CAM_CUTSCENE_STATE);
+    if (U8(cam, CAM_MODE) != 0 || U8(cam, CAM_CUTSCENE_ID) != 0)
         return 2;
     return 0;
 }
 
 u8 camera_cutscene_id(void *cam)
 {
-    return U8(cam, 0x9BE);
+    return U8(cam, CAM_CUTSCENE_ID);
 }
 
 u8 camera_cutscene_flag(void *cam)
 {
-    return U8(cam, 0xA0A);
+    return U8(cam, CAM_CUTSCENE_FLAG);
 }
 
 int camera_is_special_cutscene(void *cam)
 {
     u8 id;
 
-    if (U8(cam, 0x961) == 0)
+    if (U8(cam, CAM_CUTSCENE_ON) == 0)
         return 0;
-    id = U8(cam, 0x9BE);
+    id = U8(cam, CAM_CUTSCENE_ID);
     return id >= 0x50 && id <= 0x69;
 }
 
 int camera_cutscene_timer(void *cam)
 {
-    if (g_game[0x422] == 0)
+    if (G_TIME_STOP == 0)
         return -1;
-    return S16(cam, 0x964);
+    return S16(cam, CAM_CUTSCENE_TIMER);
 }
 
 int camera_blocks_input(void *cam)
 {
-    if (g_game[0x422] != 1 && U8(cam, 0xA0A) == 0) {
-        switch (U8(cam, 0x9BE)) {
+    if (G_TIME_STOP != 1 && U8(cam, CAM_CUTSCENE_FLAG) == 0) {
+        switch (U8(cam, CAM_CUTSCENE_ID)) {
         case 3: case 4: case 5:
         case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 17: case 18:
             return 1;
@@ -312,36 +307,36 @@ int camera_blocks_input(void *cam)
 
 int camera_is_free(void *cam, u8 *player)
 {
-    if (U8(cam, 0x961) != 0)
+    if (U8(cam, CAM_CUTSCENE_ON) != 0)
         return 0;
-    return player[0x564] != 0 || U8(cam, 0x621) != 0;
+    return player[0x564] != 0 || U8(cam, CAM_VIEW3_ACTIVE) != 0;
 }
 
 int camera_get_zoom(void *cam, u8 *out_a, u8 *out_b, f32 *out_f)
 {
-    *out_a = U8(cam, 0x699);
-    *out_b = U8(cam, 0x69A);
-    if (U8(cam, 0x69A) != 0) {
-        f32 f = F32(cam, 0x618) - F32(cam, 0x680);
+    *out_a = U8(cam, CAM_ZOOM_A);
+    *out_b = U8(cam, CAM_ZOOM_ON);
+    if (U8(cam, CAM_ZOOM_ON) != 0) {
+        f32 f = F32(cam, CAM_VIEW3_FOV) - F32(cam, CAM_ZOOM_BASE);
         *out_f = f;
-        *out_f = f * F32(cam, 0x688);
+        *out_f = f * F32(cam, CAM_ZOOM_SCALE);
     }
-    return (s8)U8(cam, 0x698);
+    return (s8)U8(cam, CAM_ZOOM_STATE);
 }
 
 void camera_get_eye(void *cam, f32 *out)
 {
-    out[0] = F32(cam, 0xB40);
-    out[1] = F32(cam, 0xB44);
-    out[2] = F32(cam, 0xB48);
+    out[0] = F32(cam, CAM_EYE);
+    out[1] = F32(cam, CAM_EYE + 4);
+    out[2] = F32(cam, CAM_EYE + 8);
     U32(out, 12) = 0;
 }
 
 void camera_get_target(void *cam, f32 *out)
 {
-    out[0] = F32(cam, 0xB50);
-    out[1] = F32(cam, 0xB54);
-    out[2] = F32(cam, 0xB58);
+    out[0] = F32(cam, CAM_TARGET);
+    out[1] = F32(cam, CAM_TARGET + 4);
+    out[2] = F32(cam, CAM_TARGET + 8);
     U32(out, 12) = 0;
 }
 
@@ -387,25 +382,25 @@ void camera_look_at(void *cam, const f32 *eye, const f32 *target, const u32 *up)
     int i;
 
     for (i = 0; i < 4; i++) {
-        U32(cam, 0xB40 + i * 4) = ((const u32 *)eye)[i];
-        U32(cam, 0xB50 + i * 4) = ((const u32 *)target)[i];
-        U32(cam, 0xB60 + i * 4) = up[i];
+        U32(cam, CAM_EYE + i * 4) = ((const u32 *)eye)[i];
+        U32(cam, CAM_TARGET + i * 4) = ((const u32 *)target)[i];
+        U32(cam, CAM_UP + i * 4) = up[i];
     }
     dx = target[0] - eye[0];
     dy = target[1] - eye[1];
     dz = target[2] - eye[2];
     d2 = dx * dx + dy * dy + dz * dz;
-    F32(cam, 0xDB8) = d2;
-    F32(cam, 0xDB8) = fsqrt(d2); /* eye-to-target distance */
-    mat_look_at(&F32(cam, 0xB80), eye, target, (const f32 *)up);
+    F32(cam, CAM_DISTANCE) = d2;
+    F32(cam, CAM_DISTANCE) = fsqrt(d2); /* eye-to-target distance */
+    mat_look_at(&F32(cam, CAM_VIEW_MTX), eye, target, (const f32 *)up);
     s = *D_08A62C40;
     for (i = 0; i < 4; i++) {
         se[i] = eye[i] * s;
         st[i] = target[i] * s;
     }
-    mat_look_at(&F32(cam, 0xBC0), se, st, (const f32 *)up);
-    mat_inverse_ortho(&F32(cam, 0xB80), &F32(cam, 0xC80));
-    mat_inverse_ortho(&F32(cam, 0xBC0), &F32(cam, 0xC40));
+    mat_look_at(&F32(cam, CAM_VIEW_MTX_S), se, st, (const f32 *)up);
+    mat_inverse_ortho(&F32(cam, CAM_VIEW_MTX), &F32(cam, CAM_INV_VIEW));
+    mat_inverse_ortho(&F32(cam, CAM_VIEW_MTX_S), &F32(cam, CAM_INV_VIEW_S));
 }
 
 /* Perspective projection matrix (out: 4x4). */
@@ -427,15 +422,15 @@ void camera_perspective(f32 fovy, f32 aspect, f32 znear, f32 zfar, void *unused,
 
 void camera_update_projection(f32 fovy, f32 aspect, f32 znear, f32 zfar, void *cam)
 {
-    camera_perspective(fovy, aspect, znear, zfar, cam, &F32(cam, 0xC00));
-    mat_inverse_ortho(&F32(cam, 0xC00), &F32(cam, 0xD00));
+    camera_perspective(fovy, aspect, znear, zfar, cam, &F32(cam, CAM_PROJ_MTX));
+    mat_inverse_ortho(&F32(cam, CAM_PROJ_MTX), &F32(cam, CAM_INV_PROJ));
     camera_build_frustum(cam);
 }
 
 void camera_apply_projection(void *cam)
 {
-    camera_update_projection(F32(cam, 0xC), F32(cam, 0x8), F32(cam, 0x0), F32(cam, 0x4), cam);
-    U32(cam, 0x10) = U32(cam, 0xC);
+    camera_update_projection(F32(cam, CAM_FOV), F32(cam, CAM_ASPECT), F32(cam, CAM_NEAR), F32(cam, CAM_FAR), cam);
+    U32(cam, CAM_FOV_APPLIED) = U32(cam, CAM_FOV);
 }
 
 /* copies the limits of the current game zone */
@@ -443,36 +438,36 @@ void camera_load_area_limits(void *cam)
 {
     u8 *a;
 
-    if (U32(cam, 0xAAC) == 0)
+    if (U32(cam, CAM_AREA) == 0)
         camera_default_area(cam);
-    a = (u8 *)U32(cam, 0xAAC);
-    S16(cam, 0xB1C) = S16(a, 4);
-    S16(cam, 0xB1E) = S16(a, 6);
-    S16(cam, 0xB20) = S16(a, 8);
-    S16(cam, 0xB22) = S16(a, 10);
-    U32(cam, 0xB24) = U32(a, 0xC);
-    U32(cam, 0xB28) = U32(a, 0x10);
-    U32(cam, 0xB2C) = U32(a, 0x14);
-    U32(cam, 0xB30) = U32(a, 0x18);
+    a = (u8 *)U32(cam, CAM_AREA);
+    S16(cam, CAM_LIMITS) = S16(a, 4);
+    S16(cam, CAM_LIMITS + 2) = S16(a, 6);
+    S16(cam, CAM_LIMITS + 4) = S16(a, 8);
+    S16(cam, CAM_LIMITS + 6) = S16(a, 10);
+    U32(cam, CAM_LIMITS + 0x8) = U32(a, 0xC);
+    U32(cam, CAM_LIMITS + 0xC) = U32(a, 0x10);
+    U32(cam, CAM_LIMITS + 0x10) = U32(a, 0x14);
+    U32(cam, CAM_LIMITS + 0x14) = U32(a, 0x18);
 }
 
 /* reads the stick/buttons that move the camera */
 void camera_read_input(void *cam)
 {
     if (game_quest_locked(g_game, 1) != 1) {
-        if (((u8 *)U32(cam, 0xA84))[0x552] == 0) {
-            S16(cam, 0xA70) = (s16)D_08A62C68;
-            S16(cam, 0xA72) = (s16)g_pad_pressed;
-            S16(cam, 0xA76) = D_08A62C78;
-            S16(cam, 0xA78) = D_08A62C7A;
+        if (((u8 *)U32(cam, CAM_PLAYER))[0x552] == 0) {
+            S16(cam, CAM_STICK_X) = (s16)D_08A62C68;
+            S16(cam, CAM_PAD) = (s16)g_pad_pressed;
+            S16(cam, CAM_STICK2_X) = D_08A62C78;
+            S16(cam, CAM_STICK2_Y) = D_08A62C7A;
             return;
         }
     }
-    S16(cam, 0xA74) = 0;
-    S16(cam, 0xA72) = 0;
-    S16(cam, 0xA70) = 0;
-    S16(cam, 0xA78) = 0;
-    S16(cam, 0xA76) = 0;
+    S16(cam, CAM_XA74) = 0;
+    S16(cam, CAM_PAD) = 0;
+    S16(cam, CAM_STICK_X) = 0;
+    S16(cam, CAM_STICK2_Y) = 0;
+    S16(cam, CAM_STICK2_X) = 0;
 }
 
 void camera_set_field_142(void *cam, int v)
@@ -481,7 +476,7 @@ void camera_set_field_142(void *cam, int v)
         v = -1;
     if (v < 0)
         v = 0xff;
-    U8(cam, 0x142) = v;
+    U8(cam, CAM_X142) = v;
 }
 
 /* --- "look at" matrix and camera zones ---------------------------------- */
@@ -536,7 +531,7 @@ void mat_look_at(f32 *m, const f32 *eye, const f32 *target, const f32 *up)
 /* default zone (when the map has none) */
 void camera_default_area(void *cam)
 {
-    u8 *a = (u8 *)U32(cam, 0xAAC);
+    u8 *a = (u8 *)U32(cam, CAM_AREA);
     static const u16 off[] = { 0x74, 0x78, 0x80, 0x88, 0x94, 0x98, 0xA0, 0xA8, 0xB4, 0xB8,
                                0xC0, 0xC8, 0xD4, 0xD8, 0xE0, 0xE8, 0xF4, 0xF8, 0x100, 0x108 };
     int i;
@@ -575,7 +570,7 @@ void camera_default_area(void *cam)
     U32(a, 0x58) = 0;
     S16(a, 0x5E) = 0;
     S16(a, 0x5C) = 0;
-    U32(cam, 0xAAC) = (u32)a;
+    U32(cam, CAM_AREA) = (u32)a;
 }
 
 /* is point p inside quadrilateral q (in plan)? 0 = yes, 2 = no */
@@ -606,12 +601,12 @@ int camera_player_in_zone(void *cam, u8 *zone, u32 mask_arg)
     u8 *part;
     int n;
 
-    if ((zone[6] & 0x80) && !func_088DA324(U32(cam, 0xA84)))
+    if ((zone[6] & 0x80) && !func_088DA324(U32(cam, CAM_PLAYER)))
         return 2;
     part = (u8 *)U32(zone, 0x18);
     for (n = zone[5]; n > 0; n--, part += 0x40) {
         if ((part[0x2C] & mask) == 0) {
-            u8 *pl = (u8 *)U32(cam, 0xA84);
+            u8 *pl = (u8 *)U32(cam, CAM_PLAYER);
             f32 d[3], h;
 
             d[0] = F32(pl, 0x200) - F32(part, 0x20);
@@ -629,29 +624,29 @@ int camera_player_in_zone(void *cam, u8 *zone, u32 mask_arg)
 /* finds the camera zone where the player is */
 int camera_find_zone(void *cam)
 {
-    u8 *area = (u8 *)U32(cam, 0xAAC);
+    u8 *area = (u8 *)U32(cam, CAM_AREA);
     u8 *grid;
     int *cell, n;
     u32 *zone;
 
     if (area == NULL) {
-        U32(cam, 0xA90) = 0;
+        U32(cam, CAM_ZONE) = 0;
         return -1;
     }
-    U32(cam, 0xA90) = U32(area, 0x28);
-    if (U8(cam, 0xB14) != 0)
+    U32(cam, CAM_ZONE) = U32(area, 0x28);
+    if (U8(cam, CAM_ZONE_LOCK) != 0)
         return 0;
     grid = (u8 *)U32(area, 0x1C);
     if (grid == NULL)
         return 0;
-    cell = (int *)(grid + ((u32)*(u16 *)((u8 *)cam + 0xB16) +
-                           (u32)*(u16 *)((u8 *)cam + 0xB1C) * *(u16 *)((u8 *)cam + 0xB18)) * 8);
+    cell = (int *)(grid + ((u32)*(u16 *)((u8 *)cam + CAM_GRID_X) +
+                           (u32)*(u16 *)((u8 *)cam + CAM_LIMITS) * *(u16 *)((u8 *)cam + CAM_GRID_Z)) * 8);
     n = cell[0];
     if (n == 0)
         return 0;
     for (zone = (u32 *)cell[1]; n > 0; n--, zone++) {
         if (camera_player_in_zone(cam, (u8 *)*zone, 1) == 0) {
-            U32(cam, 0xA90) = *zone;
+            U32(cam, CAM_ZONE) = *zone;
             return 1;
         }
     }
@@ -662,20 +657,20 @@ void camera_set_view(f32 fov, void *cam, const u32 *eye, const u32 *target)
 {
     int i;
 
-    U32(cam, 0xB60) = 0;
-    U32(cam, 0xB64) = 0x3f800000;
-    U32(cam, 0xB68) = 0;
-    U32(cam, 0xB6C) = 0;
+    U32(cam, CAM_UP) = 0;
+    U32(cam, CAM_UP + 4) = 0x3f800000;
+    U32(cam, CAM_UP + 8) = 0;
+    U32(cam, CAM_UP + 12) = 0;
     for (i = 0; i < 4; i++) {
-        U32(cam, 0x20 + i * 4) = eye[i];
-        U32(cam, 0x30 + i * 4) = target[i];
+        U32(cam, CAM_EYE_WANT + i * 4) = eye[i];
+        U32(cam, CAM_TARGET_WANT + i * 4) = target[i];
     }
     for (i = 0; i < 4; i++) {
-        U32(cam, 0xB40 + i * 4) = eye[i];
-        U32(cam, 0xB50 + i * 4) = target[i];
+        U32(cam, CAM_EYE + i * 4) = eye[i];
+        U32(cam, CAM_TARGET + i * 4) = target[i];
     }
-    F32(cam, 0xA8) = fov;
-    F32(cam, 0xC) = fov;
+    F32(cam, CAM_FOV_WANT) = fov;
+    F32(cam, CAM_FOV) = fov;
     camera_update(cam);
 }
 
@@ -710,8 +705,8 @@ static inline u32 angle16(f32 rad)
 /* horizontal direction the camera looks in */
 u32 camera_get_yaw(void *cam)
 {
-    f32 x = F32(cam, 0xB50) - F32(cam, 0xB40);
-    f32 y = -(F32(cam, 0xB58) - F32(cam, 0xB48));
+    f32 x = F32(cam, CAM_TARGET) - F32(cam, CAM_EYE);
+    f32 y = -(F32(cam, CAM_TARGET + 8) - F32(cam, CAM_EYE + 8));
 
     return angle16(atan2_approx(y, x));
 }
@@ -721,20 +716,20 @@ u32 camera_get_yaw(void *cam)
 void camera_update(void *cam)
 {
     f32 x, y, a, c, s;
-    f32 *bb = &F32(cam, 0xCC0);
+    f32 *bb = &F32(cam, CAM_BILLBOARD);
     int i;
 
     for (i = 0; i < 3; i++)
-        F32(cam, 0xB50 + i * 4) += (F32(cam, 0x30 + i * 4) - F32(cam, 0xB50 + i * 4)) / 9.0f;
+        F32(cam, CAM_TARGET + i * 4) += (F32(cam, CAM_TARGET_WANT + i * 4) - F32(cam, CAM_TARGET + i * 4)) / 9.0f;
     for (i = 0; i < 3; i++)
-        F32(cam, 0xB40 + i * 4) += (F32(cam, 0x20 + i * 4) - F32(cam, 0xB40 + i * 4)) / 9.0f;
-    F32(cam, 0xC) += (F32(cam, 0xA8) - F32(cam, 0xC)) / 9.0f;
+        F32(cam, CAM_EYE + i * 4) += (F32(cam, CAM_EYE_WANT + i * 4) - F32(cam, CAM_EYE + i * 4)) / 9.0f;
+    F32(cam, CAM_FOV) += (F32(cam, CAM_FOV_WANT) - F32(cam, CAM_FOV)) / 9.0f;
     camera_apply_projection(cam);
-    camera_look_at(cam, &F32(cam, 0xB40), &F32(cam, 0xB50), &U32(cam, 0xB60));
+    camera_look_at(cam, &F32(cam, CAM_EYE), &F32(cam, CAM_TARGET), &U32(cam, CAM_UP));
 
     /* camera z axis in the world */
-    x = (F32(cam, 0xCA0) + F32(cam, 0xCB0)) - F32(cam, 0xCB0);
-    y = -((F32(cam, 0xCA8) + F32(cam, 0xCB8)) - F32(cam, 0xCB8));
+    x = (F32(cam, CAM_INV_VIEW + 0x20) + F32(cam, CAM_INV_VIEW + 0x30)) - F32(cam, CAM_INV_VIEW + 0x30);
+    y = -((F32(cam, CAM_INV_VIEW + 0x28) + F32(cam, CAM_INV_VIEW + 0x38)) - F32(cam, CAM_INV_VIEW + 0x38));
     a = atan2_approx(y, x);
     a = ((((f32)((angle16(a) + 0x4000) & 0xffff) * 360.0f) / 65536.0f) / 360.0f) * 6.2831855f;
     c = cosf(a);
@@ -752,7 +747,7 @@ void camera_update(void *cam)
 /* Projects the world point p onto the screen (out: x, y, z, w). */
 void camera_world_to_screen(void *cam, f32 *out, const f32 *p)
 {
-    const f32 *v = &F32(cam, 0xBC0), *pr = &F32(cam, 0xC00);
+    const f32 *v = &F32(cam, CAM_VIEW_MTX_S), *pr = &F32(cam, CAM_PROJ_MTX);
     f32 s = *D_08A62C40, in[4], t[4];
     int r, k;
 
@@ -767,10 +762,10 @@ void camera_world_to_screen(void *cam, f32 *out, const f32 *p)
         out[r] = pr[r] * t[0] + pr[4 + r] * t[1] + pr[8 + r] * t[2] + pr[12 + r] * t[3];
     if (-1e-05f < out[3] && out[3] < 1e-05f)
         out[3] = 1.0f;
-    out[0] = F32(cam, 0xDAC) + (F32(cam, 0xDA0) * out[0]) / out[3];
+    out[0] = F32(cam, CAM_SCREEN_CENTER) + (F32(cam, CAM_SCREEN_SCALE) * out[0]) / out[3];
     out[1] = F32(cam, 0xDB0) + (F32(cam, 0xDA4) * out[1]) / out[3];
     out[2] = F32(cam, 0xDB4) + (F32(cam, 0xDA8) * out[2]) / out[3];
-    out[0] -= F32(cam, 0xB70);
+    out[0] -= F32(cam, CAM_SCREEN_SHIFT);
     out[1] -= F32(cam, 0xB74);
 }
 
@@ -781,10 +776,10 @@ void camera_set_area(void *cam, u8 *area)
     int n, count = 0;
 
     if (area == NULL) {
-        U32(cam, 0xAAC) = 0;
+        U32(cam, CAM_AREA) = 0;
         return;
     }
-    U32(cam, 0xAAC) = (u32)area;
+    U32(cam, CAM_AREA) = (u32)area;
     zone = area + 0x30;
     U32(area, 0x28) = (u32)zone;
     for (n = *(u16 *)(area + 2); n > 0; n--) {
@@ -830,48 +825,48 @@ void camera_select_view(void *cam)
     int i;
 
     for (i = 0; i < 3; i++, slot += 0x20) {
-        if (slot[0xAC0] != 0 && --*(s16 *)(slot + 0xAC2) < 1)
-            slot[0xAC0] = 0;
+        if (slot[CAM_SHAKE + SHAKE_ACTIVE] != 0 && --*(s16 *)(slot + CAM_SHAKE + SHAKE_TIMER) < 1)
+            slot[CAM_SHAKE + SHAKE_ACTIVE] = 0;
     }
-    pre = (u8 *)cam + U8(cam, 0xA8D) * 0x1A0;
+    pre = CAM_VIEW(cam, U8(cam, CAM_VIEW_SEL));
     for (i = 0; i < 4; i++) {
-        U32(cam, 0x20 + i * 4) = U32(pre, 0xB0 + i * 4);
-        U32(cam, 0x30 + i * 4) = U32(pre, 0xC0 + i * 4);
+        U32(cam, CAM_EYE_WANT + i * 4) = U32(pre, VIEW_EYE + i * 4);
+        U32(cam, CAM_TARGET_WANT + i * 4) = U32(pre, VIEW_TARGET + i * 4);
     }
-    U32(cam, 0xA0) = U32(pre, 0x130);
-    U32(cam, 0xA8) = U32(pre, 0x138);
-    U8(cam, 0xDC4) = 0xff;
-    if (U8(cam, 0x961) != 0)
-        U8(cam, 0xDC4) = 5;
-    else if (U8(cam, 0x621) != 0)
-        U8(cam, 0xDC4) = 3;
-    else if (U8(cam, 0x7C1) != 0)
-        U8(cam, 0xDC4) = 4;
-    sel = (s8)U8(cam, 0xDC4);
+    U32(cam, CAM_X0A0) = U32(pre, VIEW_X130);
+    U32(cam, CAM_FOV_WANT) = U32(pre, VIEW_FOV);
+    U8(cam, CAM_ACTIVE_VIEW) = 0xff;
+    if (U8(cam, CAM_CUTSCENE_ON) != 0)
+        U8(cam, CAM_ACTIVE_VIEW) = 5;
+    else if (U8(cam, CAM_VIEW3_ACTIVE) != 0)
+        U8(cam, CAM_ACTIVE_VIEW) = 3;
+    else if (U8(cam, CAM_VIEW4_ACTIVE) != 0)
+        U8(cam, CAM_ACTIVE_VIEW) = 4;
+    sel = (s8)U8(cam, CAM_ACTIVE_VIEW);
     if (sel < 1) {
         for (i = 0; i < 4; i++) {
-            U32(cam, 0xB40 + i * 4) = U32(cam, 0x20 + i * 4);
-            U32(cam, 0xB50 + i * 4) = U32(cam, 0x30 + i * 4);
+            U32(cam, CAM_EYE + i * 4) = U32(cam, CAM_EYE_WANT + i * 4);
+            U32(cam, CAM_TARGET + i * 4) = U32(cam, CAM_TARGET_WANT + i * 4);
         }
-        camera_apply_shake(cam, (u8 *)cam + 0xAB0);
-        U32(cam, 0xB34) = U32(cam, 0xA0);
-        U32(cam, 0xC) = U32(cam, 0xA8);
+        camera_apply_shake(cam, (u8 *)cam + CAM_SHAKE);
+        U32(cam, CAM_ROLL) = U32(cam, CAM_X0A0);
+        U32(cam, CAM_FOV) = U32(cam, CAM_FOV_WANT);
     } else {
-        pre = (u8 *)cam + sel * 0x1A0;
+        pre = CAM_VIEW(cam, sel);
         for (i = 0; i < 4; i++) {
-            U32(cam, 0xB40 + i * 4) = U32(pre, 0xB0 + i * 4);
-            U32(cam, 0xB50 + i * 4) = U32(pre, 0xC0 + i * 4);
+            U32(cam, CAM_EYE + i * 4) = U32(pre, VIEW_EYE + i * 4);
+            U32(cam, CAM_TARGET + i * 4) = U32(pre, VIEW_TARGET + i * 4);
         }
-        sel = (s8)U8(cam, 0xDC4);
+        sel = (s8)U8(cam, CAM_ACTIVE_VIEW);
         if (sel == 5)
-            camera_apply_shake(cam, (u8 *)cam + 0xAF0);
+            camera_apply_shake(cam, (u8 *)cam + CAM_SHAKE + 2 * SHAKE_SIZE);
         else if (sel == 3)
-            camera_apply_shake(cam, (u8 *)cam + 0xAD0);
+            camera_apply_shake(cam, (u8 *)cam + CAM_SHAKE + SHAKE_SIZE);
         else if (sel == 4)
-            camera_apply_shake(cam, (u8 *)cam + 0xAB0);
-        U32(cam, 0xB34) = U32(pre, 0x130);
-        U32(cam, 0xC) = U32(pre, 0x138);
-        U8(cam, 0xA88) = 0;
+            camera_apply_shake(cam, (u8 *)cam + CAM_SHAKE);
+        U32(cam, CAM_ROLL) = U32(pre, VIEW_X130);
+        U32(cam, CAM_FOV) = U32(pre, VIEW_FOV);
+        U8(cam, CAM_XA88) = 0;
     }
-    camera_set_field_142(cam, (s8)U8(cam, 0xDC4));
+    camera_set_field_142(cam, (s8)U8(cam, CAM_ACTIVE_VIEW));
 }

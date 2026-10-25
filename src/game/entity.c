@@ -86,7 +86,7 @@ void entity_update_common(u8 *o)
             o[0x276]--;
         (*(void (**)(void *))(U32(o, 0) + 0x3C))(o);
     }
-    if ((U32(g_game, 0x6AF14) & 1) == 0) {
+    if ((GAME_FLAGS & 1) == 0) {
         entity_clear_flag(o, 0x800);
         if (entity_flag(o, 1) == 0)
             entity_clear_flag(o, 0x2000);

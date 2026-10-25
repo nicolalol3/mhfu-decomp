@@ -57,7 +57,7 @@ void menu_open(void *self)
     u8 *g;
     u32 f;
 
-    U32(self, 0x530) = player_get(g_players, g_game[0x28]);
+    U32(self, 0x530) = player_get(g_players, G_MY_SLOT);
     U8(self, 0x52F) = 0;
     U8(self, 0x52E) = 0;
     U8(self, 0x52D) = 0;
@@ -275,7 +275,7 @@ void menu_draw_trade(void *self)
     for (i = 0; i < 7; i++)
         xoff[i] = D_089384F4[i];
     lang = LANG;
-    if ((U32(g_game, 0x6AF14) & 0x200) == 0)
+    if ((GAME_FLAGS & 0x200) == 0)
         slots = (u16 *)(g_game + 0x43C8);
     else
         slots = pouch_slot(g_game, 0);

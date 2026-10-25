@@ -231,7 +231,7 @@ void hud_map_draw_hunter(f32 x, f32 y, f32 scale, u8 *self, u32 ang_arg, u32 p)
         pt[i * 2] = (int)(x + (c * vx + s * vy));
         pt[i * 2 + 1] = (int)(y + (-s * vx + c * vy));
     }
-    id = (p == g_game[0x28]) ? 0x92 : 0x97;
+    id = (p == G_MY_SLOT) ? 0x92 : 0x97;
     col = &D_0893ABAC[(p & 3) * 4];
     gfx_draw_quad(self, pt, col[0], col[1], col[2], id);
     n = S16(self, 0x56C + p * 2);
@@ -554,7 +554,7 @@ void hud_take_box_item(u8 *self, u8 *h)
 
     h[0x55E] = 30;
     hud_box_cursor_flash(self, h);
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
+    if ((OPT_FLAGS & 1) == 0) {
         u8 slot;
 
         S16(h, 0x5EC) = 0;

@@ -170,7 +170,7 @@ void rl_draw_all(u8 *self)
             for (; o != NULL; o = (u32 *)o[2])
                 (*(void (**)(void *))(o[0] + 0xC))(o);
         }
-        if (layer == 8 && U16(g_game, 0x6AF0E) != 0 && *g_area != NULL
+        if (layer == 8 && G_AREA != 0 && *g_area != NULL
             && (*g_area)[0x3D4] == 1)
             func_088CACD4(*g_area);
         rl_close(self);

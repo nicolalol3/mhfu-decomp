@@ -69,7 +69,7 @@ u32 menu_list_tabs_input(void *self, u32 keys);
 
 #define SND(n) sound_play(g_sound, 0, n, 0, 0, 0, 0, 0, 0)
 #define TXT(id) func_09A63198(D_09A44C5C, id)
-#define ONLINE ((*(u32 *)(g_sys + 0xF7A57C) & 1) != 0)
+#define ONLINE ((OPT_FLAGS & 1) != 0)
 
 /* sum of the values of the reward items of the quest */
 static s32 reward_value(void)
@@ -186,7 +186,7 @@ void hud_pause_input(u8 *self, u32 keys)
         return;
     }
     if (ONLINE && (keys & 0x1000)) {
-        s16 *sig = (s16 *)(self + 0x56C + g_game[0x28] * 2);
+        s16 *sig = (s16 *)(self + 0x56C + G_MY_SLOT * 2);
 
         if (*sig < 0) {
             *sig = 0;

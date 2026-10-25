@@ -118,7 +118,7 @@ int save_in_progress(u8 *g)
 /* starts saving (off-line only) */
 void save_start(u8 *g)
 {
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) != 0) {
+    if ((OPT_FLAGS & 1) != 0) {
         g[0x6AF1A] = 0;
         return;
     }
@@ -274,7 +274,7 @@ int party_has_kitchen_skill(u8 *p, u32 k_arg)
     u8 k = k_arg;
     int i, j;
 
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+    if ((OPT_FLAGS & 1) == 0)
         return has_kitchen_skill(p, k_arg);
     for (i = 0; i < 6; i++, p += 0x8C) {
         if (p[0x30] == 0)
@@ -294,7 +294,7 @@ int memcmp(const void *a, const void *b, size_t n);
 /* 1 if the quest is still going (not ended, failed or abandoned) */
 int quest_running(void)
 {
-    u32 f = U32(g_game, 0x6AF14);
+    u32 f = GAME_FLAGS;
 
     if (f & 1)
         return 0;

@@ -60,7 +60,7 @@ void dl_end_frame(u8 *dl)
 {
     dl_wait_ge(dl);
     osk_update(D_08A62C60);
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) != 0) {
+    if ((OPT_FLAGS & 1) != 0) {
         func_088ADF24(D_09A1FDDC);
         func_088AB1CC(g_net);
         func_08898980(g_net_players);

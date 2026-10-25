@@ -473,7 +473,7 @@ void menu_layout_pos(void *self, f32 *x, f32 *y, f32 *z, u32 id_arg)
     u16 id = id_arg;
     const s16 *p = D_08938AFC[id];
 
-    if (g_game[0x6AF10] == 15 && (u32)(id - 0x80) < 2)
+    if (G_MAP == 15 && (u32)(id - 0x80) < 2)
         p = D_08939140[id - 0x80];
     *x = p[0];
     *y = p[1];
@@ -495,7 +495,7 @@ int menu_layout_screen_pos(void *self, f32 *x, f32 *y, u32 id)
         return 0;
     }
     {
-        u8 g = g_game[0x6AF10];
+        u8 g = G_MAP;
 
         *x = 0x1.af286cp-8f * *x * D_0893887C[g][0];
         *y = 0x1.af286cp-8f * *y * D_0893887C[g][1];

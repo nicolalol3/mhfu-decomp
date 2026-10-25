@@ -84,7 +84,7 @@ void menu_msg_next(void *self)
     s8 h;
     int i;
 
-    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0 && g_game[0x422] == 1)
+    if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0 && G_TIME_STOP == 1)
         return;
     for (i = 0; i < 20; i++)
         if (U8((u8 *)self + i * 0x24, 0xE28) != 0)

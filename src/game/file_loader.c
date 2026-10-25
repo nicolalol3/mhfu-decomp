@@ -672,7 +672,7 @@ void fl_report_error(u8 *p, s32 err)
 /* error message to show (depends on the error and on on-line / off-line) */
 void fl_set_error(u8 *p, s32 err)
 {
-    int online = (*(u32 *)(g_sys + 0xF7A57C) & 1) != 0;
+    int online = (OPT_FLAGS & 1) != 0;
     u32 code;
 
     if (err == (s32)0x80020321) {

@@ -39,7 +39,7 @@ s32 menu_other_ready(void *self);
 void menu_pouch_compact(void *self, u32 box_arg)
 {
     u8 box = box_arg;
-    u8 *hunter = (u8 *)player_get(g_players, g_game[0x28]);
+    u8 *hunter = (u8 *)player_get(g_players, G_MY_SLOT);
     s16 *list;
     s16 *p;
     u16 sel = 0, a = 0, b = 0;
@@ -158,9 +158,9 @@ u8 menu_get_mode(u8 *self)
     self[0x5E6] = 0;
     f = *(u32 *)((u8 *)g_quest + 0x28);
     if (f & 0x40000) {
-        if (g_game[0x6AF10] == 12)
+        if (G_MAP == 12)
             self[0x584] = 4;
-        else if (g_game[0x6AF10] == 1)
+        else if (G_MAP == 1)
             self[0x584] = 3;
         else
             self[0x584] = 6;
@@ -234,7 +234,7 @@ u8 *menu_quest_data(void *self)
 /* 1 if the selected item can be given to another player */
 int menu_item_giftable(u8 *self)
 {
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+    if ((OPT_FLAGS & 1) == 0)
         return 0;
     if (D_0899D19A[(s16)menu_slot_first(self, self[0x586]) * 0x18] >= 3)
         return 0;
@@ -294,12 +294,12 @@ void menu_draw_give(u8 *self, int alt)
     else
         layout_build(&l, D_089386D4, 0, 0, 0);
     if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0) {
-        me = g_game[0x28];
+        me = G_MY_SLOT;
         k = 0;
         for (i = 0; i < 4; i++) {
             if (me == (u32)i)
                 continue;
-            if (g_game[(i & 0xFF) * 0x8C + 0x30] == 0)
+            if (G_PLAYER_HERE((i & 0xFF)) == 0)
                 name[k] = NULL;
             else
                 name[k] = (const char *)(g_net_players + (i & 0xFF) * 200 + 0xBC8);
@@ -367,7 +367,7 @@ void dl_link(void *dl, u32 *p, int n, u8 layer);
 /* 1 if the menu accepts input now (for the player of hunter, when given) */
 int menu_input_ready(u8 *self, u8 *hunter)
 {
-    if (hunter != NULL && U16(hunter, 0x1E6) != g_game[0x28])
+    if (hunter != NULL && U16(hunter, 0x1E6) != G_MY_SLOT)
         return 0;
     if (self[0x52F] != 0)
         return 0;
@@ -396,7 +396,7 @@ s32 menu_open_give(u8 *self)
             return -1;
         self[0x57E] = 0;
     } else {
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+        if ((OPT_FLAGS & 1) == 0)
             return -1;
         self[0x57E] = 0;
     }

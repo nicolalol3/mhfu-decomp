@@ -1,6 +1,7 @@
 /* Result screens at the end of the quest: reward money, sold items (with the counting
  * animation). The object is g_result. (Guessed names.) */
 #include "quest.h"
+#include "result.h"
 #undef menu_draw_sprite
 #undef gfx_draw_item_icon_alpha
 #undef text_item_name
@@ -49,11 +50,11 @@ void result_init_sounds(u8 *self);
 /* waits a step of 10 frames; 1 when the step ends */
 static int step_wait(u8 *self)
 {
-    S16(self, 0xA8)--;
-    if (S16(self, 0xA8) >= 0)
+    S16(self, RES_STEP_TIMER)--;
+    if (S16(self, RES_STEP_TIMER) >= 0)
         return 0;
-    S16(self, 0xA4)++;
-    U16(self, 0xA8) = 10;
+    S16(self, RES_STEP)++;
+    U16(self, RES_STEP_TIMER) = 10;
     return 1;
 }
 
@@ -62,10 +63,10 @@ s32 result_money_update(u8 *self)
 {
     u32 h;
 
-    player_get(g_players, g_game[0x28]);
-    if (S16(self, 0xAA) > 0)
-        S16(self, 0xAA)--;
-    switch (U16(self, 0xA4)) {
+    player_get(g_players, G_MY_SLOT);
+    if (S16(self, RES_TIMER) > 0)
+        S16(self, RES_TIMER)--;
+    switch (U16(self, RES_STEP)) {
     case 0:
         if (step_wait(self))
             SE(0x10);
@@ -81,30 +82,30 @@ s32 result_money_update(u8 *self)
         break;
     case 4:
         if (step_wait(self))
-            U16(self, 0xAE) = 0;
+            U16(self, RES_SOUND_ON) = 0;
         break;
     case 5:
-        if (U32(g_result, 0x14) == 0) {
-            func_088854A0(g_sound, U32(self, 0xC8), 0);
-            S16(self, 0xA4)++;
+        if (U32(g_result, RES_VALUE) == 0) {
+            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            S16(self, RES_STEP)++;
             SE(0x19);
             break;
         }
-        if (S16(self, 0xAE) == 0) {
+        if (S16(self, RES_SOUND_ON) == 0) {
             h = SE(8);
-            U32(self, 0xC8) = h;
-            S16(self, 0xAE)++;
+            U32(self, RES_SOUND) = h;
+            S16(self, RES_SOUND_ON)++;
         }
         if ((g_pad_pressed & 0x4000) == 0) {
             game_add_money(g_game, 1);
-            U32(g_result, 0x14)--;
+            U32(g_result, RES_VALUE)--;
         } else {
-            game_add_money(g_game, U32(g_result, 0x14));
-            U32(g_result, 0x14) = 0;
+            game_add_money(g_game, U32(g_result, RES_VALUE));
+            U32(g_result, RES_VALUE) = 0;
         }
         break;
     case 6:
-        if (S16(self, 0xAA) <= 0 || (game_buttons(g_game) & 0x4000) != 0) {
+        if (S16(self, RES_TIMER) <= 0 || (game_buttons(g_game) & 0x4000) != 0) {
             SE(0x13);
             return 1;
         }
@@ -123,7 +124,7 @@ static void draw_footer(u8 *self, const s16 *tbl, s32 lang)
     s16 x;
 
     font_set_pos(g_font, 0xFC, 0xF2);
-    font_draw(g_font, RTEXT(D_089B53C6), S16(self, 0xAA) / 30);
+    font_draw(g_font, RTEXT(D_089B53C6), S16(self, RES_TIMER) / 30);
     for (i = 0; i < 7; i++)
         t[i] = tbl[i];
     x = t[lang] + 0xF4;
@@ -163,14 +164,14 @@ void result_money_draw(u8 *self)
     u32 v;
     char buf[0x100];
 
-    switch (S16(self, 0xA4)) {
+    switch (S16(self, RES_STEP)) {
     default:
         draw_press_button(t[lang]);
         /* fall through */
     case 4:
     case 5:
         font_draw_centered(0xF4, D_089A87E6, RTEXT(D_089B53BA), 0x10);
-        font_printf_at(g_font, 0xF4, D_089A87E6, RTEXT(D_089B541A), U32(self, 0x14));
+        font_printf_at(g_font, 0xF4, D_089A87E6, RTEXT(D_089B541A), U32(self, RES_VALUE));
         /* fall through */
     case 3:
         v = 0;
@@ -184,7 +185,7 @@ void result_money_draw(u8 *self)
     case 2:
         v = 0;
         if (quest_state(QUEST, 1) == 1) {
-            u32 h = player_get(g_players, g_game[0x28]);
+            u32 h = player_get(g_players, G_MY_SLOT);
 
             if (hunter_felyne_skill(h, 0x31) == 0)
                 v = QUEST->reward;
@@ -211,10 +212,10 @@ void result_money_draw(u8 *self)
 /* prices of the sold items (list at 0x28, count at 0x24) */
 static s32 sold_total(u8 *self)
 {
-    u16 *p = &U16(self, 0x28);
+    u16 *p = &U16(self, RES_SOLD);
     s32 i, sum = 0;
 
-    for (i = 0; i < (s32)U32(self, 0x24); i++, p += 2) {
+    for (i = 0; i < (s32)U32(self, RES_SOLD_N); i++, p += 2) {
         if (p[0] == 0)
             break;
         sum += (s16)p[1] * D_0899D1A8[p[0] * 6];
@@ -224,16 +225,16 @@ static s32 sold_total(u8 *self)
 
 void result_sell_init(u8 *self)
 {
-    U16(self, 0xA4) = 0;
-    U16(self, 0xA6) = 0;
-    U16(self, 0xAA) = 3600;
-    U32(g_result, 0x14) = 0;
+    U16(self, RES_STEP) = 0;
+    U16(self, RES_XA6) = 0;
+    U16(self, RES_TIMER) = 3600;
+    U32(g_result, RES_VALUE) = 0;
     g_result[0x1C] = 0;
-    U16(self, 0xA8) = 10;
-    U32(self, 0x14) = hrp_scale(g_result, sold_total(self), 1);
-    U32(self, 0x10) = sold_total(self);
+    U16(self, RES_STEP_TIMER) = 10;
+    U32(self, RES_VALUE) = hrp_scale(g_result, sold_total(self), 1);
+    U32(self, RES_SOLD_TOTAL) = sold_total(self);
     g_result[0x1D] = g_result[0x1C];
-    U32(self, 0x20) = 0;
+    U32(self, RES_X20) = 0;
 }
 
 /* screen of the sold items: pages with left / right, then counting of money and points */
@@ -241,23 +242,23 @@ s32 result_sell_update(u8 *self)
 {
     s32 old, pages, h;
 
-    player_get(g_players, g_game[0x28]);
-    if (S16(self, 0xAA) > 0)
-        S16(self, 0xAA)--;
-    if (S16(self, 0xA4) >= 2) {
-        old = U32(self, 0x20);
-        pages = ((s32)U32(self, 0x24) - 1) / 10;
+    player_get(g_players, G_MY_SLOT);
+    if (S16(self, RES_TIMER) > 0)
+        S16(self, RES_TIMER)--;
+    if (S16(self, RES_STEP) >= 2) {
+        old = U32(self, RES_X20);
+        pages = ((s32)U32(self, RES_SOLD_N) - 1) / 10;
         if ((game_buttons(g_game) & 0x80) != 0) {
-            if ((s32)--U32(self, 0x20) < 0)
-                U32(self, 0x20) = pages;
+            if ((s32)--U32(self, RES_X20) < 0)
+                U32(self, RES_X20) = pages;
         } else if ((game_buttons(g_game) & 0x20) != 0) {
-            if (pages < (s32)++U32(self, 0x20))
-                U32(self, 0x20) = 0;
+            if (pages < (s32)++U32(self, RES_X20))
+                U32(self, RES_X20) = 0;
         }
-        if (old != (s32)U32(self, 0x20))
+        if (old != (s32)U32(self, RES_X20))
             SE(0x11);
     }
-    switch (U16(self, 0xA4)) {
+    switch (U16(self, RES_STEP)) {
     case 0:
         if (step_wait(self))
             SE(0x10);
@@ -267,52 +268,52 @@ s32 result_sell_update(u8 *self)
             SE(0x11);
         break;
     case 2:
-        S16(self, 0xA8)--;
-        if (S16(self, 0xA8) < 0) {
+        S16(self, RES_STEP_TIMER)--;
+        if (S16(self, RES_STEP_TIMER) < 0) {
             if (--g_result[0x1C] == 0) {
-                U16(self, 0xA4) = 7;
+                U16(self, RES_STEP) = 7;
                 SE(0x13);
             } else {
-                S16(self, 0xA4)++;
+                S16(self, RES_STEP)++;
                 SE(0x11);
             }
-            U16(self, 0xA8) = 10;
+            U16(self, RES_STEP_TIMER) = 10;
         }
         break;
     case 3:
         if (step_wait(self))
-            U16(self, 0xAE) = 0;
+            U16(self, RES_SOUND_ON) = 0;
         break;
     case 4:
-        if ((s32)U32(g_result, 0x10) <= 0 && (s32)U32(g_result, 0x14) <= 0) {
-            func_088854A0(g_sound, U32(self, 0xC8), 0);
-            S16(self, 0xA4)++;
+        if ((s32)U32(g_result, RES_SOLD_TOTAL) <= 0 && (s32)U32(g_result, RES_VALUE) <= 0) {
+            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            S16(self, RES_STEP)++;
             SE(0x19);
             return 0;
         }
-        if (S16(self, 0xAE) == 0) {
+        if (S16(self, RES_SOUND_ON) == 0) {
             h = SE(8);
-            U32(self, 0xC8) = h;
-            S16(self, 0xAE)++;
+            U32(self, RES_SOUND) = h;
+            S16(self, RES_SOUND_ON)++;
         }
         if ((g_pad_pressed & 0x4000) == 0) {
-            if ((s32)U32(g_result, 0x10) > 0) {
-                U32(g_result, 0x10)--;
+            if ((s32)U32(g_result, RES_SOLD_TOTAL) > 0) {
+                U32(g_result, RES_SOLD_TOTAL)--;
                 game_add_money(g_game, 1);
             }
-            if ((s32)U32(g_result, 0x14) > 0) {
+            if ((s32)U32(g_result, RES_VALUE) > 0) {
                 game_add_points(g_game, 1);
-                U32(g_result, 0x14)--;
+                U32(g_result, RES_VALUE)--;
             }
         } else {
-            game_add_money(g_game, U32(g_result, 0x10));
-            game_add_points(g_game, U32(g_result, 0x14));
-            U32(g_result, 0x10) = 0;
-            U32(g_result, 0x14) = 0;
+            game_add_money(g_game, U32(g_result, RES_SOLD_TOTAL));
+            game_add_points(g_game, U32(g_result, RES_VALUE));
+            U32(g_result, RES_SOLD_TOTAL) = 0;
+            U32(g_result, RES_VALUE) = 0;
         }
         break;
     case 5:
-        if (S16(self, 0xAA) <= 0 || (game_buttons(g_game) & 0x4000) != 0) {
+        if (S16(self, RES_TIMER) <= 0 || (game_buttons(g_game) & 0x4000) != 0) {
             SE(0x13);
             return 1;
         }
@@ -331,19 +332,19 @@ void result_sell_draw(u8 *self)
     u16 *p;
     char buf[0x100];
 
-    switch (S16(self, 0xA4)) {
+    switch (S16(self, RES_STEP)) {
     default:
         draw_press_button(t[lang]);
         /* fall through */
     case 3:
     case 4:
         font_draw_centered(0xF4, D_089A8846, RTEXT(D_089B5414), 0x10);
-        font_printf_at(g_font, 0xF4, D_089A8846, RTEXT(D_089B5416), U32(self, 0x10),
-                      U32(self, 0x14));
+        font_printf_at(g_font, 0xF4, D_089A8846, RTEXT(D_089B5416), U32(self, RES_SOLD_TOTAL),
+                      U32(self, RES_VALUE));
         /* fall through */
     case 2:
         font_set_size(g_font, 0xE, 0xE);
-        p = &U16(self, 0x28 + U32(self, 0x20) * 0x28);
+        p = &U16(self, RES_SOLD + U32(self, RES_X20) * 0x28);
         for (c = 0; c < 2; c++) {
             for (r = 0; r < 5; r++, p += 2) {
                 if (p[0] == 0)
@@ -360,11 +361,11 @@ void result_sell_draw(u8 *self)
             }
         }
         font_set_size(g_font, 0x10, 0x10);
-        if ((s32)U32(self, 0x24) > 10) {
+        if ((s32)U32(self, RES_SOLD_N) > 10) {
             gfx_draw_arrows_blink(g_menu, (u16)D_089A8808, (u16)D_089A880A,
                                   (u16)D_089A880C, 0xF0);
-            font_printf_at(g_font, 0x192, 0x30, RTEXT(D_089B5420), U32(self, 0x20) + 1,
-                          ((s32)U32(self, 0x24) - 1) / 10 + 1);
+            font_printf_at(g_font, 0x192, 0x30, RTEXT(D_089B5420), U32(self, RES_X20) + 1,
+                          ((s32)U32(self, RES_SOLD_N) - 1) / 10 + 1);
         }
         /* fall through */
     case 1:
@@ -381,8 +382,8 @@ void result_sell_draw(u8 *self)
 
 void result_sell_init_timers(u8 *self)
 {
-    U16(self, 0xA8) = 0x5A;
-    U16(self, 0xAA) = 1;
-    U16(self, 0xAC) = 900;
+    U16(self, RES_STEP_TIMER) = 0x5A;
+    U16(self, RES_TIMER) = 1;
+    U16(self, RES_XAC) = 900;
     result_init_sounds(self);
 }

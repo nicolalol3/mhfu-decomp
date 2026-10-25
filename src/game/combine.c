@@ -23,7 +23,7 @@ s32 game_box_size(void *g);
 
 static void *own_hunter(void)
 {
-    return (void *)player_get(g_players, g_game[0x28]);
+    return (void *)player_get(g_players, G_MY_SLOT);
 }
 
 /* the combination of the items a and b (mode -1: without tool, 0: possible now, 1: any) */
@@ -282,7 +282,7 @@ s32 combo_rate_of(void *p, u8 *e, s32 mode)
         for (i = 0; i < 5; i++) {
             int has = pouch_count(g_game, D_089A5B60[i]) != 0;
 
-            if ((U32(g_game, 0x6AF14) & 1) != 0 && (u16)box_find(p, D_089A5B60[i]) != 0xFFFF)
+            if ((GAME_FLAGS & 1) != 0 && (u16)box_find(p, D_089A5B60[i]) != 0xFFFF)
                 has = 1;
             if (!has)
                 break;

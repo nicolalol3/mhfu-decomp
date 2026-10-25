@@ -1,6 +1,7 @@
 /* The current quest (Quest, object g_quest): start of the quest, start area, targets,
  * waves of large monsters, end of the quest, bonuses and phase steps. (Guessed names.) */
 #include "quest.h"
+#include "result.h"
 #include "vfpu.h"
 #undef text_menu
 #undef pouch_count
@@ -295,8 +296,8 @@ void quest_start(Quest *self)
     }
     for (i = 0; i < 6; i++)
         quest_slot_clear(self, i);
-    U32(g_result, 0x104) = U32(g_game, 0x696F0);
-    U32(g_result, 0x108) = U32(g_game, 0x696E8);
+    U32(g_result, RES_X104) = U32(g_game, 0x696F0);
+    U32(g_result, RES_X108) = U32(g_game, 0x696E8);
     quest_count_monsters(self, self->count_start);
     self->active = 1;
     if (quest_comrade_allowed(QUEST) != 0)

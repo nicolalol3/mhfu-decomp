@@ -4,18 +4,6 @@
 #define GAME_H
 #include "menu.h"
 
-#define G_MY_SLOT           g_game[0x28]        /* slot (0-3) of the local player */
-#define G_QUEST_STATE       g_game[0x2E]        /* QS_* */
-#define G_PLAYER_HERE(i)    g_game[(i) * 0x8C + 0x30]   /* != 0: player i is present */
-#define G_REWARDS           (&U16(g_game, 0x390))   /* 32 rewards {item, count} */
-#define G_TIMER2_ON         g_game[0x418]       /* second timer running */
-#define G_TIME_STOP         g_game[0x422]       /* != 0: the quest timers stop */
-#define G_ARENA             g_game[0x480]       /* != 0: arena / fixed start area */
-#define G_AREA              U16(g_game, 0x6AF0E)    /* current area of the map */
-#define G_MAP               g_game[0x6AF10]     /* map of the quest */
-#define G_QUEST_ID          U16(g_game, 0x6AF12)    /* id of the quest (0: none) */
-#define GAME_FLAGS          (*(u32 *)(g_game + 0x6AF14))
-#define OPT_FLAGS           (*(u32 *)(g_sys + 0xF7A57C))   /* bit 0: online */
 
 /* states of the quest (G_QUEST_STATE) */
 enum {

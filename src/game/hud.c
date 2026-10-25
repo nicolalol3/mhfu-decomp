@@ -39,7 +39,7 @@ void hud_draw_online(u8 *self, s32 layer);
 /* hides / shows the HUD with the button 0x100 (on-line only) */
 static void hud_toggle(u8 *self)
 {
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 1 && (g_pad_pressed & 0x100) != 0) {
+    if ((OPT_FLAGS & 1) == 1 && (g_pad_pressed & 0x100) != 0) {
         if (U32(self, 0x528) & 0x2000) {
             U32(self, 0x528) &= ~0x2000;
             sound_play(g_sound, 0, 17, 0, 0, 0, 0, 0, 0);
@@ -87,7 +87,7 @@ void hud_draw(u8 *self)
 /* notice of the on-line state (connection, or players waiting) */
 void hud_draw_online(u8 *self, s32 layer)
 {
-    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
     s16 w;
 
     if (h[0x299] != 16 && (u8)func_08838AB4(self, h[0x298], h[0x299]) == 1) {
@@ -149,7 +149,7 @@ void hud_draw_players(u8 *self, s32 layer)
     u32 u;
     s16 k;
 
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+    if ((OPT_FLAGS & 1) == 0)
         return;
     switch (layer) {
     case 0: self[0x534] = 9; break;
@@ -196,7 +196,7 @@ void hud_draw_players(u8 *self, s32 layer)
     l.e = (s8)g_net_players[0xEE3];
     l.h = (u16)l.h - (4 - (s8)g_net_players[0xEE3]) * 16;
     layout_draw_box(self, &l, 0, -1, 255, 0);
-    h = (u8 *)player_get(g_players, g_game[0x28]);
+    h = (u8 *)player_get(g_players, G_MY_SLOT);
     if (func_0883B498(self, U16(h, 0x1E6)) != -1)
         func_0883B53C(self, l.tx, l.ty, func_0883B498(self, U16(h, 0x1E6)), 0);
     k = 1;
@@ -282,7 +282,7 @@ u8 func_09C29630(void *a, u16 b);
 /* box with the objective of the current quest (top left of the screen) */
 void hud_draw_objective(u8 *self, s32 layer)
 {
-    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
     const char *name = NULL;
     s32 w = 120;
     u16 *q;
@@ -383,13 +383,13 @@ void hud_draw_objective(u8 *self, s32 layer)
         }
         return;
     case 2:
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
+        if ((OPT_FLAGS & 1) == 0) {
             if (func_09A7BFA8(D_09B22D70) == 0)
                 return;
         } else if (func_09A7BFA8(D_09B22D70) == 0) {
             return;
         }
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0 || g_net_players[0x12D6] != 0)
+        if ((OPT_FLAGS & 1) == 0 || g_net_players[0x12D6] != 0)
             OBJ_LINE(D_09B0523C);
         else
             OBJ_LINE(D_09B05246);
@@ -415,7 +415,7 @@ void hud_draw_objective(u8 *self, s32 layer)
             OBJ_LINE(D_09B05238);
         break;
     case 9:
-        if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+        if ((OPT_FLAGS & 1) == 0)
             return;
         OBJ_LINE(D_09B0523E);
         break;
@@ -545,7 +545,7 @@ void hud_draw_names(u8 *self, s32 layer)
 
         if (h == NULL || (U32(h, 4) & 1) == 0 || (U32(h, 4) & 4) != 0)
             continue;
-        online = (*(u32 *)(g_sys + 0xF7A57C) & 1) != 0;
+        online = (OPT_FLAGS & 1) != 0;
         if (!online) {
             lvl = g_game[0x44BC];
             name = (const char *)(g_game + 0x4A0);
@@ -980,7 +980,7 @@ void hud_draw_quest_page(u8 *self)
     col[2] = 0;
     col[1] = 0;
     col[0] = 0;
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+    if ((OPT_FLAGS & 1) == 0)
         col[2] = 10;
     y = l.ty;
     for (i = 0; i < 4; i++) {
@@ -1094,7 +1094,7 @@ u32 hud_card_input(u8 *self, u32 keys)
         s8 c = self[0x57F];
 
         if (c == 3 || c == 1 || c == 0
-            || (c == 2 && (*(u32 *)(g_sys + 0xF7A57C) & 1) != 0)) {
+            || (c == 2 && (OPT_FLAGS & 1) != 0)) {
             sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
             self[0x57E] += 1;
             U32(self, 0x5E8) &= ~4;
@@ -1226,7 +1226,7 @@ void hud_draw_player_list(u8 *self, s32 x, s32 y_arg, s32 sel_arg, s32 a)
 
     layout_build(&l, D_0893B3D4, 0, x, y_arg);
     layout_draw_box(self, &l, 0, sel, 255, 0);
-    me = hud_player_index(self, g_game[0x28]);
+    me = hud_player_index(self, G_MY_SLOT);
     y = l.ty;
     for (i = 0; i < (s8)g_net_players[0xEE3]; i++) {
         if (me != i) {
@@ -1356,7 +1356,7 @@ u32 hud_invite_input(u8 *self, u32 keys)
         }
     } else if (st == 0 && menu_cursor_vertical(self, self + 0x57F, keys, 3) == 0) {
         if (keys & 0x4000) {
-            u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+            u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
 
             if (h[0x62C] == 0) {
                 if (func_0889D7E8(g_net_players, (u32)hud_other_player(self, self[0x57F])) == 0)
@@ -1385,7 +1385,7 @@ void *memcpy(void *d, const void *s, size_t n);
 /* asks player p to trade the requested item */
 void hud_request_trade(u8 *self, u8 *p)
 {
-    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
     s16 *req;
 
     if (h[0x62C] != 0)
@@ -1398,15 +1398,15 @@ void hud_request_trade(u8 *self, u8 *p)
     if (pouch2_room_or_full(D_08A62C50, req[0]) < 1) {
         menu_msg_push_text(g_menu, text_menu(g_game, D_089ACA8C));
         sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
-        U8((u8 *)player_get(g_players, g_game[0x28]), 0x62C) = 90;
+        U8((u8 *)player_get(g_players, G_MY_SLOT), 0x62C) = 90;
     } else if (pouch2_room_or_full(D_08A62C50, req[0]) < req[1]) {
         menu_msg_push(g_menu, 1, 15, req[0]);
         sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
-        U8((u8 *)player_get(g_players, g_game[0x28]), 0x62C) = 90;
+        U8((u8 *)player_get(g_players, G_MY_SLOT), 0x62C) = 90;
     } else {
         sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
         self[0x580] = 150;
-        h = (u8 *)player_get(g_players, g_game[0x28]);
+        h = (u8 *)player_get(g_players, G_MY_SLOT);
         S16(h, 0x5CA) = req[0];
         S16(h, 0x5CC) = req[1];
         func_0889D8A8(g_net_players, p, 7, 0);
@@ -1418,7 +1418,7 @@ void hud_request_trade(u8 *self, u8 *p)
 /* asks player p for its guild card (if not already present and there is room) */
 void hud_request_card(u8 *self, u8 *p)
 {
-    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
     u8 *card;
     int dup, room;
     s32 i;
@@ -1560,14 +1560,14 @@ void hud_draw_options(u8 *self)
     Layout l;
     char title[32];
 
-    D_0893B386 = (*(u32 *)(g_sys + 0xF7A57C) & 1) == 0 ? 3 : 2;
+    D_0893B386 = (OPT_FLAGS & 1) == 0 ? 3 : 2;
     layout_build(&l, D_0893B37C, 1, 0, 0);
     sprintf(title, D_0893B390, func_09A7B790(D_09B22D70, D_09B051B4));
     layout_draw_box(self, &l, (int)title, -1, 255, 1);
     font_set_color(g_font, 5);
     OPTION_TEXT(((const u16 *)0x09B05C98)[(s16)((s8)m[0x608] + 3)], l.ty);
     OPTION_TEXT(((const u16 *)0x09B05C98)[(s16)((s8)m[0x60A] + 5)], (s16)(l.ty + l.lh));
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0)
+    if ((OPT_FLAGS & 1) == 0)
         OPTION_TEXT((&D_09B05C90)[(s16)((s8)m[0x609] ^ 1)], (s16)(l.ty + l.lh * 2));
     gfx_draw_arrows_blink(self, (u16)(l.tx + 0x92), (u16)(l.ty + l.lh * self[0x57F]), 70, 240);
 }
@@ -1624,7 +1624,7 @@ u32 hud_options_input(u8 *self, u32 keys, u32 a)
     }
     if (st != 0)
         return keys;
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 1)
+    if ((OPT_FLAGS & 1) == 1)
         n = 2;
     menu_cursor_vertical(self, self + 0x57F, keys, n);
     U16(self, 0x5FC) = self[0x57F] + 9;
@@ -1860,7 +1860,7 @@ int hud_notice_allowed(void *self)
 /* selects the player targeted by the hunter (1 if found) */
 int hud_select_target(u8 *self)
 {
-    u8 *h = (u8 *)player_get(g_players, g_game[0x28]);
+    u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
     u8 *t = *(u8 **)(h + 0x2F4);
 
     if (t == NULL)
@@ -2068,7 +2068,7 @@ int hud_load_area_data(u8 *self)
         u32 id;
         s32 r;
 
-        switch (U16(g_game, 0x6AF12)) {
+        switch (G_QUEST_ID) {
         case 0x4E21:
         case 0x4E22:
             id = 0x14FB;
@@ -2080,7 +2080,7 @@ int hud_load_area_data(u8 *self)
             id = 0x14FC;
             break;
         default:
-            id = D_0893B49C[g_game[0x6AF10]];
+            id = D_0893B49C[G_MAP];
         }
         r = HVCALL(HVFunc1, g_loader, 0x18)(g_loader, id & 0xFFFF);
         r = temp_alloc(g_heap, 0x19, r);
@@ -2437,7 +2437,7 @@ int hud_area_kind(void *self, s32 area_arg)
 {
     s16 area = area_arg;
 
-    if (g_game[0x6AF10] != 15 && g_game[0x6AF10] != 14)
+    if (G_MAP != 15 && G_MAP != 14)
         return 0;
     if (area == 0x7B)
         return 1;

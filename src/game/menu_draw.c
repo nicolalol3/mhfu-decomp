@@ -2,8 +2,6 @@
  * Same class as menu_box.c. (Guessed names.) */
 #include "menu.h"
 
-#define GAME_FLAGS (*(u32 *)(g_game + 0x6AF14))
-#define OPT_FLAGS  (*(u32 *)(g_sys + 0xF7A57C))
 
 void menu_draw_page_list(void *self, s32 dim);
 

@@ -97,7 +97,7 @@ void menu_draw_status(void *self, u8 *hunter, s32 page_arg)
     x = (s16)(l.tx + 0x46);
     menu_draw_weapon_type(self, x, (s16)(l.ty + l.lh), hunter + 0x4E8);
     font_set_pos(g_font, x, (s16)(l.ty + l.lh * 6));
-    if ((*(u32 *)(g_sys + 0xF7A57C) & 1) == 0) {
+    if ((OPT_FLAGS & 1) == 0) {
         font_printf(g_font, fmt_s, text_menu(g_game, *(u16 *)0x089AD048));
     } else {
         menu_quest_slot_name(self, S8(self, 0x536), buf);
