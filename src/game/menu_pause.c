@@ -95,7 +95,7 @@ void hud_draw_quest_rewards(u8 *self)
     const char *s;
     s32 col, row, r;
 
-    if ((U32(*(u8 **)(self + 0x530), 0x614) & 0x200) == 0) {
+    if ((U32(*(u8 **)(self + MENU_PLAYER), 0x614) & 0x200) == 0) {
         U32(self, 0x1194) &= ~0x33;
         return;
     }
@@ -143,15 +143,15 @@ void hud_pause_open(u8 *self)
     self[0x52D] = 1;
     self[0x57C] = 0;
     g_game[0x10] = 1;
-    U32(self, 0x5E8) |= 4;
-    U32(self, 0x528) &= ~0xB00;
+    U32(self, MENU_NOTICE_FLAGS) |= 4;
+    U32(self, MENU_HUD_FLAGS) &= ~0xB00;
     self[0x5FE] = 0;
-    U16(self, 0x5FC) = self[0x57D];
+    U16(self, MENU_HELP_TEXT) = self[0x57D];
     self[0x5FF] = 0xFF;
     if (ONLINE && self[0x57D] == 10)
-        U16(self, 0x5FC) = 11;
-    U32(self, 0x528) &= ~4;
-    U32(*(u8 **)(self + 0x530), 0x614) &= ~1;
+        U16(self, MENU_HELP_TEXT) = 11;
+    U32(self, MENU_HUD_FLAGS) &= ~4;
+    U32(*(u8 **)(self + MENU_PLAYER), 0x614) &= ~1;
     U32(self, 0x1194) &= ~0x33;
 }
 
@@ -178,7 +178,7 @@ void hud_pause_input(u8 *self, u32 keys)
         return;
     menu_cursor_two_columns(self, self + 0x57D, keys, 12);
     keys &= 0xFFFF;
-    U16(self, 0x5FC) = self[0x57D];
+    U16(self, MENU_HELP_TEXT) = self[0x57D];
     if (keys & 0x8000) {
         self[0x576] ^= 1;
         SND(9);
@@ -186,7 +186,7 @@ void hud_pause_input(u8 *self, u32 keys)
         return;
     }
     if (ONLINE && (keys & 0x1000)) {
-        s16 *sig = (s16 *)(self + 0x56C + G_MY_SLOT * 2);
+        s16 *sig = (s16 *)(self + MENU_BEEP_TIMERS + G_MY_SLOT * 2);
 
         if (*sig < 0) {
             *sig = 0;
@@ -216,8 +216,8 @@ void hud_pause_close(u8 *self)
     self[0x52D] = 0;
     self[0x57C] = 0;
     g_game[0x10] = 0;
-    U32(self, 0x5E8) &= ~4;
-    U32(self, 0x528) &= ~0xB04;
+    U32(self, MENU_NOTICE_FLAGS) &= ~4;
+    U32(self, MENU_HUD_FLAGS) &= ~0xB04;
 }
 
 int hud_save_open(u8 *self);
@@ -298,7 +298,7 @@ int hud_save_open(u8 *self)
         return -1;
     save_start(g_game);
     if ((u8)save_in_progress(g_game) == 1) {
-        U32(self, 0x5E8) &= ~4;
+        U32(self, MENU_NOTICE_FLAGS) &= ~4;
         self[0x11AB] = 1;
         return 0;
     }
@@ -348,10 +348,10 @@ int hud_settings_open(u8 *self)
 {
     s8 v;
 
-    self[0x57F] = 0;
-    U32(self, 0x5E8) |= 4;
+    self[MENU_SEL] = 0;
+    U32(self, MENU_NOTICE_FLAGS) |= 4;
     self[0x5FE] = 3;
-    U16(self, 0x5FC) = 0;
+    U16(self, MENU_HELP_TEXT) = 0;
     v = g_game[0x6ADD9];
     if (v == 3)
         self[0x5E4] = 2;
@@ -368,11 +368,11 @@ u32 hud_settings_input(u8 *self, u32 keys)
     u8 *v;
     u8 k;
 
-    menu_cursor_vertical(self, self + 0x57F, keys, 9);
+    menu_cursor_vertical(self, self + MENU_SEL, keys, 9);
     keys &= 0xFFFF;
-    U16(self, 0x5FC) = self[0x57F];
+    U16(self, MENU_HELP_TEXT) = self[MENU_SEL];
     if (keys & 0xA0) {
-        k = self[0x57F];
+        k = self[MENU_SEL];
         v = self + 0x5DC + k;
         switch (k) {
         case 1:
@@ -401,8 +401,8 @@ u32 hud_settings_input(u8 *self, u32 keys)
                     *v = *v - 1;
             } else {
                 *v = *v + 1;
-                if (self[0x5DC + self[0x57F]] >= 3)
-                    self[0x5DC + self[0x57F]] = 0;
+                if (self[0x5DC + self[MENU_SEL]] >= 3)
+                    self[0x5DC + self[MENU_SEL]] = 0;
             }
             SND(0x17);
             break;
@@ -410,7 +410,7 @@ u32 hud_settings_input(u8 *self, u32 keys)
     }
     g_game[0x6ADDF] = self[0x5DF];
     g_game[0x6ADE0] = self[0x5E1];
-    g_game[0x6ADE1] = self[0x5DE];
+    g_game[0x6ADE1] = self[MENU_OPTIONS];
     g_game[0x6ADE2] = self[0x5E0];
     g_game[0x6ADE4] = self[0x5E2];
     g_game[0x6ADE5] = self[0x5E3];
@@ -456,14 +456,14 @@ void hud_draw_settings(u8 *self)
         }
         y += l.lh;
     }
-    if (self[0x5DC] != 0 && self[0x57F] == 1) {
-        gfx_draw_arrows(self, (u16)(l.tx + 0x7A), (u16)(l.ty + l.lh * self[0x57F]), 0x46, 0x70, 0x70,
+    if (self[0x5DC] != 0 && self[MENU_SEL] == 1) {
+        gfx_draw_arrows(self, (u16)(l.tx + 0x7A), (u16)(l.ty + l.lh * self[MENU_SEL]), 0x46, 0x70, 0x70,
                         0x70, 0xF0);
     } else {
         f32 s = vfpu_sinf((f32)(u16)((*(u32 *)(g_sys + 0xF7A554) & 0x3F) << 10) *
                           (3.14159265f / 32768.0f));
 
-        gfx_draw_arrows(self, (u16)(l.tx + 0x7A), (u16)(l.ty + l.lh * self[0x57F]), 0x46, 0x20,
+        gfx_draw_arrows(self, (u16)(l.tx + 0x7A), (u16)(l.ty + l.lh * self[MENU_SEL]), 0x46, 0x20,
                         ((s8)(int)(48.0f * s) + 0xAF) & 0xFF, 0x20, 0xF0);
     }
 }
@@ -473,9 +473,9 @@ int hud_quit_open(u8 *self)
 {
     if ((u8)game_quest_locked(g_game, 0) == 1)
         return -1;
-    self[0x57E] = 0;
-    self[0x537] = 1;
-    U32(self, 0x5E8) &= ~4;
+    self[MENU_MODE] = 0;
+    self[MENU_YESNO] = 1;
+    U32(self, MENU_NOTICE_FLAGS) &= ~4;
     return 0;
 }
 
@@ -485,15 +485,15 @@ u32 hud_quit_input(u8 *self, u32 keys)
         return 8;
     if (self[0x1115] == 1)
         return keys;
-    if (self[0x57E] != 0)
+    if (self[MENU_MODE] != 0)
         return 0;
     menu_cursor_yes_no(self, keys, 0xA0);
     if (((u16)keys & 0x4000) == 0)
         return keys;
-    if (self[0x537] != 0)
+    if (self[MENU_YESNO] != 0)
         return 0x2000;
     quest_fail(g_quest);
-    self[0x57E]++;
+    self[MENU_MODE]++;
     SND(0x13);
     return 0;
 }
@@ -503,7 +503,7 @@ void hud_draw_quit(u8 *self)
     const char *s;
 
     layout_draw(self, (Layout *)&D_0893B090, TXT(D_089B5560), 0xFF);
-    s = text_menu(g_game, D_089AC588[self[0x537]]);
+    s = text_menu(g_game, D_089AC588[self[MENU_YESNO]]);
     font_draw_at(g_font,
                   (s16)text_center_x(g_game, s, (s16)(D_0893B090 + (D_0893B094 >> 1)), 14),
                   (s16)(D_0893B09E + 0x96), D_0893B650, s);
@@ -542,11 +542,11 @@ void hud_draw_quest_info(u8 *self)
     font_printf_at_color(g_font, 0xFC, 0xE0, 5, D_0893B650, TXT(D_089B558C));
     font_set_color(g_font, ((u8)game_quest_locked(g_game, 0) == 1) ? 10 : 0);
     menu_draw_time(self, (s16)(D_0893B760[lang] + 0x142), 0xE0, 0);
-    font_printf_at_color(g_font, 0xFC, 0x60, 5, D_0893B650, TXT(D_089B5578[self[0x584]]));
+    font_printf_at_color(g_font, 0xFC, 0x60, 5, D_0893B650, TXT(D_089B5578[self[MENU_KIND]]));
     font_set_color(g_font, 0);
-    switch (self[0x584]) {
+    switch (self[MENU_KIND]) {
     case 0:
-        if (self[0x5E6] & 1) {
+        if (self[MENU_INFO_FLAGS] & 1) {
             u8 *q = g_quest;
             u16 m = (s8)q[0x77C];
 
@@ -577,12 +577,12 @@ void hud_draw_quest_info(u8 *self)
         /* fall through */
     case 1:
         y = 0x70;
-        if ((self[0x5E6] & 4) == 0) {
+        if ((self[MENU_INFO_FLAGS] & 4) == 0) {
             for (i = 0; i < 2; i++) {
                 u8 a, b;
                 u16 id;
 
-                if (self[0x5E6] & 2) {
+                if (self[MENU_INFO_FLAGS] & 2) {
                     if (quest_goal_kind(g_quest, i) != 3)
                         continue;
                     b = 1;
@@ -664,7 +664,7 @@ void hud_draw_quest_info(u8 *self)
 /* counter "a/b" of a quest target (only "a" for the hunt-a-number quests) */
 void hud_quest_count(u8 *self, u32 a, u32 b)
 {
-    if (self[0x5E6] & 1)
+    if (self[MENU_INFO_FLAGS] & 1)
         font_printf(g_font, D_0893B794, (u16)a);
     else
         font_printf(g_font, D_0893B78C, (u16)a, (u16)b);
@@ -684,7 +684,7 @@ void hud_update_banner(u8 *self)
         self[0x11AE] = 0;
         return;
     }
-    switch (self[0x11AD]) {
+    switch (self[MENU_BANNER_KIND]) {
     case 2:
         if (++S16(self, 0x11BA) >= 0x71) {
             S16(self, 0x11BA) = 0x71;
@@ -710,12 +710,12 @@ void hud_update_banner(u8 *self)
         break;
     case 2:
         self[0x11B1] = 3;
-        func_08882D20(g_sound, 1, D_0893B1F4[self[0x11AD]]);
+        func_08882D20(g_sound, 1, D_0893B1F4[self[MENU_BANNER_KIND]]);
         break;
     case 1:
         if (S16(self, 0x11BA) >= 60) {
             self[0x11B1] = 2;
-            S16(self, 0x11B8) = (int)(D_0893B1CC[self[0x11AD]] *
+            S16(self, 0x11B8) = (int)(D_0893B1CC[self[MENU_BANNER_KIND]] *
                                       (-1.0f + 1.5258789e-05f * (2.0f * (f32)game_rand(g_sys))));
         }
         break;
@@ -743,7 +743,7 @@ void hud_draw_banner_start(f32 scale, u8 *self, u32 x, u32 y, s32 ang, u32 a);
 void hud_draw_banner_clear(f32 scale, u8 *self, u32 x, u32 y, s32 ang, u32 a);
 void hud_draw_banner_fail(f32 scale, u8 *self, u32 x, u32 y, s32 ang_arg, u32 a);
 
-/* quest banner: stripes, then the text zooming in (kind self[0x11AD]) */
+/* quest banner: stripes, then the text zooming in (kind self[MENU_BANNER_KIND]) */
 void hud_draw_banner(u8 *self)
 {
     u8 k;
@@ -759,7 +759,7 @@ void hud_draw_banner(u8 *self)
     s = 0.607f * D_0893B1D8[k];
     a = D_0893B1EC[k];
     gfx_set_filter(self, 1);
-    switch (self[0x11AD]) {
+    switch (self[MENU_BANNER_KIND]) {
     case 2:
         hud_draw_banner_fail(2.2f * s, self, 0xF0, 0x88, S16(self, 0x11B8), a);
         break;
@@ -814,7 +814,7 @@ void hud_draw_banner_stripes(u8 *self, s32 t_arg)
         lim = (i & 1) ? -4 : 0;
         if (lim < y)
             y = lim;
-        id = D_0893B1FC[self[0x11AD]];
+        id = D_0893B1FC[self[MENU_BANNER_KIND]];
         gfx_draw_sprite_mode(self, (u16)x, (u16)y, 0x14, 0x17, 0xFF, 0xFF, 0xFF, 0xE6, id, 0);
         gfx_draw_sprite_mode(self, (u16)(0x1CC - x), (u16)(0xF9 - y), 0x14, 0x17, 0xFF, 0xFF, 0xFF, 0xE6, id,
                              4);

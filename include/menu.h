@@ -101,6 +101,41 @@ s32 func_08828F3C(void *self, u16 *entry);
 u32 func_088568AC(void *game, s16 id);
 #define pouch_count func_088568AC
 
+/* fields of the menu object (g_menu, 0x1220 bytes) known so far; use with U8/U16/U32(self, ...) */
+enum {
+    MENU_HUD_FLAGS = 0x528,   /* u32 flags of the HUD (0x2000: ...) */
+    MENU_PLAYER = 0x530,      /* u8 * entity of the local player */
+    MENU_LAYER = 0x534,       /* u8 screen / drawing layer */
+    MENU_HUD_TIMER = 0x535,   /* u8 */
+    MENU_YESNO = 0x537,       /* u8 yes/no choice */
+    MENU_TIME_LEFT = 0x558,   /* u32 time left of the quest */
+    MENU_TIME_LIMIT = 0x55C,  /* u32 */
+    MENU_BEEP_TIMERS = 0x56C, /* s16[4] timers with a countdown beep */
+    MENU_AREA_KIND = 0x578,   /* u8 kind of the area of the hunter */
+    MENU_MODE = 0x57E,        /* u8 0: tab choice, 1: inside the tab */
+    MENU_SEL = 0x57F,         /* u8 selected tab / row */
+    MENU_SEL_N = 0x581,       /* u8 rows */
+    MENU_SEL2 = 0x582,        /* u8 second cursor */
+    MENU_SEL2_N = 0x583,      /* u8 */
+    MENU_KIND = 0x584,        /* u8 kind of menu (from the game state) */
+    MENU_LIST_SEL = 0x586,    /* u8 selected item of a list */
+    MENU_COUNT = 0x58A,       /* u8 count chosen in the count box */
+    MENU_ITEM = 0x590,        /* u16 selected item */
+    MENU_TRADE = 0x5A8,       /* u8 * selected trade */
+    MENU_PAGE = 0x5C4,        /* u8 */
+    MENU_PAGES = 0x5C5,       /* u8 */
+    MENU_ENTRY = 0x5D9,       /* s8 entry shown in the info panel (<0: none) */
+    MENU_OPTIONS = 0x5DE,     /* u8[6] copy of the options while they are edited */
+    MENU_INFO_FLAGS = 0x5E6,  /* u8 pages of the quest info */
+    MENU_NOTICE_FLAGS = 0x5E8, /* u32 (0x80: new notice) */
+    MENU_HELP_TEXT = 0x5FC,   /* u16 help text shown */
+    MENU_NOTICES = 0x60C,     /* 5 x 0x18: notices (player name, kind) */
+    MENU_LIST = 0x684,        /* rows of 0x12 bytes (skills, resistances, pieces) */
+    MENU_LIST2 = 0xA50,       /* wearable pieces */
+    MENU_BANNER_KIND = 0x11AD, /* u8 kind of the quest banner */
+    MENU_SAVED_EQUIP = 0x11BE, /* saved equipment of the hunter */
+};
+
 /* fields of the general game state (g_game) and of the system object (g_sys) */
 #define G_MY_SLOT           g_game[0x28]        /* slot (0-3) of the local player */
 #define G_QUEST_STATE       g_game[0x2E]        /* QS_* */

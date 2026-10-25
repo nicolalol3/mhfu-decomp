@@ -23,7 +23,7 @@ void fx_draw_all(u8 *self)
     u8 *p = self;
     int i;
 
-    self[0x534] = 12;
+    self[MENU_LAYER] = 12;
     font_set_layer(g_font, 3);
     menu_begin_draw(self);
     gfx_set_mask(self, 1);

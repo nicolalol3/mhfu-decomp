@@ -3,7 +3,7 @@
  *
  * Common pattern: nh words of vertex data followed by nc commands, among which
  * BASE/VADDR (pointing at the vertex data) at positions bi and bi + 1; the
- * commands are then linked in the layer self[0x534] by dl_link. */
+ * commands are then linked in the layer self[MENU_LAYER] by dl_link. */
 #include "menu.h"
 #include "vfpu.h"
 #undef menu_draw_sprite
@@ -64,7 +64,7 @@ void gfx_draw_tex_rect(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id)
     p[11] = 0x04060002;
     p[12] = 0x10000000;
     p[13] = 0x08000000;
-    dl_link(D_08A62C40, p + 6, 8, self[0x534]);
+    dl_link(D_08A62C40, p + 6, 8, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 14);
 }
 
@@ -78,7 +78,7 @@ void gfx_draw_tex_rect_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g,
     p = dl_cur(D_08A62C40);
     p[0] = 0x10000000;
     p[1] = 0x08000000;
-    dl_link(D_08A62C40, p, 2, self[0x534]);
+    dl_link(D_08A62C40, p, 2, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 2);
     p = dl_cur(D_08A62C40);
     c = ((u32)a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
@@ -98,7 +98,7 @@ void gfx_draw_tex_rect_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g,
     p[13] = 0x04060002;
     p[14] = 0x10000000;
     p[15] = 0x08000000;
-    dl_link(D_08A62C40, p + 8, 8, self[0x534]);
+    dl_link(D_08A62C40, p + 8, 8, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 16);
 }
 
@@ -125,7 +125,7 @@ void gfx_draw_sprite_scaled(u8 *self, u32 x, u32 y, u32 w, u32 h, s32 id)
     v[1] = ((x & 0xFFFF) << 16) | 0xFFFF;
     v[3] = ((u32)(t[1] + t[3]) << 16) | (u32)(t[0] + t[2]);
     v[0] = ((u32)t[1] << 16) | (u32)(s32)t[0];
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 6, 9, 10);
 }
@@ -171,12 +171,12 @@ void gfx_draw_sprite_color(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, u32 a, s
         e[5] = c;
         e[3] = 0;
         e[7] = 0;
-        layer = self[0x534];
+        layer = self[MENU_LAYER];
         if (layer < 20)
             DL_PUSH(dl, layer, e, 8, 9, 12);
     }
     dl = D_08A62C40;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 8, 9, 12);
 }
@@ -224,7 +224,7 @@ void gfx_draw_sprite(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, s32 id, s32 fl
     v[13] = 0x10000000;
     v[14] = 0x08000000;
     v[7] = 0xC9000100;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 6, 9, 10);
 }
@@ -261,7 +261,7 @@ void gfx_draw_sprite_rgba(u8 *self, u32 x, u32 y, u32 r, u32 g, u32 b, u32 a, s3
     c = (a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
     CMDS_C(v);
     SPRITE_VERTS_C(v, t, c, x, y & 0xFFFF, (x & 0xFFFF) + t[2], (y & 0xFFFF) + t[3]);
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 8, 9, 12);
 }
@@ -280,7 +280,7 @@ void gfx_draw_sprite_rgba_ptr(u8 *self, u32 x, u32 y, const u8 *cp, s32 id)
     CMDS_C(v);
     c = ((u32)cp[3] << 24) | ((u32)cp[2] << 16) | cp[0] | ((u32)cp[1] << 8);
     SPRITE_VERTS_C(v, t, c, x, y & 0xFFFF, (x & 0xFFFF) + t[2], (y & 0xFFFF) + t[3]);
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 8, 9, 12);
 }
@@ -310,7 +310,7 @@ void gfx_draw_sprite_scaled_color(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u
     v[1] = (x << 16) | c;
     v[3] = ((u32)(t[1] + t[3]) << 16) | (u32)(t[0] + t[2]);
     v[0] = ((u32)t[1] << 16) | (u32)(s32)t[0];
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 6, 9, 10);
 }
@@ -332,7 +332,7 @@ void gfx_draw_sprite_scaled_rgba(u8 *self, u32 x, u32 y, s32 w_arg, s32 h_arg, u
     CMDS_C(v);
     c = ((u32)a << 24) | ((b & 0xFF) << 16) | (r & 0xFF) | ((g & 0xFF) << 8);
     SPRITE_VERTS_C(v, t, c, x, y, (x & 0xFFFF) + w, (y & 0xFFFF) + h);
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 8, 9, 12);
 }
@@ -374,7 +374,7 @@ void gfx_draw_sprite_part(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g, u3
     v[5] = ((y & 0xFFFF) + (h & 0xFFFF)) & 0xFFFF;
     v[2] = y & 0xFFFF;
     v[1] = (x << 16) | c;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 6, 9, 10);
 }
@@ -412,7 +412,7 @@ void gfx_draw_quad(u8 *self, const s16 *pt, u32 r, u32 g, u32 b, s32 id)
     v[10] = ((u32)pt[6] << 16) | c;
     v[11] = (u16)pt[7];
     v[8] = (u16)pt[5];
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 12, 8, 15);
 }
@@ -480,7 +480,7 @@ void gfx_draw_sprite_mode(u8 *self, u32 x, u32 y, s32 w_arg, s32 h_arg, u32 r, u
         v[4] = UV(t[0], t[1]);
         break;
     }
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 8, 9, 12);
 }
@@ -516,7 +516,7 @@ void gfx_draw_quad_rgba(u8 *self, const s16 *pt, u32 r, u32 g, u32 b, u32 a, s32
     v[11] = 0;
     v[15] = 0;
     v[10] = (((u32)pt[5] << 16) | (u16)pt[4]);
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 16, 8, 19);
 }
@@ -586,7 +586,7 @@ void gfx_fill_rect(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g, u32 b)
     v[0] = (x << 16) | c;
     v[2] = (((x & 0xFFFF) + (w & 0xFFFF)) << 16) | c;
     v[1] = y & 0xFFFF;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 4, 8, 7);
 }
@@ -610,7 +610,7 @@ void gfx_fill_rect_rgba(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 r, u32 g, u32 
     v[3] = v[0];
     v[2] = 0;
     v[5] = 0;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 6, 8, 9);
 }
@@ -634,7 +634,7 @@ void gfx_draw_line(u8 *self, u32 x0, u32 y0, u32 x1, u32 y1, u32 r, u32 g, u32 b
     v[10] = 0x10000000;
     v[11] = 0x08000000;
     v[2] = (x1 << 16) | c;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, v, 4, 8, 7);
 }
@@ -761,7 +761,7 @@ void gfx_draw_item_icon_alpha(u8 *self, u32 id, u32 x, u32 y, u32 w, s32 h_arg, 
         if ((e[4] & 1) != 0) {
             gfx_draw_sprite_scaled_rgba(self, x, y, (s16)w, h, 255, 255, 255, alpha, w16 < 21 ? 238 : 132);
         } else if (w16 > 20) {
-            u8 *hunter = *(u8 **)(self + 0x530);
+            u8 *hunter = *(u8 **)(self + MENU_PLAYER);
             s8 k = equip_rarity(g_equip_data, hunter[0x4E9], U16(hunter, 0x4EA));
             u8 m6, m3;
             int bad = 0;
@@ -779,7 +779,7 @@ void gfx_draw_item_icon_alpha(u8 *self, u32 id, u32 x, u32 y, u32 w, s32 h_arg, 
             if ((e[1] & m3) != 0)
                 bad = 1;
             else if ((e[1] & m6) != 0
-                     && ((1 << (S16(e, 8) & 31)) & func_088D7D6C(*(u8 **)(self + 0x530))) == 0)
+                     && ((1 << (S16(e, 8) & 31)) & func_088D7D6C(*(u8 **)(self + MENU_PLAYER))) == 0)
                 bad = 1;
             if (bad)
                 gfx_draw_sprite_scaled_color(self, x, y, w, h, 255, 0, 0, 133);

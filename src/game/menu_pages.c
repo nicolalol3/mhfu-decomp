@@ -19,14 +19,14 @@ void menu_page_fill(u8 *self, u32 keys);
 /* chooses the hunter of the list with the left/right buttons (0x80 / 0x20) */
 void menu_select_hunter(u8 *self, u32 keys)
 {
-    U32(self, 0x5E8) &= ~4;
+    U32(self, MENU_NOTICE_FLAGS) &= ~4;
     if (game_count_bits62(g_game) == 0) {
-        U8(self, 0x5D9) = 0xFF;
+        U8(self, MENU_ENTRY) = 0xFF;
     } else if (keys & 0xA0) {
-        s8 c = menu_next_hunter(self, S8(self, 0x5D9), (keys & 0x80) ? -1 : 1);
+        s8 c = menu_next_hunter(self, S8(self, MENU_ENTRY), (keys & 0x80) ? -1 : 1);
 
-        if (S8(self, 0x5D9) != c) {
-            U8(self, 0x5D9) = c;
+        if (S8(self, MENU_ENTRY) != c) {
+            U8(self, MENU_ENTRY) = c;
             sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
         }
     }
@@ -37,32 +37,32 @@ void menu_page_input(u8 *self, u32 keys_arg)
 {
     u16 keys = keys_arg;
 
-    if (U32(self, 0x5A8) == 0) {
-        U32(self, 0x5E8) &= ~4;
+    if (U32(self, MENU_TRADE) == 0) {
+        U32(self, MENU_NOTICE_FLAGS) &= ~4;
         return;
     }
     {
-        u8 page = U8(self, 0x5C4);
+        u8 page = U8(self, MENU_PAGE);
 
         menu_page_fill(self, keys);
-        if (page != U8(self, 0x5C4))
+        if (page != U8(self, MENU_PAGE))
             U16(self, 0x1208) = keys & 0xA0;
     }
-    U32(self, 0x5E8) |= 4;
-    U32(self, 0x528) |= 0x800;
+    U32(self, MENU_NOTICE_FLAGS) |= 4;
+    U32(self, MENU_HUD_FLAGS) |= 0x800;
     U8(self, 0x5FE) = 1;
     if (U16(self, 0x1208) != 0) {
         if ((D_08A62C68 & U16(self, 0x1208)) == 0)
             U16(self, 0x1208) = 0;
         else
-            S16(self, 0x5FC) = 24;
+            S16(self, MENU_HELP_TEXT) = 24;
     }
     if (U16(self, 0x1208) != 0)
         return;
-    if ((u8)combo_known(D_08A62C50, *(void **)(self + 0x5A8), 1, 0) == 1)
-        S16(self, 0x5FC) = S16(*(u8 **)(self + 0x5A8), 2) + 24;
+    if ((u8)combo_known(D_08A62C50, *(void **)(self + MENU_TRADE), 1, 0) == 1)
+        S16(self, MENU_HELP_TEXT) = S16(*(u8 **)(self + MENU_TRADE), 2) + 24;
     else
-        S16(self, 0x5FC) = 9;
+        S16(self, MENU_HELP_TEXT) = 9;
 }
 
 /* stores the id of entry e in *slot, with the flags 0x8000 (marked) / 0x4000 (not usable) */
@@ -92,7 +92,7 @@ int menu_page_build(u8 *self)
         U16(self, 0x5C8 + i * 2) = 0;
     U8(self, 0x5D8) = 0;
     if (combo_next(D_08A62C50, self + 0x5D8, -1, &x, &y, 1) == NULL) {
-        U32(self, 0x5A8) = 0;
+        U32(self, MENU_TRADE) = 0;
         return 0;
     }
     pos = U8(self, 0x5D8);
@@ -109,7 +109,7 @@ int menu_page_build(u8 *self)
         if (n < first || n >= last)
             continue;
         if (U16(box, 4) == n) {
-            U32(self, 0x5A8) = (u32)e;
+            U32(self, MENU_TRADE) = (u32)e;
             U8(self, 0x5BB) = pos;
             U16(self, 0x5AC) = x;
             U16(self, 0x5AE) = y;
@@ -139,8 +139,8 @@ void menu_page_fill(u8 *self, u32 keys)
         U16(self, 0x5C8 + i * 2) = 0;
         n = U8(self, 0x5C2);
     }
-    first = n * U8(self, 0x5C4);
-    if (U8(self, 0x5C5) - 1 <= U8(self, 0x5C4))
+    first = n * U8(self, MENU_PAGE);
+    if (U8(self, MENU_PAGES) - 1 <= U8(self, MENU_PAGE))
         n = U8(self, 0x5C6);
     last = first + n;
     pos = U8(self, 0x5D8);
@@ -150,7 +150,7 @@ void menu_page_fill(u8 *self, u32 keys)
         if (i < first || i >= last)
             continue;
         if (U16(self, 0x5C0) == i) {
-            U32(self, 0x5A8) = (u32)e;
+            U32(self, MENU_TRADE) = (u32)e;
             U8(self, 0x5BB) = pos;
             U16(self, 0x5AC) = x;
             U16(self, 0x5AE) = y;
@@ -163,15 +163,15 @@ void menu_page_fill(u8 *self, u32 keys)
 void menu_page_reset(u8 *self)
 {
     U8(self, 0x5B8) = 0;
-    U8(self, 0x586) = 0;
+    U8(self, MENU_LIST_SEL) = 0;
     U8(self, 0x5B9) = 0;
     U8(self, 0x5B1) = 0xFF;
     U8(self, 0x5B0) = 0xFF;
     U16(self, 0x5AE) = 0xFFFF;
     U16(self, 0x5AC) = 0xFFFF;
     U16(self, 0x5B4) = 0xFFFF;
-    U32(self, 0x5A8) = 0;
-    U32(self, 0x528) &= ~4;
+    U32(self, MENU_TRADE) = 0;
+    U32(self, MENU_HUD_FLAGS) &= ~4;
 }
 
 /* sets the name of the hunter in the text writer */
@@ -201,39 +201,39 @@ extern void *g_equip_data;
 /* chooses the quantity of an item with the arrows (0x80 min, 0x20 max, 0x10 +1, 0x40 -1) */
 void menu_select_count(u8 *self, u32 keys)
 {
-    u8 max = ((u8 *)pouch_slot(g_game, 0))[self[0x586] * 4 + 2];
+    u8 max = ((u8 *)pouch_slot(g_game, 0))[self[MENU_LIST_SEL] * 4 + 2];
     u8 c;
     u16 old;
 
     self[0x58B] = 0;
-    c = self[0x58A];
+    c = self[MENU_COUNT];
     old = c;
     if (keys & 0x80) {
         if (c < 2)
             old = 0xFFFF;
-        self[0x58A] = 1;
+        self[MENU_COUNT] = 1;
     } else if (keys & 0x20) {
         if (c >= max)
             old = 0xFFFF;
-        self[0x58A] = max;
+        self[MENU_COUNT] = max;
     } else if (keys & 0x10) {
         if (c < max) {
-            self[0x58A] = c + 1;
+            self[MENU_COUNT] = c + 1;
         } else {
-            self[0x58A] = max;
+            self[MENU_COUNT] = max;
             old = 0xFFFF;
         }
     } else if (keys & 0x40) {
         if (c < 2)
             old = 0xFFFF;
         else
-            self[0x58A] = c - 1;
+            self[MENU_COUNT] = c - 1;
     }
     if ((s16)old < 0)
         sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
-    else if (old != self[0x58A])
+    else if (old != self[MENU_COUNT])
         sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
-    if (max <= self[0x58A])
+    if (max <= self[MENU_COUNT])
         self[0x58B] = 1;
 }
 
@@ -288,7 +288,7 @@ int menu_armor_wearable(void *self, u8 *hunter, void *eq)
 /* number of pages of the list at 0x684 (n per page) */
 u32 menu_list_pages(u8 *self, s32 per)
 {
-    u8 *p = self + 0x684;
+    u8 *p = self + MENU_LIST;
     s32 i;
 
     for (i = 0; i < 54; i++, p += 0x12)
@@ -318,7 +318,7 @@ void menu_build_equip_lists(u8 *self, u8 *hunter, u8 *other)
         U16(self, 0xE26) = b;
     }
     if (other != NULL) {
-        e = self + 0xA50;
+        e = self + MENU_LIST2;
         n = 54;
         for (c = 1; c < 100; c++) {
             if (c == 1)

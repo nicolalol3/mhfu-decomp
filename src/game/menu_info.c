@@ -23,10 +23,10 @@ void menu_draw_trade_info(void *self)
 
     sprintf(title, D_0893854C, text_menu(g_game, *(u16 *)0x089AC608));
     layout_build(l1, D_0893B0A4, 1, 0, 0);
-    if (U32(self, 0x5A8) == 0)
+    if (U32(self, MENU_TRADE) == 0)
         return;
     layout_draw_box(self, l1, (int)title, S8(self, 0x5C3), 0xFF, 0);
-    layout_draw_pages(self, l1, U8(self, 0x5C4), U8(self, 0x5C5), 0, 0);
+    layout_draw_pages(self, l1, U8(self, MENU_PAGE), U8(self, MENU_PAGES), 0, 0);
     e = (u16 *)((u8 *)self + 0x5C8);
     y = S16(l1, 14);
     for (i = 0; i < 8; i++, e++) {
@@ -48,29 +48,29 @@ void menu_draw_trade_info(void *self)
     }
     layout_build(l2, D_0893B0B8, 1, 0, 0);
     layout_draw_box(self, l2, (int)D_08938580, -1, 0xFF, 0);
-    p = (u8 *)U32(self, 0x5A8);
+    p = (u8 *)U32(self, MENU_TRADE);
     font_draw_at(g_font, S16(l2, 0x24), S16(l2, 0x26),
                   text_menu(g_game, D_089AC630[(p[7] & 1) ? 2 : 0]), U8(self, 0x5BB) + 1);
-    if ((s8)combo_known(D_08A62C50, U32(self, 0x5A8), 1, 0) == 1) {
-        p = (u8 *)U32(self, 0x5A8);
+    if ((s8)combo_known(D_08A62C50, U32(self, MENU_TRADE), 1, 0) == 1) {
+        p = (u8 *)U32(self, MENU_TRADE);
         c3 = c4 = c6 = c1 = 0;
         c5 = D_0893AF2C[(s8)p[4]];
         t1 = text_item_name(g_game, U16(p, 2));
         t3 = text_item_name(g_game, U16(self, 0x5AC));
         t4 = text_item_name(g_game, U16(self, 0x5AE));
-        t5 = text_menu(g_game, D_089AC620[(s8)((u8 *)U32(self, 0x5A8))[4]]);
-        t6 = menu_item_category(self, U32(self, 0x5A8));
+        t5 = text_menu(g_game, D_089AC620[(s8)((u8 *)U32(self, MENU_TRADE))[4]]);
+        t6 = menu_item_category(self, U32(self, MENU_TRADE));
     } else {
         c6 = c5 = c4 = c3 = c1 = 10;
         t1 = text_menu(g_game, D_089AC834[3]);
-        if ((((u8 *)U32(self, 0x5A8))[7] & 4) == 0) {
+        if ((((u8 *)U32(self, MENU_TRADE))[7] & 4) == 0) {
             c3 = 0;
             t3 = text_item_name(g_game, U16(self, 0x5AC));
         } else {
             t3 = t1;
         }
         t4 = t5 = t6 = t1;
-        if ((((u8 *)U32(self, 0x5A8))[7] & 8) == 0) {
+        if ((((u8 *)U32(self, MENU_TRADE))[7] & 8) == 0) {
             c4 = 0;
             t4 = text_item_name(g_game, U16(self, 0x5AE));
         }

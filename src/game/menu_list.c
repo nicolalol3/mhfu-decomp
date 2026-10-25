@@ -141,7 +141,7 @@ void menu_draw_info_card(void *self)
     sprintf(title, D_0893854C, text_menu(g_game, *(u16 *)0x089AC60A));
     layout_build(&l, D_0893B0CC, (int)title, 0, 0);
     layout_draw_box(self, &l, (int)title, -1, 0xFF, 0);
-    n = S8(self, 0x5D9);
+    n = S8(self, MENU_ENTRY);
     if (n < 0) {
         font_printf_at_color(g_font, (s16)(l.x + (s16)((int)((u16)l.w - 0x70) >> 1)), (s16)(l.ty + 0x50), 0,
                       fmt_s, text_menu(g_game, *(u16 *)0x089AC638));
@@ -153,7 +153,7 @@ void menu_draw_info_card(void *self)
         ent = D_08930BDC + n * 0xE;
         cnt = (u16)game_count_bits62(g_game);
         if (cnt > 1)
-            layout_draw_pages(self, &l, ((u16)game_bits62_before(g_game, U8(self, 0x5D9)) & 0xFF) - 1, cnt, 0, 0);
+            layout_draw_pages(self, &l, ((u16)game_bits62_before(g_game, U8(self, MENU_ENTRY)) & 0xFF) - 1, cnt, 0, 0);
         font_draw_at(g_font, l.tx, l.ty, text_menu(g_game, *(u16 *)0x089AC63A),
                       text_menu(g_game, D_089AC65C[ent[3]]));
         font_draw_at(g_font, l.tx, (s16)(l.ty + 0x10), text_menu(g_game, *(u16 *)0x089AC63C),
@@ -161,7 +161,7 @@ void menu_draw_info_card(void *self)
         v = (s16)game_group_count_total(g_game, ent[3]);
         font_draw_at(g_font, l.tx, (s16)(l.ty + 0x20), text_menu(g_game, *(u16 *)0x089AC63E), v);
         font_set_height2(g_font, 14);
-        font_printf_at(g_font, l.tx, (s16)(l.ty + 0x50), fmt_s, text_table17(g_game, S8(self, 0x5D9)));
+        font_printf_at(g_font, l.tx, (s16)(l.ty + 0x50), fmt_s, text_table17(g_game, S8(self, MENU_ENTRY)));
         if ((s8)monster_is_large(g_quest, ent[3]) == 1) {
             const char *s1, *s2;
 

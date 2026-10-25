@@ -155,48 +155,48 @@ u8 menu_get_mode(u8 *self)
 {
     u32 f;
 
-    self[0x5E6] = 0;
+    self[MENU_INFO_FLAGS] = 0;
     f = *(u32 *)((u8 *)g_quest + 0x28);
     if (f & 0x40000) {
         if (G_MAP == 12)
-            self[0x584] = 4;
+            self[MENU_KIND] = 4;
         else if (G_MAP == 1)
-            self[0x584] = 3;
+            self[MENU_KIND] = 3;
         else
-            self[0x584] = 6;
+            self[MENU_KIND] = 6;
     } else if (f & 4) {
-        self[0x584] = 0;
+        self[MENU_KIND] = 0;
         if (*(u32 *)((u8 *)g_quest + 0x28) & 0x200000)
-            self[0x5E6] |= 1;
+            self[MENU_INFO_FLAGS] |= 1;
         if ((*(u32 *)((u8 *)g_quest + 0x28) & 0x400000) == 0)
-            return self[0x584];
-        self[0x5E6] |= 4;
+            return self[MENU_KIND];
+        self[MENU_INFO_FLAGS] |= 4;
     } else if (f & 1) {
         s32 i;
 
-        self[0x584] = 1;
+        self[MENU_KIND] = 1;
         for (i = 0; i < 2; i++) {
             if (quest_goal_kind(g_quest, i) == 3) {
-                self[0x5E6] |= 2;
+                self[MENU_INFO_FLAGS] |= 2;
                 break;
             }
         }
     } else if (f & 2) {
-        self[0x584] = 2;
+        self[MENU_KIND] = 2;
     } else if (f & 0x10) {
-        self[0x584] = 5;
+        self[MENU_KIND] = 5;
     } else {
         s8 r = menu_other_ready(self);
 
         if (r < 0) {
-            self[0x584] = 6;
+            self[MENU_KIND] = 6;
         } else {
-            self[0x584] = 1;
+            self[MENU_KIND] = 1;
             if (r == 1)
-                self[0x5E6] |= 2;
+                self[MENU_INFO_FLAGS] |= 2;
         }
     }
-    return self[0x584];
+    return self[MENU_KIND];
 }
 
 /* state of the other players: -1 none ready, 0 ready, 1 ready in state 3 */
@@ -236,12 +236,12 @@ int menu_item_giftable(u8 *self)
 {
     if ((OPT_FLAGS & 1) == 0)
         return 0;
-    if (D_0899D19A[(s16)menu_slot_first(self, self[0x586]) * 0x18] >= 3)
+    if (D_0899D19A[(s16)menu_slot_first(self, self[MENU_LIST_SEL]) * 0x18] >= 3)
         return 0;
-    if ((s8)D_0899D19B[(s16)menu_slot_first(self, self[0x586]) * 0x18] == -1)
+    if ((s8)D_0899D19B[(s16)menu_slot_first(self, self[MENU_LIST_SEL]) * 0x18] == -1)
         return 0;
     if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0)
-        return U8(*(u8 **)(self + 0x530), 0x1E0) == 0;
+        return U8(*(u8 **)(self + MENU_PLAYER), 0x1E0) == 0;
     return *(s16 *)(g_game + 0x6AF0E) == 0x55;
 }
 
@@ -284,7 +284,7 @@ void menu_draw_give(u8 *self, int alt)
     s16 y;
 
     if (self[0x589] == 0) {
-        gfx_draw_count_box(self, 0xF0, 0x68, self[0x58A], self[0x58A] + 1 - self[0x58B], 0);
+        gfx_draw_count_box(self, 0xF0, 0x68, self[MENU_COUNT], self[MENU_COUNT] + 1 - self[0x58B], 0);
         return;
     }
     if (self[0x589] != 1)
@@ -349,7 +349,7 @@ void menu_draw_give(u8 *self, int alt)
 /* gives the selected item to player p */
 void menu_give_item(u8 *self, u32 p)
 {
-    if (hunter_deliver(*(void **)(self + 0x530)) == 0)
+    if (hunter_deliver(*(void **)(self + MENU_PLAYER)) == 0)
         return;
     quest_send_item(g_quest, p);
     self[0x1207] = 1;
@@ -392,24 +392,24 @@ int menu_player_state(void *self, s32 i)
 s32 menu_open_give(u8 *self)
 {
     if ((*(u32 *)(g_game + 0x6AF14) & 1) == 0) {
-        if (U8(*(u8 **)(self + 0x530), 0x1E0) != 0)
+        if (U8(*(u8 **)(self + MENU_PLAYER), 0x1E0) != 0)
             return -1;
-        self[0x57E] = 0;
+        self[MENU_MODE] = 0;
     } else {
         if ((OPT_FLAGS & 1) == 0)
             return -1;
-        self[0x57E] = 0;
+        self[MENU_MODE] = 0;
     }
-    self[0x57F] = 0;
+    self[MENU_SEL] = 0;
     self[0x580] = 0;
-    S16(self, 0x5FC) = 12;
+    S16(self, MENU_HELP_TEXT) = 12;
     return 0;
 }
 
 /* closes the menu (and the sub-screen of the hunter, if open) */
 void menu_close(u8 *self, u32 a)
 {
-    if ((U8(*(u8 **)(self + 0x530), 0x1E0) != 0) == 1)
+    if ((U8(*(u8 **)(self + MENU_PLAYER), 0x1E0) != 0) == 1)
         hud_pause_open(self);
     hud_grid_input(self, a);
 }
@@ -440,7 +440,7 @@ void menu_draw_sprite(u8 *self, u32 x, u32 y, s32 id)
     w[5] = ((y & 0xFFFF) + t[3]) & 0xFFFF;
     w[3] = ((u32)(t[1] + t[3]) << 16) | (u32)(t[0] + t[2]);
     w[4] = (((x & 0xFFFF) + t[2]) << 16) | 0xFFFF;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer >= 20)
         return;
     cur = U32(dl, 0x80198);

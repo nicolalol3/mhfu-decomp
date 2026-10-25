@@ -40,11 +40,11 @@ void hud_draw_online(u8 *self, s32 layer);
 static void hud_toggle(u8 *self)
 {
     if ((OPT_FLAGS & 1) == 1 && (g_pad_pressed & 0x100) != 0) {
-        if (U32(self, 0x528) & 0x2000) {
-            U32(self, 0x528) &= ~0x2000;
+        if (U32(self, MENU_HUD_FLAGS) & 0x2000) {
+            U32(self, MENU_HUD_FLAGS) &= ~0x2000;
             sound_play(g_sound, 0, 17, 0, 0, 0, 0, 0, 0);
         } else {
-            U32(self, 0x528) |= 0x2000;
+            U32(self, MENU_HUD_FLAGS) |= 0x2000;
             sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
         }
     }
@@ -91,38 +91,38 @@ void hud_draw_online(u8 *self, s32 layer)
     s16 w;
 
     if (h[0x299] != 16 && (u8)func_08838AB4(self, h[0x298], h[0x299]) == 1) {
-        self[0x535] = 40;
+        self[MENU_HUD_TIMER] = 40;
         return;
     }
     switch (layer) {
-    case 0: self[0x534] = 9; break;
-    case 1: self[0x534] = 10; break;
-    case 2: self[0x534] = 11; break;
-    case 3: self[0x534] = 12; break;
-    case 4: self[0x534] = 13; break;
-    case 5: self[0x534] = 14; break;
+    case 0: self[MENU_LAYER] = 9; break;
+    case 1: self[MENU_LAYER] = 10; break;
+    case 2: self[MENU_LAYER] = 11; break;
+    case 3: self[MENU_LAYER] = 12; break;
+    case 4: self[MENU_LAYER] = 13; break;
+    case 5: self[MENU_LAYER] = 14; break;
     }
     font_set_layer(g_font, (s8)layer);
     menu_begin_draw(self);
     font_set_color(g_font, 0);
     font_set_size(g_font, 14, 14);
     if (U32(h, 0x554) == 0 || S16(*(u8 **)(h + 0x554), 2) != 2) {
-        self[0x535] = 40;
+        self[MENU_HUD_TIMER] = 40;
         font_printf_at(g_font, 36, 18, D_0893B220, func_09A7B790(D_09B22D70, D_09B04DF6));
         w = font_char_count(g_font, func_09A7B790(D_09B22D70, D_09B04DF6));
         hud_draw_label_bg(self, 0, 16, (s16)((w + 2) * 7 + 36), 16, 0x801D3905, 0);
     } else {
-        s8 t = self[0x535] - 1;
+        s8 t = self[MENU_HUD_TIMER] - 1;
 
-        self[0x535] = t;
+        self[MENU_HUD_TIMER] = t;
         if (t < 1)
-            self[0x535] = 40;
+            self[MENU_HUD_TIMER] = 40;
         font_set_pos(g_font, 36, 18);
         font_printf_at(g_font, 36, 18, D_0893B224, func_09A7B790(D_09B22D70, D_09B04DE0),
                       func_09A7B790(D_09B22D70, D_09B04DF8));
         w = font_char_count(g_font, func_09A7B790(D_09B22D70, D_09B04DF8));
         hud_draw_label_bg(self, 0, 16, (s16)((w + 4) * 7 + 36), 16, 0x801D3905, 0);
-        func_08838E0C(self, 16, 16, 53, (s8)self[0x535], 20);
+        func_08838E0C(self, 16, 16, 53, (s8)self[MENU_HUD_TIMER], 20);
     }
 }
 
@@ -152,12 +152,12 @@ void hud_draw_players(u8 *self, s32 layer)
     if ((OPT_FLAGS & 1) == 0)
         return;
     switch (layer) {
-    case 0: self[0x534] = 9; break;
-    case 1: self[0x534] = 10; break;
-    case 2: self[0x534] = 11; break;
-    case 3: self[0x534] = 12; break;
-    case 4: self[0x534] = 13; break;
-    case 5: self[0x534] = 14; break;
+    case 0: self[MENU_LAYER] = 9; break;
+    case 1: self[MENU_LAYER] = 10; break;
+    case 2: self[MENU_LAYER] = 11; break;
+    case 3: self[MENU_LAYER] = 12; break;
+    case 4: self[MENU_LAYER] = 13; break;
+    case 5: self[MENU_LAYER] = 14; break;
     }
     font_set_layer(g_font, (s8)layer);
     menu_begin_draw(self);
@@ -166,7 +166,7 @@ void hud_draw_players(u8 *self, s32 layer)
     t[2] = src[2];
     t[3] = src[3];
     t[4] = src[4];
-    if (U32(self, 0x528) & 0x2000) {
+    if (U32(self, MENU_HUD_FLAGS) & 0x2000) {
         func_0882FC50(self, t, func_09A7B790(D_09B22D70, D_09B05C90), 255);
         func_0882A9DC(self, (u16)(U16(t, 12) - 24), (u16)(U16(t, 14) - 2), 54);
         return;
@@ -213,9 +213,9 @@ void hud_draw_players(u8 *self, s32 layer)
 /* notice shown for 150 frames when the flag 0x80 is set */
 void hud_update_notice(u8 *self)
 {
-    if ((U32(self, 0x5E8) & 0x80) != 0 && (u8)func_0883D3D4(self) == 1) {
+    if ((U32(self, MENU_NOTICE_FLAGS) & 0x80) != 0 && (u8)func_0883D3D4(self) == 1) {
         U32(self, 0x600) = 150;
-        U32(self, 0x5E8) &= ~0x80;
+        U32(self, MENU_NOTICE_FLAGS) &= ~0x80;
     }
     if ((u8)func_0883D3D4(self) == 0)
         U32(self, 0x600) = 0;
@@ -291,27 +291,27 @@ void hud_draw_objective(u8 *self, s32 layer)
 
     if ((h[0x299] != 16 && (u8)func_08838AB4(self, h[0x298], h[0x299]) == 1) || h[0x298] != 0
         || (u8)menu_input_ready(self, 0) == 0 || (h[0x298] == 0 && (u32)(h[0x299] - 13) < 2)) {
-        self[0x535] = 40;
+        self[MENU_HUD_TIMER] = 40;
         return;
     }
     switch (layer) {
-    case 0: self[0x534] = 9; break;
-    case 1: self[0x534] = 10; break;
-    case 2: self[0x534] = 11; break;
-    case 3: self[0x534] = 12; break;
-    case 4: self[0x534] = 13; break;
-    case 5: self[0x534] = 14; break;
+    case 0: self[MENU_LAYER] = 9; break;
+    case 1: self[MENU_LAYER] = 10; break;
+    case 2: self[MENU_LAYER] = 11; break;
+    case 3: self[MENU_LAYER] = 12; break;
+    case 4: self[MENU_LAYER] = 13; break;
+    case 5: self[MENU_LAYER] = 14; break;
     }
     font_set_layer(g_font, (s8)layer);
     menu_begin_draw(self);
     font_set_color(g_font, 0);
     font_set_size(g_font, 14, 14);
     if (U32(h, 0x554) == 0) {
-        self[0x535] = 40;
+        self[MENU_HUD_TIMER] = 40;
         return;
     }
-    if ((s8)(self[0x535] = self[0x535] - 1) < 1)
-        self[0x535] = 40;
+    if ((s8)(self[MENU_HUD_TIMER] = self[MENU_HUD_TIMER] - 1) < 1)
+        self[MENU_HUD_TIMER] = 40;
     font_set_pos(g_font, 36, 18);
     q = *(u16 **)(h + 0x554);
     switch (q[1]) {
@@ -366,11 +366,11 @@ void hud_draw_objective(u8 *self, s32 layer)
                 w = w2;
         }
         hud_draw_label_bg(self, 0, 16, w, 16, 0x801D3905, 0);
-        func_08838E0C(self, 16, 16, 53, (s8)self[0x535], 20);
+        func_08838E0C(self, 16, 16, 53, (s8)self[MENU_HUD_TIMER], 20);
         k = *p;
         if (k == 0x55) {
             hud_draw_label_bg(self, 0, 32, w, 16, 0x801D3905, 0);
-            func_08838E0C(self, 16, 32, 50, (s8)self[0x535], 20);
+            func_08838E0C(self, 16, 32, 50, (s8)self[MENU_HUD_TIMER], 20);
         }
         if (func_09A62E58(D_09B0FF88, ((u8 *)p)[3]) == 1) {
             s8 y = ((k == 0x55) + 1) * 16;
@@ -379,7 +379,7 @@ void hud_draw_objective(u8 *self, s32 layer)
             font_printf(g_font, D_0893B224, TXT(D_09B04DE0), TXT(D_09B05278));
             y += 16;
             hud_draw_label_bg(self, 0, y, w, 16, 0x801D3905, 0);
-            func_08838E0C(self, 16, y, 52, (s8)self[0x535], 20);
+            func_08838E0C(self, 16, y, 52, (s8)self[MENU_HUD_TIMER], 20);
         }
         return;
     case 2:
@@ -474,7 +474,7 @@ void hud_draw_objective(u8 *self, s32 layer)
         font_printf_at(g_font, 36, 18, D_0893B224, TXT(D_09B04DE0), TXT(D_09B05266));
         wb = (s16)(((s16)font_char_count(g_font, TXT(D_09B05266)) + 6) * 7 + 36);
         hud_draw_label_bg(self, 0, 16, wb, 16, 0x801D3905, 0);
-        func_08838E0C(self, 16, 16, 53, (s8)self[0x535], 20);
+        func_08838E0C(self, 16, 16, 53, (s8)self[MENU_HUD_TIMER], 20);
         font_printf_at(g_font, 8, 34, D_0893B22C, TXT(D_09B05268),
                       TXT(D_09B04E08[g_game[0x6A23F]]), TXT(D_09B0526A));
         hud_draw_label_bg(self, 0, 32, wb, 16, 0x801D3905, 0);
@@ -494,7 +494,7 @@ void hud_draw_objective(u8 *self, s32 layer)
     if (name != NULL)
         w = (s16)(((s16)font_char_count(g_font, name) + 4) * 7 + 36);
     hud_draw_label_bg(self, 0, 16, w, 16, 0x801D3905, 0);
-    func_08838E0C(self, 16, 16, 53, (s8)self[0x535], 20);
+    func_08838E0C(self, 16, 16, 53, (s8)self[MENU_HUD_TIMER], 20);
 }
 
 extern void *g_camera;          /* camera */
@@ -526,12 +526,12 @@ void hud_draw_names(u8 *self, s32 layer)
     int online, i;
 
     switch (layer) {
-    case 0: self[0x534] = 9; break;
-    case 1: self[0x534] = 10; break;
-    case 2: self[0x534] = 11; break;
-    case 3: self[0x534] = 12; break;
-    case 4: self[0x534] = 13; break;
-    case 5: self[0x534] = 14; break;
+    case 0: self[MENU_LAYER] = 9; break;
+    case 1: self[MENU_LAYER] = 10; break;
+    case 2: self[MENU_LAYER] = 11; break;
+    case 3: self[MENU_LAYER] = 12; break;
+    case 4: self[MENU_LAYER] = 13; break;
+    case 5: self[MENU_LAYER] = 14; break;
     }
     font_set_layer(g_font, (s8)layer);
     menu_begin_draw(self);
@@ -852,7 +852,7 @@ void hud_draw_skill_compare(u8 *self, u8 *hunter, u8 *eq, s32 x, s32 y)
                 else if (now < 0)
                     col[i] = 2;
             } else if ((u8)before != hunter[(i & 0xFF) + 0x676]) {
-                s8 old = func_09AE9818((u8 *)D_09B22D70 + 0xA888, *s, self + 0x11CA, self + 0x11BE);
+                s8 old = func_09AE9818((u8 *)D_09B22D70 + 0xA888, *s, self + 0x11CA, self + MENU_SAVED_EQUIP);
 
                 if (old < now)
                     col[i] = 4;
@@ -952,7 +952,7 @@ void hud_draw_label_bg(u8 *self, u32 x_arg, s32 y_arg, s32 w_arg, s32 h_arg, u32
     p[17] = 0x04040004;
     p[18] = 0x10000000;
     p[19] = 0x08000000;
-    dl_link(D_08A62C40, p + 12, 8, self[0x534]);
+    dl_link(D_08A62C40, p + 12, 8, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 20);
 }
 
@@ -971,11 +971,11 @@ void hud_draw_quest_page(u8 *self)
     s16 y;
     int i;
 
-    if (self[0x57E] != 0)
+    if (self[MENU_MODE] != 0)
         return;
     menu_draw_main_page(self, 1);
     layout_build(&l, D_0893B340, 0, 0, 0);
-    layout_draw_box(self, &l, 0, self[0x57F], 255, 1);
+    layout_draw_box(self, &l, 0, self[MENU_SEL], 255, 1);
     col[3] = 0;
     col[2] = 0;
     col[1] = 0;
@@ -1010,25 +1010,25 @@ void hud_draw_card_page(u8 *self)
     Layout l;
     s8 col[4];
     u8 *h;
-    u8 st = self[0x57E];
+    u8 st = self[MENU_MODE];
 
     if (st != 0) {
         func_09C240A0(self[0x117D], self[0x117A], st >= 3 ? 4 : 3, (s8)self[0x117B], (s8)self[0x117C], 0);
         func_08833290(self, 16, 2, U32(self, 0x118C), 0);
-        if (U16(self, 0x5FC) != 0) {
-            st = self[0x57E];
+        if (U16(self, MENU_HELP_TEXT) != 0) {
+            st = self[MENU_MODE];
             if (st == 1 || st == 2 || st == 4 || st == 10)
                 layout_draw(g_menu, (Layout *)&D_0893B368,
-                            func_09A7B790(D_09B22D70, ((const u16 *)0x09B05D10)[U16(self, 0x5FC)]), 255);
-            if (self[0x57E] == 3) {
+                            func_09A7B790(D_09B22D70, ((const u16 *)0x09B05D10)[U16(self, MENU_HELP_TEXT)]), 255);
+            if (self[MENU_MODE] == 3) {
                 layout_draw(g_menu, (Layout *)&D_0893B368,
-                            func_09A7B790(D_09B22D70, ((const u16 *)0x09B05D10)[U16(self, 0x5FC)]), 255);
+                            func_09A7B790(D_09B22D70, ((const u16 *)0x09B05D10)[U16(self, MENU_HELP_TEXT)]), 255);
                 font_draw_at(g_font, (s16)(D_0893B368.x + D_0893B36C - 148),
                               (s16)(D_0893B36A + D_0893B36E - 22), D_0893B220,
-                              text_menu(g_game, D_089AC588[self[0x537]]));
+                              text_menu(g_game, D_089AC588[self[MENU_YESNO]]));
             }
         }
-        st = self[0x57E];
+        st = self[MENU_MODE];
         if (st == 10) {
             self[0x589] = 1;
             menu_draw_give(self, 1);
@@ -1042,9 +1042,9 @@ void hud_draw_card_page(u8 *self)
         return;
     }
     menu_draw_main_page(self, 1);
-    h = *(u8 **)(self + 0x530);
+    h = *(u8 **)(self + MENU_PLAYER);
     layout_build(&l, D_0893B354, 0, 0, 0);
-    layout_draw_box(self, &l, 0, self[0x57F], 255, 1);
+    layout_draw_box(self, &l, 0, self[MENU_SEL], 255, 1);
     col[2] = 9;
     col[1] = 9;
     col[0] = 9;
@@ -1077,42 +1077,42 @@ void hud_draw_card_page(u8 *self)
 /* input of the guild card page */
 u32 hud_card_input(u8 *self, u32 keys)
 {
-    if (self[0x57E] == 1) {
-        u32 r = func_088F0088(D_09A5242C, keys, self[0x57F]);
+    if (self[MENU_MODE] == 1) {
+        u32 r = func_088F0088(D_09A5242C, keys, self[MENU_SEL]);
 
         keys = r & 0xFFFF;
         if (r & 0x2000) {
             keys = 0;
-            self[0x57E] -= 1;
-            U32(self, 0x5E8) |= 4;
+            self[MENU_MODE] -= 1;
+            U32(self, MENU_NOTICE_FLAGS) |= 4;
         }
         return keys;
     }
-    if (self[0x57E] != 0)
+    if (self[MENU_MODE] != 0)
         return keys;
     if (keys & 0x4000) {
-        s8 c = self[0x57F];
+        s8 c = self[MENU_SEL];
 
         if (c == 3 || c == 1 || c == 0
             || (c == 2 && (OPT_FLAGS & 1) != 0)) {
             sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
-            self[0x57E] += 1;
-            U32(self, 0x5E8) &= ~4;
+            self[MENU_MODE] += 1;
+            U32(self, MENU_NOTICE_FLAGS) &= ~4;
             func_088F0020(D_09A5242C);
             return 0;
         }
         if (c == 2)
             sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
     }
-    menu_cursor_vertical(self, self + 0x57F, keys, 4);
-    U16(self, 0x5FC) = self[0x57F] + 14;
+    menu_cursor_vertical(self, self + MENU_SEL, keys, 4);
+    U16(self, MENU_HELP_TEXT) = self[MENU_SEL] + 14;
     return keys;
 }
 
 /* page of the players of the room: opens the card of the selected player */
 void hud_draw_player_page(u8 *self)
 {
-    if (self[0x57E] == 1) {
+    if (self[MENU_MODE] == 1) {
         u8 *p = NULL;
         s32 i, k;
 
@@ -1136,10 +1136,10 @@ void hud_draw_player_page(u8 *self)
             }
         }
         if (p != NULL)
-            func_0883A07C(self, self[0x582]);
-    } else if (self[0x57E] == 0) {
+            func_0883A07C(self, self[MENU_SEL2]);
+    } else if (self[MENU_MODE] == 0) {
         menu_draw_main_page(self, 1);
-        func_0883A758(self, 240, 40, (s8)self[0x57F], 0);
+        func_0883A758(self, 240, 40, (s8)self[MENU_SEL], 0);
     }
 }
 
@@ -1189,7 +1189,7 @@ int hud_nonzero(void *self, s32 v)
 void hud_draw_player_page2(u8 *self)
 {
     menu_draw_main_page(self, 1);
-    func_0883A758(self, 240, 40, (s8)self[0x57F], 1);
+    func_0883A758(self, 240, 40, (s8)self[MENU_SEL], 1);
 }
 
 /* 1 if the room is busy or player p is busy */
@@ -1204,15 +1204,15 @@ int hud_room_busy(void *self, u32 p)
 /* cursor of a 4 x 3 grid; with the button 0x4000 stores the choice in the hunter */
 u32 hud_grid_input(u8 *self, u32 keys)
 {
-    u8 row = self[0x57F] >> 2;
-    u8 col = self[0x57F] & 3;
+    u8 row = self[MENU_SEL] >> 2;
+    u8 col = self[MENU_SEL] & 3;
 
     if (menu_cursor_horizontal(self, &col, keys, 4) != 0)
-        self[0x57F] = col + row * 4;
+        self[MENU_SEL] = col + row * 4;
     else if (menu_cursor_vertical(self, &row, keys, 3) != 0)
-        self[0x57F] = col + row * 4;
+        self[MENU_SEL] = col + row * 4;
     if (keys & 0x4000)
-        U8(*(u8 **)(self + 0x530), 0x565) = self[0x57F] + 1;
+        U8(*(u8 **)(self + MENU_PLAYER), 0x565) = self[MENU_SEL] + 1;
     return keys;
 }
 
@@ -1319,8 +1319,8 @@ void hud_draw_choice_grid(u8 *self)
     gfx_draw_subwindow(self, D_0893B3E8, D_0893B3EA, D_0893B3EC, D_0893B3EE, 255);
     font_set_color(g_font, 0);
     font_set_size(g_font, 14, 14);
-    gfx_fill_rect_pulse(self, D_0893B3F8 + D_0893B3F4 * (self[0x57F] & 3),
-                        D_0893B3FA + D_0893B3F6 * (u16)(self[0x57F] >> 2), D_0893B3FC, D_0893B3FE,
+    gfx_fill_rect_pulse(self, D_0893B3F8 + D_0893B3F4 * (self[MENU_SEL] & 3),
+                        D_0893B3FA + D_0893B3F6 * (u16)(self[MENU_SEL] >> 2), D_0893B3FC, D_0893B3FE,
                         self[0x580] != 0 ? 0x80808080 : 0x8000C040);
     for (c = 0; c < 4; c++)
         for (r = 0; r < 3; r++)
@@ -1332,37 +1332,37 @@ void hud_draw_choice_grid(u8 *self)
 /* input of the "invite a player" page */
 u32 hud_invite_input(u8 *self, u32 keys)
 {
-    s8 st = self[0x57E];
+    s8 st = self[MENU_MODE];
 
     if (st == 3) {
         sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
         menu_close_state(self);
     } else if (st == 2) {
         menu_msg_push_text(g_menu, func_09A7B790(D_09B22D70, D_09B04DFE));
-        self[0x57E] = 3;
+        self[MENU_MODE] = 3;
         sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
         menu_close_state(self);
     } else if (st == 1) {
         u8 *h = (u8 *)player_get(g_players, 0);
 
         if (h[0x5C8] == 1) {
-            self[0x57E] = 3;
+            self[MENU_MODE] = 3;
         } else if (h[0x5C8] == 2) {
-            self[0x57E] = 3;
+            self[MENU_MODE] = 3;
         } else {
             self[0x580] -= 1;
             if (self[0x580] == 0)
-                self[0x57E] = 2;
+                self[MENU_MODE] = 2;
         }
-    } else if (st == 0 && menu_cursor_vertical(self, self + 0x57F, keys, 3) == 0) {
+    } else if (st == 0 && menu_cursor_vertical(self, self + MENU_SEL, keys, 3) == 0) {
         if (keys & 0x4000) {
             u8 *h = (u8 *)player_get(g_players, G_MY_SLOT);
 
             if (h[0x62C] == 0) {
-                if (func_0889D7E8(g_net_players, (u32)hud_other_player(self, self[0x57F])) == 0)
-                    func_0883AE3C(self, hud_other_player(self, self[0x57F]));
+                if (func_0889D7E8(g_net_players, (u32)hud_other_player(self, self[MENU_SEL])) == 0)
+                    func_0883AE3C(self, hud_other_player(self, self[MENU_SEL]));
                 else
-                    func_0883ABE0(self, hud_other_player(self, self[0x57F]));
+                    func_0883ABE0(self, hud_other_player(self, self[MENU_SEL]));
             } else {
                 sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
             }
@@ -1411,7 +1411,7 @@ void hud_request_trade(u8 *self, u8 *p)
         S16(h, 0x5CC) = req[1];
         func_0889D8A8(g_net_players, p, 7, 0);
         func_09AAEE70(h, 0, 6, 0);
-        self[0x57E] = 1;
+        self[MENU_MODE] = 1;
     }
 }
 
@@ -1466,7 +1466,7 @@ void hud_request_card(u8 *self, u8 *p)
         memcpy(h + 0x5DC, card, 16);
         func_0889D8A8(g_net_players, p, 17, 0);
         func_09AAEE70(h, 0, 6, 0);
-        self[0x57E] = 1;
+        self[MENU_MODE] = 1;
     } else {
         menu_msg_push_text(g_menu, func_09A7B790(D_09B22D70, D_09B05D06));
         sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
@@ -1477,7 +1477,7 @@ void hud_request_card(u8 *self, u8 *p)
 /* input of the page of the players: choose a player, then an action (2 columns) */
 u32 hud_player_page_input(u8 *self, u32 keys)
 {
-    if (self[0x57E] == 1) {
+    if (self[MENU_MODE] == 1) {
         u8 *p = NULL;
         s32 i, k;
 
@@ -1502,29 +1502,29 @@ u32 hud_player_page_input(u8 *self, u32 keys)
         }
         if ((u8)hud_nonzero(self, (s32)p) == 0 || (keys & 0x2000) != 0) {
             keys &= 0xDFFF;
-            self[0x57E] -= 1;
-            U32(self, 0x5E8) |= 4;
+            self[MENU_MODE] -= 1;
+            U32(self, MENU_NOTICE_FLAGS) |= 4;
             sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
         } else {
-            menu_cursor_horizontal(self, self + 0x582, keys, 2);
+            menu_cursor_horizontal(self, self + MENU_SEL2, keys, 2);
         }
         return keys;
     }
-    if (self[0x57E] != 0)
+    if (self[MENU_MODE] != 0)
         return keys;
     if ((keys & 0x4000) == 0) {
-        menu_cursor_vertical(self, self + 0x57F, keys, 3);
+        menu_cursor_vertical(self, self + MENU_SEL, keys, 3);
     } else {
-        u8 *p = hud_other_player(self, self[0x57F]);
+        u8 *p = hud_other_player(self, self[MENU_SEL]);
 
         if ((u8)hud_nonzero(self, (s32)p) == 0) {
             sound_play(g_sound, 0, 21, 0, 0, 0, 0, 0, 0);
         } else {
-            self[0x57E] += 1;
+            self[MENU_MODE] += 1;
             memcpy(self + 0x1172, p, 8);
-            self[0x582] = 0;
+            self[MENU_SEL2] = 0;
             sound_play(g_sound, 0, 19, 0, 0, 0, 0, 0, 0);
-            U32(self, 0x5E8) &= ~4;
+            U32(self, MENU_NOTICE_FLAGS) &= ~4;
         }
     }
     return keys;
@@ -1569,7 +1569,7 @@ void hud_draw_options(u8 *self)
     OPTION_TEXT(((const u16 *)0x09B05C98)[(s16)((s8)m[0x60A] + 5)], (s16)(l.ty + l.lh));
     if ((OPT_FLAGS & 1) == 0)
         OPTION_TEXT((&D_09B05C90)[(s16)((s8)m[0x609] ^ 1)], (s16)(l.ty + l.lh * 2));
-    gfx_draw_arrows_blink(self, (u16)(l.tx + 0x92), (u16)(l.ty + l.lh * self[0x57F]), 70, 240);
+    gfx_draw_arrows_blink(self, (u16)(l.tx + 0x92), (u16)(l.ty + l.lh * self[MENU_SEL]), 70, 240);
 }
 
 /* input of the options page (with the network connection steps 1 and 2) */
@@ -1626,11 +1626,11 @@ u32 hud_options_input(u8 *self, u32 keys, u32 a)
         return keys;
     if ((OPT_FLAGS & 1) == 1)
         n = 2;
-    menu_cursor_vertical(self, self + 0x57F, keys, n);
-    U16(self, 0x5FC) = self[0x57F] + 9;
+    menu_cursor_vertical(self, self + MENU_SEL, keys, n);
+    U16(self, MENU_HELP_TEXT) = self[MENU_SEL] + 9;
     if ((keys & 0x20) == 0 && (keys & 0x80) == 0)
         return keys;
-    if (self[0x57F] == 1) {
+    if (self[MENU_SEL] == 1) {
         u8 v = 0;
         s8 m;
 
@@ -1654,7 +1654,7 @@ u32 hud_options_input(u8 *self, u32 keys, u32 a)
         g_game[0x6ADD9] = v;
         func_08880760(g_sound, (s8)g_game[0x6ADD9]);
         sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
-    } else if (self[0x57F] == 2) {
+    } else if (self[MENU_SEL] == 2) {
         s8 v = (s8)self[0x609] ^ 1;
 
         self[0x609] = v;
@@ -1665,7 +1665,7 @@ u32 hud_options_input(u8 *self, u32 keys, u32 a)
             func_088BFBEC(D_09A44C60);
         }
         sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
-    } else if (self[0x57F] == 0) {
+    } else if (self[MENU_SEL] == 0) {
         self[0x608] = (s8)self[0x608] ^ 1;
         g_game[0x6ADE3] = ((u8 *)g_menu)[0x608];
         sound_play(g_sound, 0, 23, 0, 0, 0, 0, 0, 0);
@@ -1801,13 +1801,13 @@ void hud_notice_add(u8 *self, const char *name, s32 kind)
         s32 k;
 
         for (k = 0; k < 4; k++)
-            memcpy(self + k * 0x18 + 0x60C, self + k * 0x18 + 0x624, 0x18);
+            memcpy(self + k * 0x18 + MENU_NOTICES, self + k * 0x18 + 0x624, 0x18);
         i = 4;
     }
     off = i * 0x18;
-    memcpy(self + off + 0x60C, name, 0x12);
+    memcpy(self + off + MENU_NOTICES, name, 0x12);
     S32(self + off, 0x620) = kind;
-    U32(self, 0x5E8) |= 0x80;
+    U32(self, MENU_NOTICE_FLAGS) |= 0x80;
 }
 
 /* clears the notices */
@@ -1867,9 +1867,9 @@ int hud_select_target(u8 *self)
         return 0;
     if (func_0883B498(self, U16(t, 0x1E6)) == -1)
         return 0;
-    self[0x57F] = func_0883B498(self, U16(t, 0x1E6));
-    memcpy(self + 0x1172, g_net_players + self[0x57F] * 200 + 0x57C, 8);
-    self[0x582] = 0;
+    self[MENU_SEL] = func_0883B498(self, U16(t, 0x1E6));
+    memcpy(self + 0x1172, g_net_players + self[MENU_SEL] * 200 + 0x57C, 8);
+    self[MENU_SEL2] = 0;
     sound_play(g_sound, 0, 17, 0, 0, 0, 0, 0, 0);
     return 1;
 }
@@ -1930,11 +1930,11 @@ int hud_player_card_input(u8 *self, u32 keys)
         sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
         return 1;
     }
-    menu_cursor_horizontal(self, self + 0x582, keys, 2);
-    self[0x534] = 10;
+    menu_cursor_horizontal(self, self + MENU_SEL2, keys, 2);
+    self[MENU_LAYER] = 10;
     font_set_layer(g_font, 1);
     menu_begin_draw(self);
-    hud_draw_player_card(self, self[0x582], p);
+    hud_draw_player_card(self, self[MENU_SEL2], p);
     return 0;
 }
 
@@ -1980,7 +1980,7 @@ void hud_draw_item_get(u8 *self)
     t[4] = D_0893B488[4];
     if (st < 3 || st == 7)
         return;
-    menu_draw_item_list(self, self[0x586], D_0893AA94[st], 16, 0);
+    menu_draw_item_list(self, self[MENU_LIST_SEL], D_0893AA94[st], 16, 0);
     if (S8(self, 0x592) == 0) {
         Layout c;
         s32 w, h2, u;
@@ -2003,19 +2003,19 @@ void hud_draw_item_get(u8 *self)
         c.w = u;
         c.x = 240 - (s16)((s32)(u & 0xFFFF) >> 1);
         layout_draw(self, &c, text_menu(g_game, D_089AC84C), 255);
-        U32(*(u8 **)(self + 0x530), 0x614) &= ~1;
+        U32(*(u8 **)(self + MENU_PLAYER), 0x614) &= ~1;
         id = U16(self, 0x58E);
     } else {
         s8 n = self[0x593];
 
         if (n < 2) {
-            layout_draw(self, (Layout *)D_0893B108, text_item_name(g_game, U16(self, 0x590)), 255);
+            layout_draw(self, (Layout *)D_0893B108, text_item_name(g_game, U16(self, MENU_ITEM)), 255);
             id = U16(self, 0x58E);
         } else {
             char buf[64];
             const char *f = text_menu(g_game, D_089AC84E);
 
-            sprintf(buf, f, text_item_name(g_game, U16(self, 0x590)), n);
+            sprintf(buf, f, text_item_name(g_game, U16(self, MENU_ITEM)), n);
             layout_draw(self, (Layout *)D_0893B11C, buf, 255);
             id = U16(self, 0x58E);
         }
@@ -2023,7 +2023,7 @@ void hud_draw_item_get(u8 *self)
     menu_draw_desc(self, 1, id, -1);
     st = self[0x52F];
     if ((s8)st == 5) {
-        layout_draw_from(self, D_0893B130, 0, self[0x537], 255, 0);
+        layout_draw_from(self, D_0893B130, 0, self[MENU_YESNO], 255, 0);
     } else if ((s8)st == 3 || (s8)st == 4) {
         Layout l;
         u8 col;
@@ -2035,7 +2035,7 @@ void hud_draw_item_get(u8 *self)
         layout_build(&l, (const u8 *)t, 0, 0, 0);
         l.color = D_0893AAB0[self[0x52F]];
         layout_draw_box(self, &l, 0, self[0x58C], 255, 0);
-        col = box_room(D_08A62C50, U16(self, 0x590)) < (s8)self[0x593] ? 10 : 0;
+        col = box_room(D_08A62C50, U16(self, MENU_ITEM)) < (s8)self[0x593] ? 10 : 0;
         font_printf_at_color(g_font, l.tx, l.ty, col, func_09A7B790(D_09B22D70, D_09B04E06));
         font_printf_at_color(g_font, l.tx, (s16)(l.ty + l.lh), 0,
                       text_menu(g_game, *(const u16 *)D_089AC600));
@@ -2135,15 +2135,15 @@ void hud_timer_sounds(u8 *self)
     int i;
 
     for (i = 0; i < 4; i++, self += 2) {
-        s32 t = S16(self, 0x56C);
+        s32 t = S16(self, MENU_BEEP_TIMERS);
 
         if (t < 0)
             continue;
         if (t < 100 && t % 20 == 0)
             sound_play(g_sound, 1, t / 20 + 123, 0, 0, 0, 0, 0, 0);
-        S16(self, 0x56C) = S16(self, 0x56C) + 1;
-        if (S16(self, 0x56C) >= 106)
-            S16(self, 0x56C) = -1;
+        S16(self, MENU_BEEP_TIMERS) = S16(self, MENU_BEEP_TIMERS) + 1;
+        if (S16(self, MENU_BEEP_TIMERS) >= 106)
+            S16(self, MENU_BEEP_TIMERS) = -1;
     }
 }
 
@@ -2164,7 +2164,7 @@ void hud_draw_layer0(u8 *self)
 
     if (save_in_progress(g_game) == 1)
         return;
-    self[0x534] = 9;
+    self[MENU_LAYER] = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(self);
     func_0883FDF4(self);
@@ -2176,7 +2176,7 @@ void hud_draw_layer0(u8 *self)
         func_08841908(self);
         func_08842628(self);
     } else if (self[0x57B] == 0) {
-        k = U8(*(u8 **)(self + 0x530), 0x1E8);
+        k = U8(*(u8 **)(self + MENU_PLAYER), 0x1E8);
         if (k == 1 || k == 5)
             func_088428EC(self);
     }
@@ -2185,7 +2185,7 @@ void hud_draw_layer0(u8 *self)
 /* layer 10 of the HUD: pages of the in-game menu */
 void hud_draw_layer1(u8 *self)
 {
-    self[0x534] = 10;
+    self[MENU_LAYER] = 10;
     font_set_layer(g_font, 1);
     menu_begin_draw(self);
     if (save_in_progress(g_game) == 1) {
@@ -2200,7 +2200,7 @@ void hud_draw_layer1(u8 *self)
     } else if (self[0x52F] != 0) {
         menu_draw_confirm(self);
     } else if (self[0x52D] == 0) {
-        if ((U32(*(u8 **)(self + 0x530), 0x614) & 2) == 0 && self[0x554] == 0) {
+        if ((U32(*(u8 **)(self + MENU_PLAYER), 0x614) & 2) == 0 && self[0x554] == 0) {
             func_08842EE8(self);
             hud_draw_item_bar(self);
         }
@@ -2222,7 +2222,7 @@ void hud_draw_layer1(u8 *self)
             menu_draw_page_list(self, 0);
             menu_draw_help_keys(self);
         }
-        if (U32(self, 0x5E8) & 4)
+        if (U32(self, MENU_NOTICE_FLAGS) & 4)
             menu_draw_entry_desc(self);
     }
     hud_draw_save(self);
@@ -2233,7 +2233,7 @@ void hud_draw_layer2(u8 *self)
 {
     if (save_in_progress(g_game) == 1)
         return;
-    self[0x534] = 11;
+    self[MENU_LAYER] = 11;
     font_set_layer(g_font, 2);
     menu_begin_draw(self);
     hud_draw_item_bar_arrows(self);
@@ -2287,7 +2287,7 @@ void hud_draw_clock_hand(u8 *self, s32 t, s32 big)
 /* 1 if the hunter is in danger (low health, poisoned, ...) */
 int hud_hunter_danger(u8 *self)
 {
-    u8 *h = *(u8 **)(self + 0x530);
+    u8 *h = *(u8 **)(self + MENU_PLAYER);
 
     if (func_09A6DEC0(h) >= 1)
         return 1;
@@ -2324,7 +2324,7 @@ u8 hunter_state_flag(void *hunter, int flag);
 u32 hud_health_bar_color(u8 *self, s32 kind_arg)
 {
     s16 kind = kind_arg;
-    u8 *h = *(u8 **)(self + 0x530);
+    u8 *h = *(u8 **)(self + MENU_PLAYER);
     u32 c = 0xFF10C010;
     s16 sp = 0;
 
@@ -2374,7 +2374,7 @@ u32 hud_health_bar_color(u8 *self, s32 kind_arg)
 u32 hud_stamina_bar_color(u8 *self, s32 kind_arg)
 {
     s16 kind = kind_arg;
-    u8 *h = *(u8 **)(self + 0x530);
+    u8 *h = *(u8 **)(self + MENU_PLAYER);
     u32 c = 0xFFF0F000;
     s16 sp = 0;
 
@@ -2429,7 +2429,7 @@ int hud_area_kind(void *self, s32 area_arg);
 /* kind of the current area of the hunter (stored in self+0x578) */
 void hud_update_area_kind(u8 *self)
 {
-    self[0x578] = hud_area_kind(self, S16(*(u8 **)(self + 0x530), 0x29A));
+    self[MENU_AREA_KIND] = hud_area_kind(self, S16(*(u8 **)(self + MENU_PLAYER), 0x29A));
 }
 
 /* kind of area: 0 normal, in the towers (game 14/15) 1 for the areas 0x79..0x7B, else 2 */

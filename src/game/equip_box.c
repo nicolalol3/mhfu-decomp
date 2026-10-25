@@ -93,7 +93,7 @@ void emblem_draw(u8 *self, u32 x, u32 y, u32 u, u32 v)
     w[3] = (((v & 0xFFFF) + 36) << 16) | ((u & 0xFFFF) + 36);
     w[1] = (x << 16) | 0xFFFF;
     w[4] = (((x & 0xFFFF) + 51) << 16) | 0xFFFF;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20)
         DL_PUSH(dl, layer, w, 6, 9, 10);
     gfx_set_filter(self, 0);
@@ -136,7 +136,7 @@ int equip_draw_name_box(u8 *self, u8 *a, u32 x, u32 y, u32 flags, u8 *b, s32 idx
             menu_draw_pager(self, mx, (s16)((s16)y + D_08938758[idx][1] - 20), flags & 7, m, k);
         }
     }
-    func_0881EE84(self, a, x, y, flags, b, *(void **)(self + 0x530), idx);
+    func_0881EE84(self, a, x, y, flags, b, *(void **)(self + MENU_PLAYER), idx);
     return 0;
 }
 

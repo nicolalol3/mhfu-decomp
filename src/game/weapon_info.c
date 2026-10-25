@@ -440,7 +440,7 @@ void weapon_draw_element(u8 *self, u8 *eq, s32 x_arg, s32 y_arg, u8 *other)
 {
     s16 x = x_arg;
     s16 y = y_arg;
-    void *hunter = *(void **)(self + 0x530);
+    void *hunter = *(void **)(self + MENU_PLAYER);
     char buf1[40], buf2[40];
     s16 v[3], o[3];     /* value, index, base */
     s16 idx2, val2, oidx2, oval2;

@@ -158,15 +158,15 @@ void menu_close_state(u8 *self)
     self[0x111A] = 0;
     self[0x1119] = 0;
     self[0x1118] = 0;
-    U32(self, 0x5E8) |= 4;
-    f = U32(self, 0x528);
-    U32(self, 0x528) = f & ~0x800;
-    U32(self, 0x528) = f & ~0xA00;
-    U32(self, 0x528) = f & ~0xB00;
+    U32(self, MENU_NOTICE_FLAGS) |= 4;
+    f = U32(self, MENU_HUD_FLAGS);
+    U32(self, MENU_HUD_FLAGS) = f & ~0x800;
+    U32(self, MENU_HUD_FLAGS) = f & ~0xA00;
+    U32(self, MENU_HUD_FLAGS) = f & ~0xB00;
     self[0x5FE] = 4;
-    U16(self, 0x5FC) = self[0x111C];
+    U16(self, MENU_HELP_TEXT) = self[0x111C];
     self[0x5FF] = 0xFF;
-    U32(self, 0x5E8) &= ~0x40;
+    U32(self, MENU_NOTICE_FLAGS) &= ~0x40;
 }
 
 /* 1 when the menu is closed (otherwise reads the key of the frame) */
@@ -190,11 +190,11 @@ void menu_close_all(u8 *self)
     self[0x111A] = 0;
     self[0x1119] = 0;
     self[0x1118] = 0;
-    U32(self, 0x5E8) |= 4;
-    f = U32(self, 0x528);
-    U32(self, 0x528) = f & ~0x800;
-    U32(self, 0x528) = f & ~0xA00;
-    U32(self, 0x528) = f & ~0xB00;
+    U32(self, MENU_NOTICE_FLAGS) |= 4;
+    f = U32(self, MENU_HUD_FLAGS);
+    U32(self, MENU_HUD_FLAGS) = f & ~0x800;
+    U32(self, MENU_HUD_FLAGS) = f & ~0xA00;
+    U32(self, MENU_HUD_FLAGS) = f & ~0xB00;
     g_game[0x10] = 0;
     self[0x112C] = 0;
     self[0x1138] = 0;
@@ -210,14 +210,14 @@ s32 menu_update_page(u8 *self, u32 key)
     s32 r = func_0883E928(self, key);
 
     if (r != 0)
-        pouch_backup_deliveries(*(void **)(self + 0x530));
+        pouch_backup_deliveries(*(void **)(self + MENU_PLAYER));
     return r;
 }
 
 /* layer 9: background */
 void menu_draw_layer0(u8 *self)
 {
-    self[0x534] = 9;
+    self[MENU_LAYER] = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(self);
     if (*(s16 *)(g_game + 0x6AF0E) == 13)
@@ -227,7 +227,7 @@ void menu_draw_layer0(u8 *self)
 /* layer 10: pages */
 void menu_draw_layer1(u8 *self)
 {
-    self[0x534] = 10;
+    self[MENU_LAYER] = 10;
     font_set_layer(g_font, 1);
     menu_begin_draw(self);
     if (self[0x52F] != 0)
@@ -239,7 +239,7 @@ void menu_draw_layer1(u8 *self)
 /* layer 11: typewriter text */
 void menu_draw_layer2(u8 *self)
 {
-    self[0x534] = 11;
+    self[MENU_LAYER] = 11;
     font_set_layer(g_font, 2);
     menu_begin_draw(self);
     if (self[0x5F0] != 0) {
@@ -270,7 +270,7 @@ void menu_draw_page(u8 *self)
     } else if (self[0x1118] == 0) {
         func_0883488C(self, 0);
     }
-    if (U32(self, 0x5E8) & 4)
+    if (U32(self, MENU_NOTICE_FLAGS) & 4)
         menu_draw_entry_desc(self);
 }
 
@@ -325,7 +325,7 @@ void menu_draw_main_page(u8 *self, int dim)
             col[4] = 10;
             col[6] = 10;
         }
-        if (U32(*(u8 **)(self + 0x530), 0x614) & 8)
+        if (U32(*(u8 **)(self + MENU_PLAYER), 0x614) & 8)
             col[1] = 10;
     } else {
         ids = (const u16 *)0x09B051AE;
@@ -333,11 +333,11 @@ void menu_draw_main_page(u8 *self, int dim)
             col[4] = 10;
             col[5] = 10;
         } else {
-            u8 *h = *(u8 **)(self + 0x530);
+            u8 *h = *(u8 **)(self + MENU_PLAYER);
 
             if ((u8)hud_event_state(self, h[0x298], h[0x299]) == 1)
                 col[5] = 10;
-            if (U32(*(u8 **)(self + 0x530), 0x614) & 8)
+            if (U32(*(u8 **)(self + MENU_PLAYER), 0x614) & 8)
                 col[5] = 10;
         }
         col[6] = 10;
@@ -371,7 +371,7 @@ s32 menu_input(u8 *self, u32 keys)
         }
     } else if (st[0] == 0) {
         menu_cursor_two_columns(self, self + 0x111C, keys, 14);
-        U16(self, 0x5FC) = self[0x111C];
+        U16(self, MENU_HELP_TEXT) = self[0x111C];
         if (keys & 0x4000) {
             if (menu_select_entry(self, self[0x111C]) == 0) {
                 st[0] += 1;
@@ -421,28 +421,28 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
         break;
     case 3:
         if (online) {
-            self[0x57E] = 0;
-            self[0x57F] = 0;
+            self[MENU_MODE] = 0;
+            self[MENU_SEL] = 0;
             self[0x580] = 0;
             self[0x5FE] = 0;
             r = 0;
-            U16(self, 0x5FC) = 12;
+            U16(self, MENU_HELP_TEXT) = 12;
         }
         break;
     case 4:
         if (online) {
-            self[0x57E] = 0;
-            self[0x57F] = 0;
+            self[MENU_MODE] = 0;
+            self[MENU_SEL] = 0;
             self[0x580] = 0;
             r = 0;
         }
         break;
     case 5:
         r = 0;
-        U32(self, 0x5E8) |= 4;
-        U16(self, 0x5FC) = 14;
-        self[0x57E] = 0;
-        self[0x57F] = 0;
+        U32(self, MENU_NOTICE_FLAGS) |= 4;
+        U16(self, MENU_HELP_TEXT) = 14;
+        self[MENU_MODE] = 0;
+        self[MENU_SEL] = 0;
         break;
     case 6: {
         u8 *g;
@@ -451,18 +451,18 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
 
         if (!online)
             return 1;
-        U32(self, 0x5E8) |= 4;
-        self[0x57E] = 0;
-        self[0x57F] = 0;
+        U32(self, MENU_NOTICE_FLAGS) |= 4;
+        self[MENU_MODE] = 0;
+        self[MENU_SEL] = 0;
         U32(self, 0x118C) = (u32)(g_game + 0x69BEC);
         g = g_game;
         for (k = 0; k < 13; k++, g += 0x70)
             if (g[0x69BEC] != 0)
                 n++;
         if (n == 0)
-            U16(self, 0x5FC) = 21;
+            U16(self, MENU_HELP_TEXT) = 21;
         else
-            U16(self, 0x5FC) = self[0x57F] + 18;
+            U16(self, MENU_HELP_TEXT) = self[MENU_SEL] + 18;
         r = 0;
         break;
     }
@@ -489,10 +489,10 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
             self[0x60A] = 1;
         else if (m == 1)
             self[0x60A] = 0;
-        U32(self, 0x5E8) |= 4;
+        U32(self, MENU_NOTICE_FLAGS) |= 4;
         self[0x5FE] = 3;
-        U16(self, 0x5FC) = 9;
-        self[0x57F] = 0;
+        U16(self, MENU_HELP_TEXT) = 9;
+        self[MENU_SEL] = 0;
         r = 0;
         break;
     }
@@ -502,9 +502,9 @@ s32 menu_select_entry(u8 *self, u32 i_arg)
         break;
     case 12:
         if (online && (u8)hud_event_state(self, h[0x298], h[0x299]) == 0
-            && (U32(*(u8 **)(self + 0x530), 0x614) & 8) == 0) {
-            self[0x57E] = 0;
-            self[0x57F] = 0;
+            && (U32(*(u8 **)(self + MENU_PLAYER), 0x614) & 8) == 0) {
+            self[MENU_MODE] = 0;
+            self[MENU_SEL] = 0;
             self[0x580] = 0;
             r = 0;
         }

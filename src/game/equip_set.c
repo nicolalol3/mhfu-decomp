@@ -54,7 +54,7 @@ void equip_check_armor(void *self, u8 *hunter);
  * skills (*sharp, *hits); returns the flags of what the skills changed */
 u16 equip_preview_weapon(u8 *self, u8 *eq, u8 *sharp, u8 *hits)
 {
-    void *hunter = *(void **)(self + 0x530);
+    void *hunter = *(void **)(self + MENU_PLAYER);
     u16 r = 0;
     u8 *w = equip_data_of(g_equip_data, eq);
     u8 k;
@@ -264,7 +264,7 @@ void equip_draw_skill_points(void *self, u32 id, s32 x, s32 y, u32 cmp, u32 flag
 /* saves the current equipment of the hunter in self (0x11BE) */
 void equip_save(void *self, u8 *hunter)
 {
-    u8 *d = (u8 *)self + 0x11BE;
+    u8 *d = (u8 *)self + MENU_SAVED_EQUIP;
     u8 *s = hunter + 0x4E8;
     int i;
 
@@ -283,7 +283,7 @@ void equip_restore(void *self, u8 *hunter)
         return;
     for (i = 0; i < 5; i++)
         EQ_COPY(hunter + 0x4F4 + i * 0xC, (u8 *)self + 0x11CA + i * 0xC);
-    EQ_COPY(hunter + 0x4E8, (u8 *)self + 0x11BE);
+    EQ_COPY(hunter + 0x4E8, (u8 *)self + MENU_SAVED_EQUIP);
     func_088D897C(hunter);
     func_088DAAA0(hunter);
     U8(hunter, 0x5F2) = func_088DAB94(hunter, S16(hunter, 0x60C));

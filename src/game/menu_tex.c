@@ -77,7 +77,7 @@ void tex_select(u8 *self, u32 tex, u32 file)
         TEX_CMDS(w, t.fmt, t.addr, t.w, pow2_log(D_08A62C40, t.w), lh, t.clut, t.clutn);
     }
     dl = D_08A62C40;
-    layer = self[0x534];
+    layer = self[MENU_LAYER];
     if (layer < 20) {
         u32 cur = U32(dl, 0x80198);
         s32 used = (s32)(cur - (u32)(dl + U32(dl, 4) * 0x40000 + 0x198)) / 4;
@@ -123,7 +123,7 @@ void tex_select_sprite(u8 *self, const s16 *spr)
     p[9] = 0xCB000000;
     p[10] = 0x10000000;
     p[11] = 0x08000000;
-    dl_link(D_08A62C40, p, 12, self[0x534]);
+    dl_link(D_08A62C40, p, 12, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 12);
 }
 
@@ -207,7 +207,7 @@ void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u
     p[17] = 0x04040004;
     p[18] = 0x10000000;
     p[19] = 0x08000000;
-    dl_link(D_08A62C40, p + 12, 8, self[0x534]);
+    dl_link(D_08A62C40, p + 12, 8, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 20);
     p = dl_cur(D_08A62C40);
     xe = (x + (w & 0xFFFF)) & 0xFFFF;
@@ -231,7 +231,7 @@ void gfx_fill_gradient(u8 *self, u32 x_arg, u32 y, u32 w, u32 h, u32 r, u32 g, u
     p[17] = 0x04040004;
     p[18] = 0x10000000;
     p[19] = 0x08000000;
-    dl_link(D_08A62C40, p + 12, 8, self[0x534]);
+    dl_link(D_08A62C40, p + 12, 8, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 20);
 }
 
@@ -262,14 +262,14 @@ s32 menu_give_items(u8 *self, u8 *hunter, u32 id, s32 key_arg, u32 flags_arg, u3
     if (S16(self, 0x119E) > 0 && key != U16(self, 0x119C))
         return -1;
     r = hunter_add_item(hunter, id, n, 0);
-    S16(self, 0x590) = 0;
+    S16(self, MENU_ITEM) = 0;
     if (r == 5) {
         if (item_combinable(D_08A62C50, id) != -1) {
             if (flags & 1)
                 menu_msg_push(self, 0, 12, 0);
             return 5;
         }
-        S16(self, 0x590) = id;
+        S16(self, MENU_ITEM) = id;
         self[0x52F] = 1;
         S16(self, 0x58E) = id;
         self[0x593] = n;
@@ -355,7 +355,7 @@ void gfx_dim_screen(u8 *self, s32 l)
     u8 old;
 
     func_08832B98(self, 1);
-    old = self[0x534];
+    old = self[MENU_LAYER];
     MENU_LAYER(self, l);
     gfx_draw_sprite_scaled(self, 0, 0, 480, 272, 264);
     MENU_LAYER(self, old);
@@ -381,9 +381,9 @@ void gfx_draw_panel(u8 *self, u32 x, u32 y, u32 w, u32 h, u32 c)
 /* frees the menu data loaded by menu_load_data */
 void menu_free_data(u8 *self)
 {
-    if (U32(self, 0x528) & 0x1000) {
+    if (U32(self, MENU_HUD_FLAGS) & 0x1000) {
         temp_free(g_heap, 11);
-        U32(self, 0x528) &= ~0x1000;
+        U32(self, MENU_HUD_FLAGS) &= ~0x1000;
     }
 }
 
@@ -428,7 +428,7 @@ void gfx_set_mask(u8 *self, int on)
         p[1] = 0xDF000032;
         p[2] = 0x10000000;
         p[3] = 0x08000000;
-        dl_link(D_08A62C40, p, 4, self[0x534]);
+        dl_link(D_08A62C40, p, 4, self[MENU_LAYER]);
         dl_set_cur(D_08A62C40, p + 4);
     } else {
         p[0] = 0x21000001;
@@ -436,7 +436,7 @@ void gfx_set_mask(u8 *self, int on)
         p[2] = 0xE1FFFFFF;
         p[3] = 0x10000000;
         p[4] = 0x08000000;
-        dl_link(D_08A62C40, p, 5, self[0x534]);
+        dl_link(D_08A62C40, p, 5, self[MENU_LAYER]);
         dl_set_cur(D_08A62C40, p + 5);
     }
 }
@@ -449,7 +449,7 @@ void gfx_set_filter(u8 *self, int on)
     p[0] = on == 0 ? 0xC6000000 : 0xC6000101;
     p[1] = 0x10000000;
     p[2] = 0x08000000;
-    dl_link(D_08A62C40, p, 3, self[0x534]);
+    dl_link(D_08A62C40, p, 3, self[MENU_LAYER]);
     dl_set_cur(D_08A62C40, p + 3);
 }
 

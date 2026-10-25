@@ -10,8 +10,8 @@ void menu_draw_main(void *self)
 {
     u8 layout[0x28];
 
-    if (U8(self, 0x57E) == 1) {
-        s8 m = U8(self, 0x57F);
+    if (U8(self, MENU_MODE) == 1) {
+        s8 m = U8(self, MENU_SEL);
 
         if (m == 2) {
             if (friend_marked(g_game) == 0) {
@@ -28,10 +28,10 @@ void menu_draw_main(void *self)
         } else if (m == 0) {
             menu_draw_trade_info(self);
         }
-    } else if (U8(self, 0x57E) == 0) {
+    } else if (U8(self, MENU_MODE) == 0) {
         menu_draw_page_list(self, 1);
         layout_build(layout, D_0893AFB4, 0, 0, 0);
-        layout_draw_from(self, D_0893AFB4, 0, U8(self, 0x57F), 0xFF, 0);
+        layout_draw_from(self, D_0893AFB4, 0, U8(self, MENU_SEL), 0xFF, 0);
     }
 }
 
@@ -44,20 +44,20 @@ void menu_draw_info(void *self)
     u8 *p;
 
     sprintf(buf, D_0893854C, text_menu(g_game, D_089AC7C4[0]));
-    if ((U32(self, 0x528) & 0x40) == 0) {
+    if ((U32(self, MENU_HUD_FLAGS) & 0x40) == 0) {
         layout_draw_box(self, (void *)&D_0893B040, (int)buf, -1, 0xFF, 0);
         font_printf_at_color(g_font, 0xFC, 0x86, 0, fmt_s, text_menu(g_game, D_089AC7C4[1]));
         return;
     }
     l = D_0893B040;
-    page = U8(self, 0x57F);
+    page = U8(self, MENU_SEL);
     if (GAME_FLAGS & 1)
         page = (page + 1) & 0xFF;
     if (page == 0)
         sprintf(buf, D_0893854C, text_menu(g_game, D_089AC7C4[2]));
     l.ptr = D_089AC7CC + page * 0x1A;
     layout_draw_box(self, &l, (int)buf, -1, 0xFF, 0);
-    layout_draw_pages(self, &l, U8(self, 0x57F), U8(self, 0x581), 0, 0);
+    layout_draw_pages(self, &l, U8(self, MENU_SEL), U8(self, MENU_SEL_N), 0, 0);
     font_printf_at_color(g_font, l.tx, (s16)(l.ty + l.lh - 2), 0, fmt_s, quest_text(g_quest, 0));
     gfx_fill_rect(self, l.tx, l.ty + l.lh * 2 - 3, l.w - 0x18, 1, 0x80, 0x80, 0x80);
     if (page == 3) {
@@ -92,17 +92,17 @@ void menu_draw_info(void *self)
 
 void menu_draw_item_box(void *self)
 {
-    menu_draw_status(self, (u8 *)U32(self, 0x530), U8(self, 0x57F));
+    menu_draw_status(self, (u8 *)U32(self, MENU_PLAYER), U8(self, MENU_SEL));
 }
 
 void menu_draw_equip_box(void *self)
 {
     u8 buf[12];
 
-    layout_draw_box(self, D_0893B068, (int)text_menu(g_game, *(u16 *)0x089AC860), U8(self, 0x57F), 0xFF, 0);
-    menu_draw_equipment(self, (u8 *)U32(self, 0x530), 1);
-    equip_draw_name_box(self, (u32)menu_get_equip_slot(self, buf, U8(self, 0x57F), (u8 *)U32(self, 0x530)), 8, 0x28,
-                  U8(self, 0x582) | 0x100, 0, 1);
+    layout_draw_box(self, D_0893B068, (int)text_menu(g_game, *(u16 *)0x089AC860), U8(self, MENU_SEL), 0xFF, 0);
+    menu_draw_equipment(self, (u8 *)U32(self, MENU_PLAYER), 1);
+    equip_draw_name_box(self, (u32)menu_get_equip_slot(self, buf, U8(self, MENU_SEL), (u8 *)U32(self, MENU_PLAYER)), 8, 0x28,
+                  U8(self, MENU_SEL2) | 0x100, 0, 1);
 }
 
 /* confirmation window with the name of the selected item */
@@ -117,7 +117,7 @@ void menu_draw_confirm(void *self)
 
     if (U8(self, 0x52F) < 3)
         return;
-    menu_draw_item_list(self, U8(self, 0x586), D_0893AA94[U8(self, 0x52F)], 0x10, 0);
+    menu_draw_item_list(self, U8(self, MENU_LIST_SEL), D_0893AA94[U8(self, 0x52F)], 0x10, 0);
     if (U8(self, 0x592) == 0) {
         const char *s;
         int n, t, w;
@@ -133,15 +133,15 @@ void menu_draw_confirm(void *self)
         *(s16 *)(l + 0) = 0xF0 - ((w & 0xFFFF) >> 1);
         s = text_menu(g_game, *(u16 *)0x089AC84C);
         layout_draw(self, l, s, 0xFF);
-        U32((u8 *)U32(self, 0x530), 0x614) &= ~1;
+        U32((u8 *)U32(self, MENU_PLAYER), 0x614) &= ~1;
     } else {
         m = U8(self, 0x593);
         if (m < 2) {
-            layout_draw(self, D_0893B108, text_item_name(g_game, U16(self, 0x590)), 0xFF);
+            layout_draw(self, D_0893B108, text_item_name(g_game, U16(self, MENU_ITEM)), 0xFF);
         } else {
             const char *fmt = text_menu(g_game, *(u16 *)0x089AC84E);
 
-            sprintf(buf, fmt, text_item_name(g_game, U16(self, 0x590)), (int)m);
+            sprintf(buf, fmt, text_item_name(g_game, U16(self, MENU_ITEM)), (int)m);
             layout_draw(self, D_0893B11C, buf, 0xFF);
         }
     }
@@ -149,7 +149,7 @@ void menu_draw_confirm(void *self)
     menu_draw_desc(self, 1, id, -1);
     m = U8(self, 0x52F);
     if (m == 5) {
-        layout_draw_from(self, D_0893B130, 0, U8(self, 0x537), 0xFF, 0);
+        layout_draw_from(self, D_0893B130, 0, U8(self, MENU_YESNO), 0xFF, 0);
         return;
     }
     if (m != 3) {
@@ -191,7 +191,7 @@ void menu_draw_page_list(void *self, s32 dim_arg)
     for (i = 0; i < 6; i++)
         col[i] = 0;
     if (page == 0) {
-        u8 *p = (u8 *)U32(self, 0x530);
+        u8 *p = (u8 *)U32(self, MENU_PLAYER);
 
         if ((s8)menu_special_mode(self) == 0 || (s8)menu_input_ready(self, 0) == 0 || (s8)func_09A6E5A8(p) == 1)
             col[1] = 10;
@@ -237,7 +237,7 @@ void menu_draw_help_keys(void *self)
 /* description of the current entry */
 void menu_draw_entry_desc(void *self)
 {
-    s16 id = S16(self, 0x5FC);
+    s16 id = S16(self, MENU_HELP_TEXT);
 
     if (U8(self, 0x5FE) == 3) {
         if (id == 8 && U8(self, 0x5E4) == 1)
@@ -270,10 +270,10 @@ void menu_draw_desc(void *self, u32 kind_arg, u32 id_arg, int arg)
         u16 it;
         const u8 *item;
 
-        if (U32(self, 0x528) & 0x200) {
+        if (U32(self, MENU_HUD_FLAGS) & 0x200) {
             y = 0x88;
             x = 0x48;
-        } else if (U32(self, 0x528) & 0x800) {
+        } else if (U32(self, MENU_HUD_FLAGS) & 0x800) {
             x = 0xD8;
             y = 200;
         }
@@ -288,16 +288,16 @@ void menu_draw_desc(void *self, u32 kind_arg, u32 id_arg, int arg)
         font_set_color(g_font, 0);
         return;
     }
-    f = U32(self, 0x528);
+    f = U32(self, MENU_HUD_FLAGS);
     if (f & 0x200)
         layout = (f & 0x10) ? D_0893B158 : D_0893B144;
     else if (f & 0x100)
         layout = D_0893B158;
-    else if (kind == 3 && S16(self, 0x5FC) == 8)
+    else if (kind == 3 && S16(self, MENU_HELP_TEXT) == 8)
         layout = D_0893B1A8;
     else if (kind == 3 && id < 9)
         layout = D_0893B194;
-    else if (kind == 3 && U16(self, 0x5FC) > 8)
+    else if (kind == 3 && U16(self, MENU_HELP_TEXT) > 8)
         layout = D_0893B180;
     else
         layout = D_0893B16C;

@@ -63,7 +63,7 @@ int skill_entry_fill(u8 *self, u8 *hunter, u8 *e, int cmp)
         U16(e, 0) += t * 0x80 + 0x4000;
     U16(e, 0) += e[3];
     if (cmp != 0) {
-        l = self + 0xA50;
+        l = self + MENU_LIST2;
         for (n = 54; n != 0; n--, l += 0x12) {
             if (l[2] == 0)
                 break;
@@ -129,11 +129,11 @@ void skill_list_add(u8 *self, void *hunter, u32 c, void *other)
     e[3] = c;
     if ((u8)skill_entry_fill(self, hunter, e, (int)other) != 1)
         return;
-    end = self + 0x684;
+    end = self + MENU_LIST;
     for (n = 54; end[2] != 0; end += 0x12)
         if (--n < 1)
             return;
-    pos = self + 0x684;
+    pos = self + MENU_LIST;
     for (n = 54; pos[2] != 0; pos += 0x12) {
         if (U16(pos, 0) <= U16(e, 0)) {
             for (q = end; q > pos; q -= 0x12)
@@ -284,7 +284,7 @@ int skill_applies_to_weapon(u8 *self, u8 *eq, u32 k_arg, const s8 *list)
         if ((s8)cls == 5 || (s8)cls == 1) {
             u32 w = U32(equip_data_of(g_equip_data, eq), 0x18);
 
-            return ((w | func_088D7DE8(*(void **)(self + 0x530))) & 0xE00) != 0;
+            return ((w | func_088D7DE8(*(void **)(self + MENU_PLAYER))) & 0xE00) != 0;
         }
         if ((s8)cls == 8)
             return 1;
@@ -393,13 +393,13 @@ int menu_slot_combine(u8 *self, s32 a_arg, s32 b_arg)
         return 0;
     ib = *(s16 *)pouch_slot(g_game, b);
     e = (u8 *)combo_find(D_08A62C50, ib, *(s16 *)pouch_slot(g_game, a), 0, 0, 0);
-    U32(self, 0x5A8) = (u32)e;
+    U32(self, MENU_TRADE) = (u32)e;
     if (e == NULL)
         return 0;
     if (combo_known(D_08A62C50, e, 0, 0) == 0)
         U16(self, 0x5B4) = 0xFFFF;
     else
-        U16(self, 0x5B4) = U16(*(u8 **)(self + 0x5A8), 2);
+        U16(self, 0x5B4) = U16(*(u8 **)(self + MENU_TRADE), 2);
     return 1;
 }
 
@@ -408,14 +408,14 @@ void menu_slot_restore(u8 *self)
 {
     int i;
 
-    if ((U32(self, 0x528) & 8) == 0)
+    if ((U32(self, MENU_HUD_FLAGS) & 8) == 0)
         return;
     for (i = 0; i < 2; i++)
         if (U16(self, 0x5AC + i * 2) != 0xFFFF)
-            hunter_add_item(*(void **)(self + 0x530), U16(self, 0x5AC + i * 2), 1, 0);
+            hunter_add_item(*(void **)(self + MENU_PLAYER), U16(self, 0x5AC + i * 2), 1, 0);
     if ((*(u32 *)(g_game + 0x6AF14) & 1) != 0)
-        pouch_backup_deliveries(*(void **)(self + 0x530));
-    U32(self, 0x528) &= ~8;
+        pouch_backup_deliveries(*(void **)(self + MENU_PLAYER));
+    U32(self, MENU_HUD_FLAGS) &= ~8;
 }
 
 extern const s16 D_08938AFC[][3], D_08939140[][3];
@@ -450,7 +450,7 @@ int menu_combo_has_slot(u8 *self, u32 s_arg)
  * -1 not this item, 0 none, 1 fewer than the result, 2 enough */
 int menu_combo_room(u8 *self, u16 *it)
 {
-    u8 *e = *(u8 **)(self + 0x5A8);
+    u8 *e = *(u8 **)(self + MENU_TRADE);
     s32 room;
 
     if (e == NULL)
@@ -462,7 +462,7 @@ int menu_combo_room(u8 *self, u16 *it)
     room = D_0899D19B[it[0] * 0x18] - (s16)it[1];
     if (room <= 0)
         return 0;
-    if (room < (u8)combo_amount(D_08A62C50, *(void **)(self + 0x5A8)))
+    if (room < (u8)combo_amount(D_08A62C50, *(void **)(self + MENU_TRADE)))
         return 1;
     return 2;
 }

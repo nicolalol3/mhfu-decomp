@@ -35,7 +35,7 @@ int menu_special_mode(void *self)
 {
     if ((*(u32 *)(g_game + 0x6AF14) & 1) != 0)
         return 1;
-    if ((U32(*(void **)((u8 *)self + 0x530), 0x614) & 4) != 0)
+    if ((U32(*(void **)((u8 *)self + MENU_PLAYER), 0x614) & 4) != 0)
         return 1;
     return 0;
 }
@@ -48,7 +48,7 @@ void menu_draw_messages(void *self)
 
     if (save_in_progress(g_game) == 1)
         return;
-    U8(self, 0x534) = 14;
+    U8(self, MENU_LAYER) = 14;
     font_set_layer(g_font, 5);
     menu_begin_draw(self);
     menu_msg_next(self);
@@ -138,8 +138,8 @@ void menu_set_state(void *self)
     U32(self, 0x1214) = 3600;
     U8(self, 0x1218) = 0;
     U8(self, 0x5FE) = 6;
-    U16(self, 0x5FC) = 4;
-    U32(self, 0x5E8) |= 4;
+    U16(self, MENU_HELP_TEXT) = 4;
+    U32(self, MENU_NOTICE_FLAGS) |= 4;
 }
 
 void menu_set_state_ex(void *self)
@@ -187,7 +187,7 @@ void menu_begin_draw(void *self)
     p[9] = 0xC6000000;
     p[10] = 0x10000000;
     p[11] = 0x08000000;
-    dl_link(D_08A62C40, p, 12, U8(self, 0x534));
+    dl_link(D_08A62C40, p, 12, U8(self, MENU_LAYER));
     dl_set_cur(D_08A62C40, p + 12);
 }
 
@@ -196,7 +196,7 @@ void menu_page_back(void *self)
 {
     U8(self, 0x585) -= 1;
     sound_play(g_sound, 0, 20, 0, 0, 0, 0, 0, 0);
-    S16(self, 0x5FC) = menu_slot_first(self, U8(self, 0x586)) + 24;
+    S16(self, MENU_HELP_TEXT) = menu_slot_first(self, U8(self, MENU_LIST_SEL)) + 24;
 }
 
 /* two equipment names side by side with a blinking arrow */
@@ -461,12 +461,12 @@ int menu_load_data(u8 *self)
 {
     s32 st;
 
-    if (U32(self, 0x528) & 0x1000)
+    if (U32(self, MENU_HUD_FLAGS) & 0x1000)
         return 1;
     st = U32(self, 0x1198);
     if (st == 2) {
         U32(self, 0x1198) = 0;
-        U32(self, 0x528) |= 0x1000;
+        U32(self, MENU_HUD_FLAGS) |= 0x1000;
         return 1;
     }
     if (st == 1) {
