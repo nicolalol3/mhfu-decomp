@@ -609,12 +609,12 @@ int camera_player_in_zone(void *cam, u8 *zone, u32 mask_arg)
             u8 *pl = (u8 *)U32(cam, CAM_PLAYER);
             f32 d[3], h;
 
-            d[0] = F32(pl, 0x200) - F32(part, 0x20);
-            d[1] = F32(pl, 0x204) - F32(part, 0x24);
-            d[2] = F32(pl, 0x208) - F32(part, 0x28);
+            d[0] = F32(pl, E_POS) - F32(part, 0x20);
+            d[1] = F32(pl, E_POS + 4) - F32(part, 0x24);
+            d[2] = F32(pl, E_POS + 8) - F32(part, 0x28);
             h = F32(part, 0x30) * d[0] + F32(part, 0x34) * d[1] + F32(part, 0x38) * d[2];
             if (0.0f <= h && h <= F32(part, 0x3C) &&
-                camera_point_in_quad(cam, (f32 *)part, &F32(pl, 0x200)) == 0)
+                camera_point_in_quad(cam, (f32 *)part, &F32(pl, E_POS)) == 0)
                 return 0;
         }
     }

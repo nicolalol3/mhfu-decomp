@@ -197,8 +197,8 @@ void hud_draw_players(u8 *self, s32 layer)
     l.h = (u16)l.h - (4 - (s8)g_net_players[0xEE3]) * 16;
     layout_draw_box(self, &l, 0, -1, 255, 0);
     h = (u8 *)player_get(g_players, G_MY_SLOT);
-    if (func_0883B498(self, U16(h, 0x1E6)) != -1)
-        func_0883B53C(self, l.tx, l.ty, func_0883B498(self, U16(h, 0x1E6)), 0);
+    if (func_0883B498(self, U16(h, E_SLOT)) != -1)
+        func_0883B53C(self, l.tx, l.ty, func_0883B498(self, U16(h, E_SLOT)), 0);
     k = 1;
     for (u = 0; (s32)u < (s8)g_net_players[0xEE3]; u++) {
         u8 *p = g_net_players;
@@ -552,22 +552,22 @@ void hud_draw_names(u8 *self, s32 layer)
         } else {
             u8 *p;
 
-            if (func_0883B498(self, U16(h, 0x1E6)) == -1)
+            if (func_0883B498(self, U16(h, E_SLOT)) == -1)
                 continue;
-            p = g_net_players + (func_0883B498(self, U16(h, 0x1E6)) & 0xFF) * 200;
+            p = g_net_players + (func_0883B498(self, U16(h, E_SLOT)) & 0xFF) * 200;
             lvl = p[0x604];
             name = (const char *)(p + 0x584);
         }
-        in[0] = F32(h, 0x200);
-        in[1] = F32(h, 0x204) + 190.0f;
-        in[2] = F32(h, 0x208);
+        in[0] = F32(h, E_POS);
+        in[1] = F32(h, E_POS + 4) + 190.0f;
+        in[2] = F32(h, E_POS + 8);
         in[3] = 1.0f;
         camera_world_to_screen(g_camera, pos, in);
         if (!(pos[0] < 700.0f) || pos[0] <= -60.0f || !(pos[1] < 500.0f) || pos[1] <= -20.0f
             || pos[3] <= 0.0f)
             continue;
         sh = (s16)((wstr_len(D_089CBBE8, (const s16 *)name) << 4) >> 2);
-        menu_draw_sprite(self, (u16)(SCR(pos[0]) - sh - 14), (u16)(SCR(pos[1]) - 2), D_0893AE68[h[0x1E8]]);
+        menu_draw_sprite(self, (u16)(SCR(pos[0]) - sh - 14), (u16)(SCR(pos[1]) - 2), D_0893AE68[h[E_KIND]]);
         font_set_color(g_font, 1);
         font_puts_at(g_font, (s16)(SCR(pos[0]) - sh + 1), (s16)(SCR(pos[1]) + 1), name);
         switch (lvl) {
@@ -586,12 +586,12 @@ void hud_draw_names(u8 *self, s32 layer)
                 QUEST_MARK(c, D_0893983C, 0x8C);
             }
         } else {
-            s8 st = g_net_players[(func_0883B498(self, U16(h, 0x1E6)) & 0xFF) * 200 + 0x63B];
+            s8 st = g_net_players[(func_0883B498(self, U16(h, E_SLOT)) & 0xFF) * 200 + 0x63B];
 
             if (st == 3 || st == 4) {
-                u8 c = func_0889E1BC(g_net_players, func_0883B498(self, U16(h, 0x1E6)));
+                u8 c = func_0889E1BC(g_net_players, func_0883B498(self, U16(h, E_SLOT)));
 
-                if (g_net_players[(func_0883B498(self, U16(h, 0x1E6)) & 0xFF) * 200 + 0x63A] == 0) {
+                if (g_net_players[(func_0883B498(self, U16(h, E_SLOT)) & 0xFF) * 200 + 0x63A] == 0) {
                     if (st == 3 || (*(u32 *)(g_sys + 0xF7A554) & 0x10) != 0)
                         QUEST_MARK(c, D_08939830, 0x8B);
                 } else {

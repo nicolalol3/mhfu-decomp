@@ -182,7 +182,7 @@ void menu_set_hunter_name(void *self, u8 *hunter)
     if ((OPT_FLAGS & 1) == 0)
         name = g_game + 0x4A0;
     else
-        name = g_net_players + hunter[0x1E6] * 200 + 0xBC8;
+        name = g_net_players + hunter[E_SLOT] * 200 + 0xBC8;
     func_088911A0(g_font, name);
 }
 

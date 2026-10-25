@@ -326,9 +326,9 @@ void equip_set_weapon(u8 *hunter, u8 *eq)
 {
     EQ_COPY(hunter + 0x4E8, eq);
     U16(hunter, 0x534) = weapon_base_id(g_equip_data, hunter + 0x4E8);
-    U8(hunter, 0x1E8) = item_rarity(g_equip_data, U16(hunter, 0x534));
-    U8(hunter, 0x5F3) = table_314fc_a(g_equip_data, U8(hunter, 0x1E8));
-    U8(hunter, 0x5F4) = table_314fc_b(g_equip_data, U8(hunter, 0x1E8));
+    U8(hunter, E_KIND) = item_rarity(g_equip_data, U16(hunter, 0x534));
+    U8(hunter, 0x5F3) = table_314fc_a(g_equip_data, U8(hunter, E_KIND));
+    U8(hunter, E_SIZE_SHOWN) = table_314fc_b(g_equip_data, U8(hunter, E_KIND));
     U8(hunter, 0x5F5) = bowgun_byte13(g_equip_data, hunter + 0x4E8);
     func_088DAAA0(hunter);
     U8(hunter, 0x5F2) = func_088DAB94(hunter, S16(hunter, 0x60C));

@@ -136,6 +136,22 @@ enum {
     MENU_SAVED_EQUIP = 0x11BE, /* saved equipment of the hunter */
 };
 
+/* fields of the entities (hunters and monsters), for U8/U16/S16/F32(e, ...) */
+enum {
+    E_SLOT = 0x1E6,             /* u16 player slot / entity slot */
+    E_KIND = 0x1E8,             /* u8 monster kind */
+    E_ANGLE = 0x1F4,
+    E_POS = 0x200,              /* f32 x, y, z */
+    E_SIZE = 0x274,             /* u16 */
+    E_AREA = 0x29A,             /* u16 */
+    E_LIFE = 0x2E4,             /* s16 */
+    E_QINDEX = 0x4AC,           /* s16 QuestMonster.index */
+    E_SIZE_CLASS = 0x4BC,       /* s8 */
+    E_DELIVERED = 0x542,        /* 4 x {u16 item, s16 count} */
+    E_SIZE_SHOWN = 0x5F4,       /* s16 */
+    E_PARTS = 0x774             /* u16 parts broken */
+};
+
 /* fields of the general game state (g_game) and of the system object (g_sys) */
 #define G_MY_SLOT           g_game[0x28]        /* slot (0-3) of the local player */
 #define G_QUEST_STATE       g_game[0x2E]        /* QS_* */

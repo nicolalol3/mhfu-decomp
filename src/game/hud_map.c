@@ -528,7 +528,7 @@ int hud_draw_item_name(u8 *self, u32 slot_arg, s32 y)
     n = ((u8 *)pouch_slot(g_game, slot))[2];
     if (n == 0)
         return 0;
-    if (h[0x1E8] == 10)
+    if (h[E_KIND] == 10)
         color = (slot == h[0x5F6]) ? 5 : 0;
     else
         color = (it[8] == h[0x689]) ? 0 : 5;

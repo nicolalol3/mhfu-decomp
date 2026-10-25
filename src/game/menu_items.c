@@ -367,7 +367,7 @@ void dl_link(void *dl, u32 *p, int n, u8 layer);
 /* 1 if the menu accepts input now (for the player of hunter, when given) */
 int menu_input_ready(u8 *self, u8 *hunter)
 {
-    if (hunter != NULL && U16(hunter, 0x1E6) != G_MY_SLOT)
+    if (hunter != NULL && U16(hunter, E_SLOT) != G_MY_SLOT)
         return 0;
     if (self[0x52F] != 0)
         return 0;

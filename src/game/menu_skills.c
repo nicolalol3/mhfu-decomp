@@ -172,10 +172,10 @@ void skill_update_hunter(void *self, u8 *hunter)
     v = func_08828658(self, hunter);
     v = (s8)g_game[0x6993C] + 100 + v;
     if (v < 151) {
-        S16(hunter, 0x2E4) = v;
+        S16(hunter, E_LIFE) = v;
     } else {
         v = 150;
-        S16(hunter, 0x2E4) = 150;
+        S16(hunter, E_LIFE) = 150;
     }
     S16(hunter, 0x41E) = v;
     S16(hunter, 0x62E) = *(s16 *)(g_game + 0x69938) + 300;
