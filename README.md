@@ -35,22 +35,16 @@ to **behave** the same way.
 
 ## Readability
 
-The code is written first with raw offsets (`U32(self, 0x28)`), then, once a part of the game
-is complete and tested, it is cleaned up: structures with named fields, names instead of
-`func_XXXXXXXX` / `D_XXXXXXXX`, named constants. Done so far: the quest system
-(`src/game/quest*.c`, `include/quest.h`). With structures GCC can keep fields in registers, so
-the compiled code changes a little: the cleaned functions are checked again with the test bench.
+The code is written first with raw offsets (`U32(self, 0x28)`), then cleaned up once a part of
+the game is complete and tested:
+- quest system (`src/game/quest*.c`, `include/quest.h`): structures with named fields, named
+  constants for goals and script commands (the changed functions were re-checked with the
+  test bench, since with structures GCC keeps fields in registers);
+- camera (`include/camera.h`), result screens (`include/result.h`), menu (`MENU_*` in
+  `include/menu.h`), file loader, object manager, entities (`E_*`), game state (`G_*`):
+  named offsets used with `U8/U16/U32/F32(...)`, so the compiled code does not change;
+- functions and global objects with a known name are written with it (`g_game`, `g_font`,
+  `font_printf_at`, ...); `symbols.txt` has the names.
 
-## Commands (run by Claude)
-
-```
-wsl.exe -d Ubuntu -- bash tools/build.sh                 # compiles and creates build/EBOOT.BIN
-tools/.venv/Scripts/python.exe -I tools/difftest.py      # test bench
-tools/boottest.sh 25                                     # boot test in PPSSPP
-python tools/progress.py                                 # percentage completed
-```
-
-## Status
-
-See `python tools/progress.py`. The percentage refers only to the EBOOT (1,089,080 bytes of
-code); the game loads other code (overlays) from `DATA.BIN`, which is not counted yet.
+What is still a raw offset or a `func_XXXXXXXX` is a part of the game whose meaning is not
+known yet: it becomes clear by decompiling the code around it.
