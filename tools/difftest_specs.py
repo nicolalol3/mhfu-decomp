@@ -494,3 +494,17 @@ def layout_pages_spec(rng, args, fargs, scratch):
 SPECS.update({
     "layout_draw_pages": layout_pages_spec,
 })
+
+
+# --- camera (game code) --------------------------------------------------------------
+
+def spline_build_spec(rng, args, fargs, scratch):
+    """spline_build: a rail has 2-16 points (more overflow the arrays on the stack)."""
+    args = list(args)
+    args[2] = rng.randrange(2, 17)
+    return args, fargs, scratch
+
+
+SPECS.update({
+    "spline_build": spline_build_spec,
+})

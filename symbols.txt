@@ -1306,11 +1306,493 @@
 0x0887B7E0 result_flags_update
 0x0887B8D8 result_flags_draw
 
-# --- not decompiled yet: names only (guessed from what they do) ---
+# --- result screens 4 (src/game/result_extra.c) ---
+0x0887BB48 result_check_flags
+0x0887C708 result_notice_init
+0x0887C724 result_notice_update
+0x0887C81C result_notice_draw
+0x0887CA08 net_is_leader
+0x0887CA4C crowns_large_all
+0x0887CAFC crowns_small_all
+0x0887CBAC hunted_list_a
+0x0887CC28 hunted_list_b
+0x0887CCAC result_rankup_init
+0x0887CD04 result_rankup_update
+0x0887CDFC result_rankup_draw
+0x0887D02C font_draw_centered
+0x0887D0B4 result_tscore_init
+0x0887D0D0 result_tscore_compute
+0x0887D65C result_tscore_update
+0x0887D884 result_tscore_draw
+0x0887DD88 result_tpoints_init
+0x0887DDD0 result_tpoints_update
+0x0887E030 result_tpoints_draw
+0x0887E320 result_tscore_save
+0x0887E9AC hrp_scale
+0x0887EA88 training_restore_all
+0x0887EB20 training_restore_equip
+0x0887EB80 quest_elapsed_seconds
+0x0887EBFC result_log_events
+
+# --- sound system (src/game/sound.c) ---
+0x0887F464 posobj_ctor
+0x0887F4F0 posobj_dtor
+0x0887F54C posobj_update
+0x0887F794 sndbank_ctor
+0x0887F7F8 sndbank_dtor
+0x0887F848 sndbank_init
+0x0887F8D4 sndbank_update
+0x0887F934 sndbank_rand_cb
+0x0887FAB4 sndbank_pause
+0x0887FAEC sndbank_resume
+0x0887FB28 sndbank_set_mode
+0x0887FBBC sndbank_get_mode
+0x0887FBC4 sndbank_clear_slot
+0x0887FBF8 sndbank_clear_all
+0x0887FC40 sndbank_set_slot
+0x0887FCBC sndbank_set_a
+0x0887FCD4 sndbank_set_b
+0x0887FCEC sndbank_set_c
+0x0887FD04 sndbank_clear_a
+0x0887FD2C sndbank_clear_b
+0x0887FD48 sndbank_clear_c
+0x0887FD64 sndbank_clear_abc
+0x0887FDAC sndbank_get_w0
+0x0887FDC4 sndbank_get_w1
+0x0887FDDC sndbank_get_w2
+0x0887FDF4 sndbank_get_a
+0x0887FE0C sndbank_get_b
+0x0887FE24 sndbank_get_c
+0x0887FE3C sndbank_is_playing
+0x0887FE5C sndbank_select
+0x0887FEE4 sndbank_select_raw
+0x0887FF1C sndbank_get_selected
+0x0887FF24 sndbank_slot_ready
+0x0887FF74 sndbank_slot_play
+0x0887FFE0 sndbank_data_size
+0x0887FFE8 sndbank_play
+0x088800C0 sndbank_play_f
+0x088801A0 sndbank_play_at
+0x088801E8 sndbank_play_at_f
+0x08880254 sndbank_set_3
+0x08880294 sndbank_stop_voice
+0x088802C4 sndbank_stop_ch
+0x088802F4 sndbank_stop_all
+0x08880324 sndbank_check
+0x08880350 sndbank_set_params
+0x08880378 sndbank_fx_init
+0x08880384 sndbank_fade_in
+0x088803A4 sndbank_fade_out
+0x088803C4 sndbank_start_fade
+0x088803D8 sndbank_set_volume
+0x088803E4 sndbank_set_global_a
+0x088803F0 sndbank_set_global_b
+0x088803FC sound_ctor
+0x08880498 sound_dtor
+0x0888051C sound_load_prx
+0x088805A0 sound_prx_thread
+0x08880660 sound_start
+0x08880708 sound_update
+0x08880760 sound_set_mode
+0x0888076C sound_bgm_play
+0x088807CC sound_bgm_area
+0x08880864 sound_set_vol_a
+0x08880874 sound_set_vol_b
+0x08880884 sound_scale7
+0x088808B0 sound_percent
+0x088808DC sound_request_change
+0x08880A70 sound_request_load
+0x08880CF8 sound_slot_clear
+0x08880D64 sound_slot_set
+
+# --- sound data loading (src/game/sound_load.c) ---
+0x08880D94 sound_drop_loaded
+0x08880E50 sound_request_monsters
+0x08881114 sound_request_one
+0x088812B4 music_request
+0x088813E0 music_stop_all
+0x08881438 music_slot_clear
+0x08881458 music_request3
+0x088816AC music_size
+0x088817E8 music_set_size
+0x08881824 sound_req_done
+0x08881840 sound_load_step
+0x08881970 sound_loading
+0x088819D0 music_loading
+0x08881A30 sound_req_step_change
+0x08881CE0 sound_req_step_load
+0x08882014 sound_req_step_monsters
+0x088823B0 sound_req_step_one
+0x088825FC music_req_step
+0x08882750 music_req_step3
+0x0888291C music_place
+0x08882A74 music_select_set
+0x08882AEC music_set_volume
+0x08882B4C music_state
+0x08882B58 music_fade
+0x08882B68 music_fade_both
+0x08882BB8 music_fade_full
+0x08882C24 music_fade_to
+0x08882C90 music_fading
+0x08882CFC music_current
+0x08882D20 music_play_full
+
+# --- playing the sounds (src/game/sound_play.c) ---
+0x08882D9C music_play
+0x08882E24 music_play_vol
+0x08882EA0 music_play_fade
+0x08882F10 music_set_both
+0x08882F58 music_stop_player
+0x08882F64 music_busy
+0x08882FA4 sound_set_slots
+0x0888307C sound_set_slots_range
+0x08883268 sound_clear_channel
+0x088832B4 sound_select_bank
+0x088832F8 sound_select_bank_range
+0x0888334C sound_set_data_size
+0x08883374 sound_listener_reset
+0x088838B0 sound_play_raw
 0x08883988 sound_play
+0x08883A80 sound_play_b
+0x08883B54 sound_play_3d
+0x08883DE4 sound_play_3d_center
+0x08883FF0 sound_volume_at
+0x088846F4 sound_curve_at
+0x08884748 sound_play_at
+0x0888491C sound_play_monster_at
+0x088849B4 sound_dist_volume
+0x08884CE4 sound_curve_volume
+0x08885088 sound_curve_volume2
+0x08885494 sound_set3
+0x088854A0 sound_stop
+0x08885530 sound_stop_all
+0x088855C4 sound_check
+0x088855D0 sound_monster_channel
+0x08885644 sound_fade_in_all
+0x0888571C sound_fade_in_all2
+0x08885798 sound_fade_out_all
+0x08885870 sound_fade_out_all2
+0x088858EC sound_area_volume
+0x08885D80 sound_mgr3_ctor
+
+# --- music (src/game/music.c) ---
+0x08885DB0 musctl_dtor
+0x08885E00 musctl_reset
+0x08885E3C musctl_jingle
+0x08885E9C musctl_end_jingle
+0x08885F50 musctl_update
+0x08886074 musctl_set_music
+0x08886098 musctl_set_x18
+0x088860A0 musctl_item_jingle
+0x0888616C musctl_is_battle
+0x088862A8 musctl_lower
+0x0888637C musplay_ctor
+0x088863BC musplay_dtor
+0x0888640C musplay_init
+0x08886468 musplay_update
+0x08886530 musplay_clear_player
+0x08886568 musplay_clear_players
+0x088865B0 musplay_clear_entry
+0x088865D0 musplay_clear_entries
+0x08886618 musplay_set_entry
+0x08886638 musplay_set_loaded
+0x0888664C musplay_unload
+0x08886664 musplay_entry_addr
+0x08886674 musplay_open
+0x088866D8 musplay_find
+0x0888670C musplay_entry_id
+0x0888671C musplay_state
+0x08886734 musplay_fading
+0x08886780 musplay_start
+0x088867F4 musplay_stop
+0x08886834 musplay_set_x
+0x08886850 musplay_set_volume
+0x08886870 musplay_fade
+0x088868A0 musplay_set_global
+
+# --- camera modes (src/game/camera_modes.c) ---
+0x088868AC cammode_start
+0x088883B8 cammode_none
+0x08889C90 cammode_init_3
+0x0888A164 cammode_init_4
+0x0888A190 cammode_update_4
+0x0888A1D0 cammode_init_5
+0x0888A1FC cammode_update_5
+0x0888A330 camrail_update
+0x0888A388 camrail_move
+0x0888A49C camrail_set
+0x0888A538 camrail_follow
+0x0888A668 cammode_lockon
+
+# --- camera scripts (src/game/camera_script.c) ---
+0x0888AF68 cam_ease
+0x0888AFEC camscript_update
+0x0888B1C0 camscript_run
+0x0888B7FC camrail_point
+0x0888B884 camrail_nearest
+0x0888B994 camrail_locate
+0x0888BB40 camrail_clamp
+
+# --- camera splines (src/game/camera_spline.c) ---
+0x0888C294 cam_remap
+0x0888C318 cam_lerp_value
+0x0888C344 cam_lerp_angle
+0x0888C3AC spline_build
+0x0888C794 spline_solve
+0x0888C9F8 cam_event_update
+
+# --- camera helpers (src/game/camera_util.c) ---
+0x0888D004 cam_read_buttons
+0x0888D1BC cam_roof_height
+0x0888D600 cam_can_turn
+0x0888D708 cam_lockon_active
+0x0888D734 cam_fall_follow
+0x0888D888 cam_weapon_kind
+0x0888DA60 poly5_roots
+0x0888E1C8 vec3_dot
+0x0888E1F8 vec2_dot_xz
+0x0888E218 cam_event_monster
+0x0888E28C cam_script_angles
+0x0888E324 cam_blend_start
+0x0888E350 cam_blend_area
+0x0888E3DC cam_blend_step
+0x0888E494 cam_can_look
+0x0888E5B8 cam_ground_height
+0x0888E634 cam_angle_bump
+0x0888EA44 cam_script_copy
+
+# --- camera helpers 2 (src/game/camera_util.c) ---
+0x0888FBD4 cam_update_target
+0x0888FCE4 cam_facing
+
+# --- system object (src/game/sys.c) ---
+0x0888FD38 sys_main_loop
+0x0888FDFC sys_init
+0x08890020 sys_exit_thread
+0x08890080 sys_seed
+0x088900A0 sys_restore_seed
 0x088900C4 game_rand
+0x08890114 game_rand_saved
+0x08890144 sys_load_overlay
+0x088901E0 sys_loader_busy
+0x088901F8 sys_overlay_ready
+0x08890284 sys_overlay_is
+0x088902A8 sys_set_text_kind
+0x088903BC sys_lang_code
+0x08890430 sys_start_prio_thread
+0x08890494 sys_prio_thread
+0x08890544 sys_prio_restore
+0x088905B0 sys_create_vtimer
+0x088905EC sys_start_vtimer
+0x0889064C sys_vtimer_handler
+0x08890718 sys_read_language
+
+# --- font (src/game/font.c) ---
+0x088907D8 font_init
+0x088908FC font_init_textures
+0x08890B38 font_clear_cache
+0x08890BBC font_begin_frame
+0x08890C94 font_set_palette
+0x08890CE0 font_init_palette
+0x08890D90 font_add_color
+0x08890DE8 font_set_size
+0x08890DFC font_set_pos
+0x08890E08 font_set_layer
+0x08890E38 font_set_color
+0x08890E40 font_set_height2
+0x08890E48 font_char_count
+0x08890ED4 font_line_char_count
+0x08890F68 font_strlen
+0x08890F70 font_text_width
+0x08891074 font_line_width
+0x088911A0 font_push_text
+0x088912BC font_puts_at
+0x088912F8 font_puts_at_color
+
+# --- font printing (src/game/font_print.c) ---
+0x0889134C font_printf
+0x08891474 font_printf_at
+0x088915B0 font_printf_at_color
+0x08891700 font_printf_at_raw
+0x0889183C font_printf_at_color_raw
+0x0889198C font_print_shadow
+0x08891A28 font_draw_layer
+0x08891B14 font_draw_layers
+0x08891B5C font_first_char_width
+0x08891BC8 font_to_full_width_utf8
+0x08891D4C font_to_full_width_sjis
+0x08891E0C font_cache_string
+0x08891F1C font_count_utf8
+0x08891F88 font_count_sjis
+0x08892004 font_draw
+0x088920A8 font_draw_at
+0x08892148 font_draw_at_color
+
+# --- font glyphs (src/game/font_glyph.c) ---
+0x08892E7C font_open_system
+0x08892F18 font_lib_alloc
+0x08892FB0 font_begin_layer
+0x088930A0 font_end_layer
+0x088930A8 glyph_mark_layer
+0x08893198 glyph_cache_add
+0x088932A8 glyph_cache_slot
+0x08893390 glyph_render_all
+0x08893444 glyph_render
+0x0889377C font_draw_entry
+
+# --- font drawing (src/game/font_draw.c) ---
+0x08893894 glyph_draw
+0x08894754 font_store_text
+0x08894874 font_char_kind
+0x08894988 font_layer_dl
+0x088949EC font_blink_color
+0x08894B00 font_cache_digits
+0x08894EE4 font_tag_number
+0x08895220 font_add_icon
+0x088952A4 font_char_advance
+0x08895538 scenes_update
+0x0889560C scene_slot_used
+
+# --- font tags (src/game/font_draw.c) ---
+0x08894B0C font_parse_tag
+0x08894F7C font_get_char
+0x088952E4 font_is_accented_capital
+
+# --- scene manager (src/game/scene_mgr.c) ---
+0x08895644 scene_start
+
+# --- help pages (src/game/help.c) ---
+0x08895EA0 help_init
+0x08895F3C help_open
+0x08895FFC help_input
+0x0889615C help_list_open
+0x08896228 help_list_input
+0x0889645C help_draw
+0x08896484 help_list_draw
+0x088965D8 help_page_draw
+0x088966C0 help_popup
+0x0889695C help_check_list
+0x08896A50 help_check_flag
+0x08896AD4 help_check_first
+
+# --- help page data (src/game/help.c) ---
+0x08896C10 help_pages
+0x08896C2C help_page_known
+0x08896C58 help_page_title
+0x08896CA0 help_page_line
+0x08896CF8 help_page_lines
+0x08896D24 help_list_box
+0x08896EB8 help_page_box
+
+# --- scene objects (src/game/scene_mgr.c) ---
+0x088971F0 scene_obj_step
+
+# --- system sound libraries (src/game/sas.c) ---
+0x08897290 placement_new
+0x08897298 stub_nop
+0x088972A0 sas_core
+0x088972F8 sas_init
+0x088973F8 sas_key_on
+0x08897434 sas_key_off
+0x08897470 sas_set_volume
+0x088974D4 sas_set_pitch
+0x08897524 sas_set_voice
+0x08897580 sas_set_adsr
+0x088975D4 sas_end_flags
+0x08897610 sas_rev_von
+0x088976A4 sas_rev_evol
+0x08897738 sas_rev_type
+0x088977BC sas_rev_param
+0x08897850 sas_init_default
+0x0889786C audio_init
+0x088979B4 audio_set_voice_volume
+0x08897A08 audio_set_len
+0x08897A78 audio_set_volume
+0x08897AE0 audio_output
+0x08897B48 audio_set_format
+0x08897B84 audio_rest
+0x08897BC0 fpu_set_fcsr
+0x08897BD8 vec4_add
+
+# --- text formatter (src/game/font_format.c) ---
+0x08893C6C text_format
+
+# --- font icons (src/game/font_draw.c) ---
+0x08892A88 font_draw_icons
+
+# --- font tagged text (src/game/font_print.c) ---
+0x088921FC font_draw_tagged
+0x08892708 font_tagged_char
+
+# --- global objects (src/game/globals.c) ---
+0x08897E1C game_main
+0x08897E5C loader_dtor
+0x08898350 set_d09a44c60
+0x08898360 set_d09a4f06c
+0x08898370 equip_data_ctor
+0x08898380 set_d08a62c50
+0x08898390 result_ctor
+0x088983A0 quest_obj_ctor
+0x088983B0 net_ctor
+0x088983C4 net_players_ctor
+0x088983D8 set_d09a1fddc
+0x088983E8 set_d08a62c60
+0x088983FC textconv_ctor
+0x0889840C font_ctor
+0x0889841C vram_ctor
+0x0889842C loader_ctor
+0x08898460 loader_base_dtor
+0x088984A8 pad_ctor
+0x088984B8 scenes_ctor
+0x08898510 dl_ctor
+0x08898520 sys_ctor
+0x08898530 heap_ctor
+0x08898540 heap_dtor
+
+# --- temporary memory, network start (src/game/temp_mem.c) ---
+0x08898590 temp_init
 0x08898694 temp_alloc
 0x08898748 temp_free
+0x088987D4 temp_free_ptr
+0x0889885C temp_find_free
+0x08898898 temp_get
+0x088988EC net_init_state
+0x08898948 net_reset
+0x0889942C net_get_mac
+0x08899874 net_start
+
+# --- network (src/game/temp_mem.c) ---
+0x08899D00 net_join_by_mac
+0x08899D9C net_connect_index
+0x08899DE0 net_join
+0x08899E80 net_select
+0x08899F30 net_select_mac
+0x08899FBC net_connect_mac
+0x0889A138 net_cb_create
+0x0889A1E4 net_cb_connect
+0x0889A290 net_cb_leave
+0x0889A32C net_cb_join
+0x0889A3D8 net_cb_players
+0x0889A554 net_cb_scan
+
+# --- network callbacks (src/game/temp_mem.c) ---
+0x0889A614 net_cb_host
+0x0889A700 net_cb_joined
+0x0889A828 net_cb_rooms
+0x0889A918 net_cb_left
+0x0889AA08 net_cb_closed
+0x0889AACC net_cb_info
+0x0889ABA4 net_cb_end
+
+# --- network session (src/game/temp_mem.c) ---
+0x0889AC14 net_cb_members
+0x0889ADE8 net_all_members_known
+0x0889AEB0 net_cb_flag1
+0x0889AEF4 net_cb_flag2
+0x0889B160 net_cb_flag10
+0x0889BE7C net_cb_flag40
+
+# --- not decompiled yet: names only (guessed from what they do) ---
 0x088AB514 net_send
 0x088D6A1C hunter_has_skill
 0x088D6A54 hunter_felyne_skill
@@ -1318,26 +1800,7 @@
 0x088D7904 hunter_deliver
 0x088DCEBC player_get
 0x0882F580 layout_draw_box
-0x0887D02C font_draw_centered
-0x0887E9AC hrp_scale
 0x0885CA50 equip_data_of
-0x08890DE8 font_set_size
-0x08890DFC font_set_pos
-0x08890E08 font_set_layer
-0x08890E38 font_set_color
-0x08890E40 font_set_height2
-0x08890E48 font_char_count
-0x08890F70 font_text_width
-0x088912BC font_puts_at
-0x0889134C font_printf
-0x08891474 font_printf_at
-0x088915B0 font_printf_at_color
-0x08892004 font_draw
-0x088920A8 font_draw_at
-0x08892148 font_draw_at_color
-0x088966C0 help_popup
-0x08897298 stub_nop
-0x08898898 temp_get
 0x088B89B0 data_table_entry
 0x088D6AC8 hunter_skill_value
 0x088D8900 pouch_backup_deliveries
