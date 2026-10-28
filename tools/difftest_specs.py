@@ -508,3 +508,19 @@ def spline_build_spec(rng, args, fargs, scratch):
 SPECS.update({
     "spline_build": spline_build_spec,
 })
+
+
+# --- network (game code) -------------------------------------------------------------
+
+def netgame_open_spec(rng, args, fargs, scratch):
+    """netgame_open: the info has 1-4 players (more overflow the parameters on the stack)."""
+    args = list(args)
+    args[1] = SCRATCH + 0x100
+    scratch = bytearray(scratch)
+    scratch[0x101] = rng.randrange(1, 5)
+    return args, fargs, bytes(scratch)
+
+
+SPECS.update({
+    "netgame_open": netgame_open_spec,
+})
