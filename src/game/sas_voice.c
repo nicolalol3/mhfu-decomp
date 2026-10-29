@@ -4,6 +4,7 @@
  * 0x16/0x18, wet volumes 0x20/0x22, data 0x24, size 0x28}, the reverb, the driver thread,
  * the sound map (SPUMAPDT) and the decode thread of the ATRAC3 players. (Guessed names.) */
 #include "common.h"
+#include "cse.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
 #define S16(p, off) (*(s16 *)((u8 *)(p) + (off)))
@@ -98,7 +99,7 @@ s32 sas_ended(void)
 static void limit4(s16 *s, f32 g, f32 *f, const f32 *k, f32 lo, f32 hi, f32 up, f32 down,
                    s32 *c0, s32 *c1)
 {
-    f32 v[4];
+    f32 v[CV_AGE];
     s32 i;
 
     for (i = 0; i < 4; i++)
@@ -111,7 +112,7 @@ static void limit4(s16 *s, f32 g, f32 *f, const f32 *k, f32 lo, f32 hi, f32 up, 
     for (i = 0; i < 4; i++)
         if (hi <= v[i])
             v[i] = hi;
-    if (up < v[0] || v[0] < down)
+    if (up < v[CV_STATE] || v[CV_STATE] < down)
         (*c0)++;
     if (up < v[1] || v[1] < down)
         (*c1)++;
@@ -282,8 +283,8 @@ void sasv_init(void)
     sasv_ram_clear();
     memset(D_09A0E3CC, 0, 0x580);
     for (i = 0, v = D_09A0E3CC; i < 0x20; i++, v += 0x2C) {
-        S16(v, 6) = i;
-        U32(v, 8) = 1 << (i & 0x1F);
+        S16(v, SV_NUM) = i;
+        U32(v, CV_LENGTH) = 1 << (i & 0x1F);
         sasv_reset(v);
     }
     memset(D_09A0E3B0, 0, 0x1C);
@@ -307,12 +308,12 @@ void sasv_key_on(u8 *v)
 {
     s32 d;
 
-    if (U16(v, 6) >= 0x20)
+    if (U16(v, SV_NUM) >= 0x20)
         return;
     d = sceKernelSuspendDispatchThread();
-    U32(v, 0xC) = (U32(v, 0xC) & ~0x8000) | 0x4000;
-    U32(v, 0) = sas_frame();
-    U16(v, 4) = 0;
+    U32(v, CV_KEY) = (U32(v, CV_KEY) & ~0x8000) | 0x4000;
+    U32(v, CV_STATE) = sas_frame();
+    U16(v, CV_AGE) = 0;
     sceKernelResumeDispatchThread(d);
 }
 
@@ -320,10 +321,10 @@ void sasv_key_off(u8 *v)
 {
     s32 d;
 
-    if (U16(v, 6) >= 0x20)
+    if (U16(v, SV_NUM) >= 0x20)
         return;
     d = sceKernelSuspendDispatchThread();
-    U32(v, 0xC) = (U32(v, 0xC) & ~0x4000) | 0x8000;
+    U32(v, CV_KEY) = (U32(v, CV_KEY) & ~0x4000) | 0x8000;
     sceKernelResumeDispatchThread(d);
 }
 
@@ -331,18 +332,18 @@ void sasv_reset(u8 *v)
 {
     s32 d = sceKernelSuspendDispatchThread();
 
-    U16(v, 0x10) = 0;
-    U16(v, 0x12) = 0;
-    U16(v, 0x20) = 0;
-    U16(v, 0x22) = 0;
-    U16(v, 0x14) = 0x2000;
-    U16(v, 0x16) = 0x80FF;
-    U16(v, 0x18) = 0x5FC0;
-    U32(v, 0x24) = (u32)sasv_ram();
-    U32(v, 0x28) = 0x10;
-    U32(v, 0xC) = 0x8C04;
-    U32(v, 0) = 0;
-    U16(v, 4) = 0;
+    U16(v, CV_SAS) = 0;
+    U16(v, SV_VOL_R) = 0;
+    U16(v, CV_PAN) = 0;
+    U16(v, CV_VOL) = 0;
+    U16(v, CV_ID) = 0x2000;
+    U16(v, SV_ADSR1) = 0x80FF;
+    U16(v, CV_FLAGS) = 0x5FC0;
+    U32(v, CV_VOL2) = (u32)sasv_ram();
+    U32(v, CV_PITCH2) = 0x10;
+    U32(v, CV_KEY) = 0x8C04;
+    U32(v, CV_STATE) = 0;
+    U16(v, CV_AGE) = 0;
     sceKernelResumeDispatchThread(d);
     sasv_apply(v);
 }
@@ -358,26 +359,26 @@ void sasv_apply_all(void)
 /* the changes of the voice (flags 0x0C) to sceSas */
 void sasv_apply(u8 *v)
 {
-    u32 f = U32(v, 0xC), bit = 1, b;
+    u32 f = U32(v, CV_KEY), bit = 1, b;
 
     for (;;) {
         if (f == 0)
             return;
         b = f & bit;
         if (b == 0x8000)
-            sas_key_off(U16(v, 6));
+            sas_key_off(U16(v, SV_NUM));
         else if (b == 0x4000) {
-            sas_set_voice(U16(v, 6), (void *)U32(v, 0x24), U32(v, 0x28), 1);
-            sas_key_on(U16(v, 6));
+            sas_set_voice(U16(v, SV_NUM), (void *)U32(v, CV_VOL2), U32(v, CV_PITCH2), 1);
+            sas_key_on(U16(v, SV_NUM));
         } else if (b == 0x800)
-            sas_set_adsr(U16(v, 6), U16(v, 0x16), U16(v, 0x18));
+            sas_set_adsr(U16(v, SV_NUM), U16(v, SV_ADSR1), U16(v, CV_FLAGS));
         else if (b == 4)
-            sas_set_pitch(U16(v, 6), U16(v, 0x14));
+            sas_set_pitch(U16(v, SV_NUM), U16(v, CV_ID));
         else if (b == 0x400)
-            sas_set_volume(U16(v, 6), S16(v, 0x10), S16(v, 0x12), U16(v, 0x20), U16(v, 0x22));
-        f = U32(v, 0xC) & ~bit;
+            sas_set_volume(U16(v, SV_NUM), S16(v, CV_SAS), S16(v, SV_VOL_R), U16(v, CV_PAN), U16(v, CV_VOL));
+        f = U32(v, CV_KEY) & ~bit;
         bit <<= 1;
-        U32(v, 0xC) = f;
+        U32(v, CV_KEY) = f;
     }
 }
 
@@ -533,56 +534,56 @@ s32 atrac_thread(u32 args, u8 **argp)
     u32 pan;
     f32 a, c, m, sn;
 
-    while (U32(p, 100) == 0) {
+    while (U32(p, AT_WAKE) == 0) {
         atrac_sema_wait(&D_09A0D258);
         r = atrac_decode(p);
         atrac_sema_signal(&D_09A0D258);
         if (r < 0) {
             sceKernelDelayThread(D_089B24D4 - 2000);
         } else {
-            audio_set_len(U32(p, 0x24), U32(p, 0x88));
+            audio_set_len(U32(p, AT_CHANNEL), U32(p, AT_OUT_LEN));
             if ((D_09A0DB44 & 2) != 0) {
                 f32 f[4], k[4];
 
-                s = (s16 *)U32(p, 0x98 + U32(p, 0x28) * 4);
+                s = (s16 *)U32(p, AT_BUF + U32(p, AT_BUF_SEL) * 4);
                 c0 = 0;
                 c1 = 0;
                 for (i = 0; i < 4; i++) {
-                    f[i] = F32(p, 0x1A4 + i * 4);
-                    k[i] = F32(p, 0x1C4 + i * 4);
+                    f[i] = F32(p, AT_LIM_STATE1 + i * 4);
+                    k[i] = F32(p, AT_LIM_STATE2 + i * 4);
                 }
-                n = U32(p, 0x88) << 1;
+                n = U32(p, AT_OUT_LEN) << 1;
                 for (i = 0; i < n; i += 4, s += 4) {
-                    limit4(s, F32(p, 0x17C), f, k, F32(p, 0x194), F32(p, 0x190), F32(p, 0x19C),
-                           F32(p, 0x1A0), &c0, &c1);
+                    limit4(s, F32(p, AT_LIM_GAIN), f, k, F32(p, AT_LIM_D), F32(p, AT_LIM_C), F32(p, AT_LIM_F),
+                           F32(p, AT_LIM_G), &c0, &c1);
                     if ((i & 0x1FF) == 0) {
-                        limit_gain(k, c0, F32(p, 0x198), F32(p, 0x18C), F32(p, 0x188), 0.3f,
+                        limit_gain(k, c0, F32(p, AT_LIM_E), F32(p, AT_LIM_B), F32(p, AT_LIM_A), 0.3f,
                                    0.025f);
-                        limit_gain(k + 1, c1, F32(p, 0x198), F32(p, 0x18C), F32(p, 0x188), 0.3f,
+                        limit_gain(k + 1, c1, F32(p, AT_LIM_E), F32(p, AT_LIM_B), F32(p, AT_LIM_A), 0.3f,
                                    0.025f);
                         c0 = 0;
                         c1 = 0;
                     }
                 }
                 for (i = 0; i < 4; i++) {
-                    F32(p, 0x1A4 + i * 4) = f[i];
-                    F32(p, 0x1C4 + i * 4) = k[i];
+                    F32(p, AT_LIM_STATE1 + i * 4) = f[i];
+                    F32(p, AT_LIM_STATE2 + i * 4) = k[i];
                 }
             }
-            pan = U32(p, 0x74);
+            pan = U32(p, AT_PAN);
             a = ((f32)pan / 127.0f) * D_089B24D0;
             c = cosf(a);
             m = (f32)D_09A0DA70;
             sn = sinf(a);
-            audio_output(U32(p, 0x24), (s32)((m * (f32)U32(p, 0x70) * c) / 127.0f),
-                         (s32)(((f32)D_09A0DA70 * (f32)U32(p, 0x70) * sn) / 127.0f),
-                         (void *)U32(p, 0x98 + U32(p, 0x28) * 4));
-            U32(p, 0x28) = (U32(p, 0x28) + 1) & 1;
+            audio_output(U32(p, AT_CHANNEL), (s32)((m * (f32)U32(p, AT_VOLUME_OUT) * c) / 127.0f),
+                         (s32)(((f32)D_09A0DA70 * (f32)U32(p, AT_VOLUME_OUT) * sn) / 127.0f),
+                         (void *)U32(p, AT_BUF + U32(p, AT_BUF_SEL) * 4));
+            U32(p, AT_BUF_SEL) = (U32(p, AT_BUF_SEL) + 1) & 1;
         }
         sceKernelDelayThread(1000);
         sceKernelDelayThreadCB(1000);
     }
-    while (audio_rest(U32(p, 0x24)) > 0) {
+    while (audio_rest(U32(p, AT_CHANNEL)) > 0) {
         sceKernelDelayThread(1000);
         sceKernelDelayThreadCB(1000);
     }

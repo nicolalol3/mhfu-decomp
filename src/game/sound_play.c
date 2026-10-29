@@ -1,6 +1,7 @@
 /* Sound system (3): playing the sounds, volume and pan from the distance to the listener,
  * fades of the channels, music player wrappers. (Guessed names.) */
 #include "menu.h"
+#include "sound.h"
 #include "vfpu.h"
 
 extern u8 *g_game;
@@ -16,8 +17,8 @@ extern const s32 D_089AB7F8[], D_089AB83C[], D_08A62D40[];   /* pitch curves */
 extern const u16 D_09BC8400[];    /* 3 halfwords per monster kind */
 
 #define BANK D_08A62D84
-#define VOL_A U32(self, 0x5623D0)
-#define VOL_B U32(self, 0x5623D4)
+#define VOL_A U32(self, SND_VOL_A)
+#define VOL_B U32(self, SND_VOL_B)
 #define VOL(i) ((i) == 0 ? VOL_B : VOL_A)
 
 u32 sndbank_get_selected(u8 *self);
@@ -43,14 +44,14 @@ void sndbank_start_fade(u8 *self, u16 from, u16 to, u16 n);
 s32 sound_scale7(u8 *self, s32 a, s32 v);
 s32 sound_percent(u8 *self, s32 v);
 void music_fade_to(u8 *self, s32 i, u32 t, s32 v);
-void func_08886834(u8 *mus, s32 i, s32 v);
-void func_08886850(u8 *mus, s32 i, s32 v);
-void func_08886870(u8 *mus, s32 i, u32 a, s32 v);
-void func_08886780(u8 *mus, s32 i, u32 a);
-void func_088867F4(u8 *mus, s32 i);
-s32 func_0888671C(u8 *mus, s32 i);
-u8 func_0888616C(u8 *p);
-void func_08885E00(u8 *self);
+void musplay_set_x(u8 *mus, s32 i, s32 v);
+void musplay_set_volume(u8 *mus, s32 i, s32 v);
+void musplay_fade(u8 *mus, s32 i, u32 a, s32 v);
+void musplay_start(u8 *mus, s32 i, u32 a);
+void musplay_stop(u8 *mus, s32 i);
+s32 musplay_state(u8 *mus, s32 i);
+u8 musctl_is_battle(u8 *p);
+void musctl_reset(u8 *self);
 void func_08883384(u8 *self);
 s32 func_088840A8(u8 *self, s32 ch, u32 id, f32 *pos, s32 *kind, f32 *scale);
 void func_088851C8(u8 *self, f32 *pos, s32 kind, s32 *vol, f32 *ang);
@@ -72,10 +73,10 @@ void music_play(u8 *self, s32 i, u32 a, s32 v, s32 b);
 
 void music_play(u8 *self, s32 i, u32 a, s32 v, s32 b)
 {
-    func_08886834(D_08A62D94, i, b);
-    func_08886850(D_08A62D94, i, v);
-    func_08886870(D_08A62D94, i, 0, v);
-    func_08886780(D_08A62D94, i, a);
+    musplay_set_x(D_08A62D94, i, b);
+    musplay_set_volume(D_08A62D94, i, v);
+    musplay_fade(D_08A62D94, i, 0, v);
+    musplay_start(D_08A62D94, i, a);
 }
 
 void music_play_vol(u8 *self, s32 i, u32 a, s32 v)
@@ -91,19 +92,19 @@ void music_play_fade(u8 *self, s32 i, u32 a, u32 t, s32 v)
 
 void music_set_both(u8 *self, s32 v)
 {
-    func_08886834(D_08A62D94, 0, v);
-    func_08886834(D_08A62D94, 1, v);
+    musplay_set_x(D_08A62D94, 0, v);
+    musplay_set_x(D_08A62D94, 1, v);
 }
 
 void music_stop_player(u8 *self, s32 i)
 {
-    func_088867F4(D_08A62D94, i);
+    musplay_stop(D_08A62D94, i);
 }
 
 /* 1 while the music player is in the states 1-4 */
 u32 music_busy(u8 *self, s32 i)
 {
-    s32 s = func_0888671C(D_08A62D94, i);
+    s32 s = musplay_state(D_08A62D94, i);
 
     if (s < 1)
         return 0;
@@ -179,7 +180,7 @@ void sound_select_bank_range(u8 *self, s32 n, s32 from, s32 to)
 
 void sound_set_data_size(u8 *self, s32 k, s32 i, u32 v)
 {
-    U32(U32(self, 0x308BC4), k * 0x40 + 0x10 + i * 4) = v;
+    U32(U32(self, SND_DATA), k * 0x40 + 0x10 + i * 4) = v;
 }
 
 void sound_listener_reset(u8 *self)
@@ -240,7 +241,7 @@ u32 sound_play_3d(u8 *self, s32 ch, s32 id, u32 a, s32 b, s32 c, f32 *pos, s32 k
     extra = func_088840A8(self, ch, id, pos, &alt, &scale);
     if (alt != -1)
         kind = alt;
-    U32(self, 0x562438) = pitch;
+    U32(self, SND_PITCH) = pitch;
     if (sndbank_get_mode(BANK) == 2) {
         func_088851C8(self, pos, kind, &v, &ang);
         v = sound_scale7(self, v, VOL_A);
@@ -248,7 +249,7 @@ u32 sound_play_3d(u8 *self, s32 ch, s32 id, u32 a, s32 b, s32 c, f32 *pos, s32 k
         if (force == 0 && v <= 0)
             return -1;
         p = sound_percent(self, (s32)((f32)v * scale));
-        return sndbank_play_f(BANK, ch, id, a, b, c, p, U32(self, 0x562438), p * (x + extra) / 100,
+        return sndbank_play_f(BANK, ch, id, a, b, c, p, U32(self, SND_PITCH), p * (x + extra) / 100,
                               ang);
     }
     func_08884E44(self, pos, kind, &v, &pan);
@@ -256,7 +257,7 @@ u32 sound_play_3d(u8 *self, s32 ch, s32 id, u32 a, s32 b, s32 c, f32 *pos, s32 k
     v = sound_area_volume(self, v, ch, id);
     if (force == 0 && v <= 0)
         return -1;
-    return sound_play_raw(self, ch, id, a, b, c, v, pan, U32(self, 0x562438) + 0x2000, x + extra);
+    return sound_play_raw(self, ch, id, a, b, c, v, pan, U32(self, SND_PITCH) + 0x2000, x + extra);
 }
 
 u32 sound_play_3d_center(u8 *self, s32 ch, s32 id, u32 a, s32 b, s32 c, f32 *pos, s32 kind,
@@ -272,20 +273,20 @@ u32 sound_play_3d_center(u8 *self, s32 ch, s32 id, u32 a, s32 b, s32 c, f32 *pos
     extra = func_088840A8(self, ch, id, pos, &alt, &scale);
     if (alt != -1)
         kind = alt;
-    U32(self, 0x562438) = pitch;
+    U32(self, SND_PITCH) = pitch;
     if (sndbank_get_mode(BANK) == 2) {
         func_088851C8(self, pos, kind, &v, &ang);
         v = sound_scale7(self, v, VOL_A);
         if (force == 0 && v <= 0)
             return -1;
-        return sound_play_raw(self, ch, id, a, b, c, v, 0x40, U32(self, 0x562438) + 0x2000,
+        return sound_play_raw(self, ch, id, a, b, c, v, 0x40, U32(self, SND_PITCH) + 0x2000,
                               x + extra);
     }
     func_08884E44(self, pos, kind, &v, &pan);
     v = sound_scale7(self, v, VOL_A);
     if (force == 0 && v <= 0)
         return -1;
-    return sound_play_raw(self, ch, id, a, b, c, v, 0x40, U32(self, 0x562438) + 0x2000, x + extra);
+    return sound_play_raw(self, ch, id, a, b, c, v, 0x40, U32(self, SND_PITCH) + 0x2000, x + extra);
 }
 
 /* volume of a sound at pos */
@@ -306,7 +307,7 @@ s32 sound_curve_at(f32 d, u8 *self, f32 *a, f32 *b, s32 kind, s32 mode)
 {
     s32 v;
 
-    F32(self, 0x562460) = d;
+    F32(self, SND_DIST) = d;
     sound_curve_volume2(self, a, b, kind, &v, mode + 1);
     return sound_scale7(self, v, VOL_A);
 }
@@ -316,20 +317,20 @@ void sound_play_at(u8 *self, s32 x, u32 a, u32 y, u32 z, f32 *pos, s32 kind, s32
     s32 v, pan, q;
     f32 ang;
 
-    U32(self, 0x562438) = p;
+    U32(self, SND_PITCH) = p;
     if (sndbank_get_mode(BANK) == 2) {
         func_088851C8(self, pos, kind, &v, &ang);
         v = sound_scale7(self, v, VOL_A);
         if (v > 0) {
             q = sound_percent(self, v);
-            sndbank_play_at_f(BANK, x, a, y, z, q, U32(self, 0x562438), pitch * q / 100, ang);
+            sndbank_play_at_f(BANK, x, a, y, z, q, U32(self, SND_PITCH), pitch * q / 100, ang);
         }
     } else {
         func_08884E44(self, pos, kind, &v, &pan);
         v = sound_scale7(self, v, VOL_A);
         if (v > 0) {
             q = sound_percent(self, v);
-            sndbank_play_at(BANK, x, a, y, z, q, pan, U32(self, 0x562438), pitch * q / 100);
+            sndbank_play_at(BANK, x, a, y, z, q, pan, U32(self, SND_PITCH), pitch * q / 100);
         }
     }
 }
@@ -360,19 +361,19 @@ s32 sound_dist_volume(u8 *self, f32 *pos, s32 kind)
         pt = D_08A62D40;
     func_08883384(self);
     t = D_089AB710[kind];
-    if ((u8)func_0888616C(D_08A62D90) == 1)
+    if ((u8)musctl_is_battle(D_08A62D90) == 1)
         t += 0x11;
-    d = vfpu_dist3(pos, &F32(self, 0x5623F0));
-    if (kind == 0x1F || F32(self, 0x56246C) == 30.0f) {
-        d = F32(self, 0x562460);
-        U32(self, 0x56246C) = 0;
+    d = vfpu_dist3(pos, &F32(self, SND_LISTENER));
+    if (kind == 0x1F || F32(self, SND_RANGE) == 30.0f) {
+        d = F32(self, SND_DIST);
+        U32(self, SND_RANGE) = 0;
     }
     if (d >= maxd) {
         d = maxd;
         if (maxd != 19800.0f) {
             if (kind != 0x21 && kind != 0x20 && kind != 0x11)
                 return 0;
-            U32(self, 0x562438) = pt[0];
+            U32(self, SND_PITCH) = pt[0];
             return 0;
         }
     }
@@ -383,7 +384,7 @@ s32 sound_dist_volume(u8 *self, f32 *pos, s32 kind)
     k = (s32)n;
     v = t[k] - (s32)(fr * (f32)(t[k] - t[k + 1]));
     if ((kind == 0x21 || kind == 0x20 || kind == 0x11) && self[0x562464] != 0)
-        U32(self, 0x562438) = pt[k] - (s32)(fr * (f32)(pt[k] - pt[k + 1]));
+        U32(self, SND_PITCH) = pt[k] - (s32)(fr * (f32)(pt[k] - pt[k + 1]));
     return v;
 }
 
@@ -403,7 +404,7 @@ s32 sound_curve_volume(u8 *self, f32 *a, f32 *b, s32 kind, s32 mode)
                 return 0;
         }
     } else if (mode == 2) {
-        d = F32(self, 0x562460);
+        d = F32(self, SND_DIST);
         if (d >= maxd) {
             d = maxd;
             if (maxd != 19800.0f)
@@ -464,8 +465,8 @@ s32 sound_monster_channel(u8 *self, s32 id)
     s32 i;
 
     for (i = 0; i < 4; i++)
-        if (D_09BC8400[id * 3] == D_09BC8400[self[0x56245C + i] * 3])
-            return S16(self, 0x562454 + i * 2);
+        if (D_09BC8400[id * 3] == D_09BC8400[self[SND_LOADED_EXTRA + i] * 3])
+            return S16(self, SND_LOADED_CH + i * 2);
     return 0;
 }
 
@@ -558,6 +559,6 @@ s32 sound_area_volume(u8 *self, s32 v, s32 ch, u32 id)
 u8 *sound_mgr3_ctor(u8 *self)
 {
     D_08A62D90 = self;
-    func_08885E00(self);
+    musctl_reset(self);
     return self;
 }

@@ -4,6 +4,7 @@
  * endian): {kind, code, u16 id, u16 value 4, u16 sequence 6, u16 value 8, ..}.
  * (Guessed names.) */
 #include "common.h"
+#include "net.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
 #define S32(p, off) (*(s32 *)((u8 *)(p) + (off)))
@@ -42,30 +43,30 @@ void netconn_connect(const u8 *group);
 void netconn_terminate(void);
 u32 pdp_bcast_close(s32 *sock);
 s32 bcast_flush(s32 sock);
-u8 *func_088AFC34(s32 sock, u32 timeout, u8 *x);
-u8 *func_088AFE78(void);
-u32 func_088AFE84(void);
-void func_088AFE90(u8 *p, u32 kind);
-void func_088AFFBC(u8 *p, u32 v);
-void func_088AFFD0(u8 *p);
-void func_088B00DC(u8 *p, u8 *data, u32 n);
-s32 func_088B012C(u8 *p);
-void func_088B01BC(u32 a, u8 *b);
-void func_088B0284(u8 *p, u8 *s);
-void func_088B02C8(u8 *p, u8 *s);
-u32 func_088B0324(u8 *d, u32 x);
-void func_088B0370(u8 *d, u32 x);
-void func_088B03CC(u8 *d, u32 x);
-void func_088B040C(u8 *d, u32 n, u32 x);
-s32 func_088B04B4(u8 *id);
-s32 func_088B0514(u8 *a, u8 *b);
-void func_088B0604(u8 *list, s32 *n);
-s32 func_088AF7E0(u8 *id);
-s32 func_088AF848(u8 *id);
-void func_088AF978(u8 *id);
-void func_088AFAD0(u8 *id);
-u8 func_088AFBC0(void);
-void func_088AF5E4(u8 *out, u8 *buf, u32 err);
+u8 *lobby_recv(s32 sock, u32 timeout, u8 *x);
+u8 *lobby_pkt(void);
+u32 lobby_root(void);
+void lobby_pkt_init(u8 *p, u32 kind);
+void lobby_pkt_code(u8 *p, u32 v);
+void lobby_pkt_size(u8 *p);
+void lobby_put_blob(u8 *p, u8 *data, u32 n);
+s32 lobby_pkt_send(u8 *p);
+void lobby_set_dest(u32 a, u8 *b);
+void lobby_put_name(u8 *p, u8 *s);
+void lobby_put_info(u8 *p, u8 *s);
+u32 lobby_get_name(u8 *d, u32 x);
+void lobby_get_info(u8 *d, u32 x);
+void lobby_get16(u8 *d, u32 x);
+void lobby_get_blob(u8 *d, u32 n, u32 x);
+s32 mac_nonzero(u8 *id);
+s32 mac_differs(u8 *a, u8 *b);
+void peers_get(u8 *list, s32 *n);
+s32 lobby_find(u8 *id);
+s32 lobby_add(u8 *id);
+void lobby_remove(u8 *id);
+void lobby_touch(u8 *id);
+u8 lobby_count(void);
+void lobby_request6(u8 *out, u8 *buf, u32 err);
 void func_088B6B14(u32 x);
 void func_088B6E8C(void);
 s32 func_088B6E14(u32 id, u32 seq);
@@ -76,8 +77,8 @@ void func_088B72CC(void);
 void func_088B7350(u8 *id);
 void func_088B7580(void);
 void func_088B7E74(u32 id);
-void func_088B12E8(u8 *p);
-void func_088B1350(u8 *p);
+void lobbyapi_host_found(u8 *p);
+void lobbyapi_host_joined(u8 *p);
 
 s32 lobby_dispatch(u32 id, u32 kind);
 void lobby_send_ack(u8 *to, u32 id);
@@ -108,9 +109,9 @@ void netmgr_update(u8 *m)
 
 static void task_error(u8 *o, u32 state, u32 code)
 {
-    o[0x21] = state;
-    o[0x22] = 0;
-    U16(o, 0x26) = code;
+    o[LT_STATE] = state;
+    o[LT_STEP] = 0;
+    U16(o, LT_ERROR) = code;
 }
 
 void scan_step(u8 *o);
@@ -119,13 +120,13 @@ void scan_fail(u8 *o);
 
 void scan_frame(void)
 {
-    if (TASK[0x20] == 0)
+    if (TASK[LT_ACTIVE] == 0)
         return;
-    if (TASK[0x21] == 2)
+    if (TASK[LT_STATE] == 2)
         scan_fail(TASK);
-    else if (TASK[0x21] == 1)
+    else if (TASK[LT_STATE] == 1)
         scan_done(TASK);
-    else if (TASK[0x21] == 0)
+    else if (TASK[LT_STATE] == 0)
         scan_step(TASK);
 }
 
@@ -134,15 +135,15 @@ void scan_wait(u8 *o);
 
 void scan_step(u8 *o)
 {
-    if (o[0x22] == 1)
+    if (o[LT_STEP] == 1)
         scan_wait(o);
-    else if (o[0x22] == 0)
+    else if (o[LT_STEP] == 0)
         scan_start(o);
 }
 
 void scan_start(u8 *o)
 {
-    o[0x22]++;
+    o[LT_STEP]++;
     D_09A1FDE8 = 0;
     if (sceNetAdhocctlScan() < 0)
         task_error(o, 2, 0x8003);
@@ -151,8 +152,8 @@ void scan_start(u8 *o)
 void scan_wait(u8 *o)
 {
     if (D_09A1FDE8 != 0) {
-        o[0x21] = 1;
-        o[0x22] = 0;
+        o[LT_STATE] = 1;
+        o[LT_STEP] = 0;
     } else if (D_09A1FDE4 != 0) {
         task_error(o, 2, 0x8003);
     }
@@ -165,7 +166,7 @@ void scan_done(u8 *o)
 
 void scan_fail(u8 *o)
 {
-    func_088B7078(o, 0xFFFF, U16(o, 0x26));
+    func_088B7078(o, 0xFFFF, U16(o, LT_ERROR));
 }
 
 /* ---- the connection ---- */
@@ -176,17 +177,17 @@ void conn_done(u8 *o);
 
 void conn_step(u8 *o)
 {
-    if (o[0x22] == 2)
+    if (o[LT_STEP] == 2)
         conn_done(o);
-    else if (o[0x22] == 1)
+    else if (o[LT_STEP] == 1)
         conn_wait(o);
-    else if (o[0x22] == 0)
+    else if (o[LT_STEP] == 0)
         conn_start(o);
 }
 
 void conn_start(u8 *o)
 {
-    o[0x22]++;
+    o[LT_STEP]++;
     netconn_connect(D_09A28944);
 }
 
@@ -194,7 +195,7 @@ void conn_wait(u8 *o)
 {
     switch (netconn_update()) {
     case 2:
-        o[0x22]++;
+        o[LT_STEP]++;
         break;
     case 3:
         task_error(o, 3, 0x8003);
@@ -204,9 +205,9 @@ void conn_wait(u8 *o)
 
 void conn_done(u8 *o)
 {
-    o[0x21] = 1;
-    o[0x22] = 0;
-    U32(o, 0xC) = 0x5A;
+    o[LT_STATE] = 1;
+    o[LT_STEP] = 0;
+    U32(o, LT_COUNTER) = 0x5A;
 }
 
 /* ---- the first list of the peers ---- */
@@ -216,28 +217,28 @@ void open_next(u8 *o);
 
 void open_step(u8 *o)
 {
-    if (o[0x22] == 1)
+    if (o[LT_STEP] == 1)
         open_next(o);
-    else if (o[0x22] == 0)
+    else if (o[LT_STEP] == 0)
         open_wait(o);
 }
 
 void open_wait(u8 *o)
 {
-    if (--S32(o, 0xC) >= 0)
+    if (--S32(o, LT_COUNTER) >= 0)
         return;
-    o[0x22]++;
+    o[LT_STEP]++;
     memset(D_09A1FE08, 0, 0x90);
     D_09A1FE04 = 0;
-    func_088B0604(D_09A1FE08, &D_09A1FE04);
+    peers_get(D_09A1FE08, &D_09A1FE04);
     if (D_09A1FE04 > 3)
         task_error(o, 3, 0x8052);
 }
 
 void open_next(u8 *o)
 {
-    o[0x21]++;
-    o[0x22] = 0;
+    o[LT_STATE]++;
+    o[LT_STEP] = 0;
 }
 
 void open_done(u8 *o)
@@ -247,7 +248,7 @@ void open_done(u8 *o)
 
 void open_fail(u8 *o)
 {
-    func_088B7078(o, 0xFFFF, U16(o, 0x26));
+    func_088B7078(o, 0xFFFF, U16(o, LT_ERROR));
 }
 
 /* ---- the end ---- */
@@ -258,17 +259,17 @@ void close_done(u8 *o);
 
 void close_step(u8 *o)
 {
-    if (o[0x22] == 2)
+    if (o[LT_STEP] == 2)
         close_done(o);
-    else if (o[0x22] == 1)
+    else if (o[LT_STEP] == 1)
         close_wait(o);
-    else if (o[0x22] == 0)
+    else if (o[LT_STEP] == 0)
         close_start(o);
 }
 
 void close_start(u8 *o)
 {
-    o[0x22]++;
+    o[LT_STEP]++;
     pdp_bcast_close(&D_09A202D0);
     netconn_terminate();
     D_09A202C8 = 0;
@@ -279,13 +280,13 @@ void close_wait(u8 *o)
     u32 r = netconn_term_step();
 
     if (r != 5 && r == 4)
-        o[0x22]++;
+        o[LT_STEP]++;
 }
 
 void close_done(u8 *o)
 {
-    o[0x21] = 1;
-    o[0x22] = 0;
+    o[LT_STATE] = 1;
+    o[LT_STEP] = 0;
 }
 
 void close_ok(u8 *o)
@@ -302,25 +303,25 @@ void close_fail(u8 *o)
 
 void lobby_send_entry(u8 *buf)
 {
-    u8 *p = func_088AFE78();
+    u8 *p = lobby_pkt();
 
-    func_088B01BC(0, NULL);
-    func_088AFE90(p, 10);
-    func_088B0284(p, D_09A28884);
-    func_088B00DC(p, buf, U16(buf, 0x300));
-    func_088AFFD0(p);
-    func_088B012C(p);
+    lobby_set_dest(0, NULL);
+    lobby_pkt_init(p, 10);
+    lobby_put_name(p, D_09A28884);
+    lobby_put_blob(p, buf, U16(buf, 0x300));
+    lobby_pkt_size(p);
+    lobby_pkt_send(p);
 }
 
 static void entry_init(u8 *e, u32 size, u32 tail, u32 n, u32 kind)
 {
-    u32 x = func_088AFE84();
+    u32 x = lobby_root();
 
     memset(e, 0, size);
     lobby_own_id(e);
-    x = func_088B0324(e + 8, x);
-    func_088B03CC(e + tail, x);
-    func_088B040C(e + 0x20, n, x);
+    x = lobby_get_name(e + 8, x);
+    lobby_get16(e + tail, x);
+    lobby_get_blob(e + 0x20, n, x);
     func_088B6B14(kind);
 }
 
@@ -336,16 +337,16 @@ void lobby_entry_init10(void)
 
 void lobby_request(u8 *out, u8 *to, u8 *buf)
 {
-    u8 *p = func_088AFE78();
+    u8 *p = lobby_pkt();
     u8 h[0x14];
 
     memset(h, 0, 0x14);
-    func_088B01BC(1, to);
-    func_088AFE90(p, 0xC);
-    func_088B0284(p, D_09A28884);
-    func_088B00DC(p, buf, U16(buf, 0x300));
-    func_088AFFD0(p);
-    if (func_088B012C(p) == 0)
+    lobby_set_dest(1, to);
+    lobby_pkt_init(p, 0xC);
+    lobby_put_name(p, D_09A28884);
+    lobby_put_blob(p, buf, U16(buf, 0x300));
+    lobby_pkt_size(p);
+    if (lobby_pkt_send(p) == 0)
         memcpy(h, p + 4, 0x14);
     memcpy(out, h, 0x14);
 }
@@ -366,7 +367,7 @@ u32 lobby_frame(void)
     D_09A202B4 = 0;
     bcast_flush(D_09A202D0);
     if (D_09A202C8 != 0 && D_09A202D0 != 0)
-        while ((p = func_088AFC34(D_09A202D0, 10000, x)) != NULL)
+        while ((p = lobby_recv(D_09A202D0, 10000, x)) != NULL)
             lobby_on_packet(p);
     if (D_09A1FDE4 == 0 && D_09A1FDE9 == 0) {
         lobby_peers_check();
@@ -445,18 +446,18 @@ void lobby_peers_check(void)
         return;
     memset(list, 0, 0x90);
     n = 0;
-    func_088B0604(list, &n);
+    peers_get(list, &n);
     if (memcmp(D_09A1FE08, list, 0x90) == 0)
         return;
     if (D_09A1FE04 != 0) {
         for (i = 0, e = D_09A1FE08; i < 0x12; i++, e += 8) {
-            if (func_088B04B4(e) == 0)
+            if (mac_nonzero(e) == 0)
                 continue;
             if (lobby_not_in_list(e, list) == 0)
                 continue;
-            if (func_088AF7E0(e) != 0)
+            if (lobby_find(e) != 0)
                 continue;
-            func_088AF978(e);
+            lobby_remove(e);
             if (D_09A1FDE0 != 2)
                 func_088B7350(e);
         }
@@ -478,7 +479,7 @@ s32 lobby_not_in_list(u8 *id, u8 *list)
     s32 i;
 
     for (i = 0; i < 0x12; i++, list += 8)
-        if (func_088B0514(id, list) == 0)
+        if (mac_differs(id, list) == 0)
             return 0;
     return 1;
 }
@@ -487,15 +488,15 @@ void lobby_hdr_init(u8 *p, u32 id);
 
 void lobby_send_ack(u8 *to, u32 id)
 {
-    u8 *p = func_088AFE78();
+    u8 *p = lobby_pkt();
     u8 h[0x14];
 
     memset(h, 0, 0x14);
-    func_088B01BC(1, to);
+    lobby_set_dest(1, to);
     lobby_hdr_init(p, id);
-    func_088AFFBC(p, 0x8006);
-    func_088AFFD0(p);
-    if (func_088B012C(p) == 0)
+    lobby_pkt_code(p, 0x8006);
+    lobby_pkt_size(p);
+    if (lobby_pkt_send(p) == 0)
         memcpy(h, p + 4, 0x14);
 }
 
@@ -560,30 +561,30 @@ void lobby_timers(void)
     if (--D_09A201E8 < 0) {
         D_09A201E8 = 0x3C;
         lobby_ping(h);
-        func_088AFAD0((u8 *)0x09A201F0);
+        lobby_touch((u8 *)0x09A201F0);
     }
     if (--D_09A201EC < 0) {
         D_09A201EC = 300;
         for (i = 0, pl = PLAYERS; i < 4; i++, pl += 200)
-            if (func_088B04B4(pl + 0xB8) != 0 && pl[0x17E] == 0)
-                pl[0x17F] = 1;
-        PLAYERS[0x17E] = 0;
-        PLAYERS[0x17E + 200] = 0;
-        PLAYERS[0x17E + 400] = 0;
-        PLAYERS[0x17E + 600] = 0;
+            if (mac_nonzero(pl + LP_ENTRY) != 0 && pl[LP_SEEN] == 0)
+                pl[LP_SILENT] = 1;
+        PLAYERS[LP_SEEN] = 0;
+        PLAYERS[LP_SEEN + 200] = 0;
+        PLAYERS[LP_SEEN + 400] = 0;
+        PLAYERS[LP_SEEN + 600] = 0;
     }
 }
 
 void lobby_ping(u8 *out)
 {
-    u8 *p = func_088AFE78();
+    u8 *p = lobby_pkt();
     u8 h[0x14];
 
     memset(h, 0, 0x14);
-    func_088B01BC(0, NULL);
-    func_088AFE90(p, 2);
-    func_088AFFD0(p);
-    if (func_088B012C(p) == 0)
+    lobby_set_dest(0, NULL);
+    lobby_pkt_init(p, 2);
+    lobby_pkt_size(p);
+    if (lobby_pkt_send(p) == 0)
         memcpy(h, p + 4, 0x14);
     memcpy(out, h, 0x14);
 }
@@ -598,22 +599,22 @@ void lobby_check_own(void)
     lobby_own_id(id);
     if (D_09A1FE04 == 0 || lobby_not_in_list(id, D_09A1FE08) != 0)
         return;
-    if (func_088AF7E0(id) == 0)
-        func_088AFAD0(id);
+    if (lobby_find(id) == 0)
+        lobby_touch(id);
     else
         lobby_request3(h, id);
 }
 
 void lobby_request3(u8 *out, u8 *to)
 {
-    u8 *p = func_088AFE78();
+    u8 *p = lobby_pkt();
     u8 h[0x14];
 
     memset(h, 0, 0x14);
-    func_088B01BC(1, to);
-    func_088AFE90(p, 3);
-    func_088AFFD0(p);
-    if (func_088B012C(p) == 0)
+    lobby_set_dest(1, to);
+    lobby_pkt_init(p, 3);
+    lobby_pkt_size(p);
+    if (lobby_pkt_send(p) == 0)
         memcpy(h, p + 4, 0x14);
     memcpy(out, h, 0x14);
 }
@@ -630,29 +631,29 @@ void lobby_send_info(void)
 
 void lobby_request4(u8 *out, u8 *to)
 {
-    u8 *p = func_088AFE78();
+    u8 *p = lobby_pkt();
     u8 h[0x14];
 
     memset(h, 0, 0x14);
-    func_088B01BC(1, to);
-    func_088AFE90(p, 4);
-    func_088B0284(p, (u8 *)0x09A201F8);
-    func_088B02C8(p, D_09A20210);
-    func_088AFFD0(p);
-    if (func_088B012C(p) == 0)
+    lobby_set_dest(1, to);
+    lobby_pkt_init(p, 4);
+    lobby_put_name(p, (u8 *)0x09A201F8);
+    lobby_put_info(p, D_09A20210);
+    lobby_pkt_size(p);
+    if (lobby_pkt_send(p) == 0)
         memcpy(h, p + 4, 0x14);
     memcpy(out, h, 0x14);
 }
 
 static void own_entry(u8 *e)
 {
-    u32 x = func_088AFE84();
+    u32 x = lobby_root();
 
-    func_088AFE78();
+    lobby_pkt();
     memset(e, 0, 200);
     lobby_own_id(e);
-    x = func_088B0324(e + 8, x);
-    func_088B0370(e + 0x20, x);
+    x = lobby_get_name(e + 8, x);
+    lobby_get_info(e + 0x20, x);
 }
 
 void lobby_join(void)
@@ -661,11 +662,11 @@ void lobby_join(void)
     s32 a, b;
 
     own_entry(e);
-    a = func_088AF7E0(e);
-    b = func_088AF848(e);
-    func_088AFAD0(e);
+    a = lobby_find(e);
+    b = lobby_add(e);
+    lobby_touch(e);
     if (a != 0 && b != 0 && D_09A1FDE0 != 2)
-        func_088B1350(e);
+        lobbyapi_host_joined(e);
 }
 
 void lobby_join_reply(void)
@@ -675,16 +676,16 @@ void lobby_join_reply(void)
     u32 err = 0;
 
     own_entry(e);
-    if (func_088AFBC0() >= 4)
+    if (lobby_count() >= 4)
         err = 0x8072;
     if (err == 0) {
-        if (func_088AF7E0(e) == 0) {
-            func_088AF848(e);
+        if (lobby_find(e) == 0) {
+            lobby_add(e);
         } else {
-            func_088AF848(e);
+            lobby_add(e);
             if (D_09A1FDE0 != 2)
-                func_088B12E8(e);
+                lobbyapi_host_found(e);
         }
     }
-    func_088AF5E4(h, e, err);
+    lobby_request6(h, e, err);
 }

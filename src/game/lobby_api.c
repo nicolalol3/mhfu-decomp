@@ -2,6 +2,7 @@
  * callback of the game, a and b) or answers at once with func_088B6A08(code, a, b).
  * (Guessed names.) */
 #include "common.h"
+#include "net.h"
 
 #define U16(p, off) (*(u16 *)((u8 *)(p) + (off)))
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
@@ -71,7 +72,7 @@ void func_088B6A08(u32 code, u32 a, u32 b);
 void func_088B6A80(u32 ev);
 void func_088B7078(u8 *o, u32 a, u32 b);
 void func_088B7A5C(void);
-void func_088B158C(u8 *out, u8 *info);
+void lobbyapi_send_info(u8 *out, u8 *info);
 
 void lobbyapi_bye(u8 *out);
 void lobbyapi_announce(u8 *out);
@@ -93,7 +94,7 @@ s32 func_088B3424(u8 *e);
 void func_088B2AAC(void);
 void func_088B7A50(u32 x);
 s32 func_088B6BC4(void);
-void func_088B1CA8(u8 *out, u8 *to, u32 a, u32 b);
+void lobbyapi_ask_slot(u8 *out, u8 *to, u32 a, u32 b);
 u8 *func_088B6BFC(u8 *h, void *f, u32 x);
 
 static void start(u32 kind, void *f, u32 a, u32 b)
@@ -231,7 +232,7 @@ u32 lobbyapi_set_info(u8 *info)
     memcpy(D_09A2889C, info, 0xA4);
     memcpy(D_09A20210, info, 0xA4);
     lobby_set_info(OWN_MAC, info);
-    func_088B158C(h, info);
+    lobbyapi_send_info(h, info);
     return 0;
 }
 
@@ -271,8 +272,8 @@ u32 lobbyapi_players(u8 *n, u8 *out)
 
     *n = lobby_count();
     for (i = 0; i < 4; i++, pl += 200) {
-        if (mac_nonzero(pl + 0xB8) != 0) {
-            memcpy(out, pl + 0xB8, 200);
+        if (mac_nonzero(pl + LP_ENTRY) != 0) {
+            memcpy(out, pl + LP_ENTRY, 200);
             out += 200;
         }
     }
@@ -299,13 +300,13 @@ void join_fail(u8 *o);
 
 void join_frame(void)
 {
-    if (D_09A4401C[0x20] == 0)
+    if (D_09A4401C[LT_ACTIVE] == 0)
         return;
-    if (D_09A4401C[0x21] == 2)
+    if (D_09A4401C[LT_STATE] == 2)
         join_fail(D_09A4401C);
-    else if (D_09A4401C[0x21] == 1)
+    else if (D_09A4401C[LT_STATE] == 1)
         join_done(D_09A4401C);
-    else if (D_09A4401C[0x21] == 0)
+    else if (D_09A4401C[LT_STATE] == 0)
         join_step(D_09A4401C);
 }
 
@@ -314,9 +315,9 @@ void join_wait(u8 *o);
 
 void join_step(u8 *o)
 {
-    if (o[0x22] == 1)
+    if (o[LT_STEP] == 1)
         join_wait(o);
-    else if (o[0x22] == 0)
+    else if (o[LT_STEP] == 0)
         join_start(o);
 }
 
@@ -326,33 +327,33 @@ void join_start(u8 *o)
     u8 e[200];
     u8 h[0x14];
 
-    o[0x22]++;
+    o[LT_STEP]++;
     D_09A28875 = 0;
     if (D_09A1FDE0 != 1) {
-        o[0x21] = 1;
-        o[0x22] = 0;
+        o[LT_STATE] = 1;
+        o[LT_STEP] = 0;
         D_09A1FDE0 = 1;
         return;
     }
     memset(D_09A1FE98, 0, 800);
     memcpy(e, D_09A2887C, 0xC4);
     lobby_add(e);
-    S32(o, 0xC) = 0x5A;
+    S32(o, LT_COUNTER) = 0x5A;
     lobbyapi_announce(h);
     if (h[2] == 0) {
-        U16(o, 0x26) = 0x8003;
-        o[0x21] = 2;
-        o[0x22] = 0;
+        U16(o, LT_ERROR) = 0x8003;
+        o[LT_STATE] = 2;
+        o[LT_STEP] = 0;
     }
 }
 
 void join_wait(u8 *o)
 {
     if (D_09A28875 != 0) {
-        o[0x21] = 2;
-        o[0x22] = 0;
-        U16(o, 0x26) = 0x8072;
-    } else if (--S32(o, 0xC) < 0) {
+        o[LT_STATE] = 2;
+        o[LT_STEP] = 0;
+        U16(o, LT_ERROR) = 0x8072;
+    } else if (--S32(o, LT_COUNTER) < 0) {
         D_09A1FDE0 = 1;
         func_088B7078(o, 0, 0);
     }
@@ -365,7 +366,7 @@ void join_done(u8 *o)
 
 void join_fail(u8 *o)
 {
-    func_088B7078(o, 0xFFFF, U16(o, 0x26));
+    func_088B7078(o, 0xFFFF, U16(o, LT_ERROR));
 }
 
 static void send_header(u8 *out, u8 *p)
@@ -417,7 +418,7 @@ void lobbyapi_on_announce(void)
     u8 *x = (u8 *)lobby_root();
 
     lobby_pkt();
-    if (D_09A4401C[0x20] == 0 && lobby_sign_differs(0) != 0) {
+    if (D_09A4401C[LT_ACTIVE] == 0 && lobby_sign_differs(0) != 0) {
         lobbyapi_bye(h2);
         func_088B6A80(0x14);
         return;
@@ -541,13 +542,13 @@ void select_fail(u8 *o);
 
 void select_frame(void)
 {
-    if (D_09A4410C[0x20] == 0)
+    if (D_09A4410C[LT_ACTIVE] == 0)
         return;
-    if (D_09A4410C[0x21] == 2)
+    if (D_09A4410C[LT_STATE] == 2)
         select_fail(D_09A4410C);
-    else if (D_09A4410C[0x21] == 1)
+    else if (D_09A4410C[LT_STATE] == 1)
         select_done(D_09A4410C);
-    else if (D_09A4410C[0x21] == 0)
+    else if (D_09A4410C[LT_STATE] == 0)
         select_step(D_09A4410C);
 }
 
@@ -556,9 +557,9 @@ void select_wait(u8 *o);
 
 void select_step(u8 *o)
 {
-    if (o[0x22] == 1)
+    if (o[LT_STEP] == 1)
         select_wait(o);
-    else if (o[0x22] == 0)
+    else if (o[LT_STEP] == 0)
         select_start(o);
 }
 
@@ -569,18 +570,18 @@ void select_start(u8 *o)
     u8 h[0x14];
     u8 *w;
 
-    o[0x22]++;
+    o[LT_STEP]++;
     if (func_088B6BC4() == 0) {
-        U16(o, 0x26) = 0x8002;
-        o[0x21] = 2;
-        o[0x22] = 0;
+        U16(o, LT_ERROR) = 0x8002;
+        o[LT_STATE] = 2;
+        o[LT_STEP] = 0;
         return;
     }
-    func_088B1CA8(h, D_09A28B98, D_09A28BF0, D_09A28878);
+    lobbyapi_ask_slot(h, D_09A28B98, D_09A28BF0, D_09A28878);
     if (h[2] == 0) {
-        U16(o, 0x26) = 0x8003;
-        o[0x21] = 2;
-        o[0x22] = 0;
+        U16(o, LT_ERROR) = 0x8003;
+        o[LT_STATE] = 2;
+        o[LT_STEP] = 0;
         return;
     }
     w = func_088B6BFC(h, (void *)0x088B1C34, 0);
@@ -590,12 +591,12 @@ void select_start(u8 *o)
 
 void select_wait(u8 *o)
 {
-    if (o[0x23] == 1) {
-        o[0x21] = 1;
-        o[0x22] = 0;
-    } else if (o[0x23] == 2) {
-        o[0x21] = 2;
-        o[0x22] = 0;
+    if (o[LT_ANSWER] == 1) {
+        o[LT_STATE] = 1;
+        o[LT_STEP] = 0;
+    } else if (o[LT_ANSWER] == 2) {
+        o[LT_STATE] = 2;
+        o[LT_STEP] = 0;
     }
 }
 
@@ -607,7 +608,7 @@ void select_done(u8 *o)
 
 void select_fail(u8 *o)
 {
-    func_088B7078(o, 0xFFFF, U16(o, 0x26));
+    func_088B7078(o, 0xFFFF, U16(o, LT_ERROR));
 }
 
 /* ---- the packets of the slots ---- */

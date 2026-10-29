@@ -1,8 +1,9 @@
 /* The font g_font (2): formatted text (the arguments are the register ones, copied to an
- * array for the formatter func_08893C6C), drawing of the queued layers, conversions of the
+ * array for the formatter text_format), drawing of the queued layers, conversions of the
  * strings. Not including menu.h: there these functions are declared with "...".
  * (Guessed names.) */
 #include "libc.h"
+#include "font.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
 #define S16(p, off) (*(s16 *)((u8 *)(p) + (off)))
@@ -20,34 +21,34 @@ u32 utf8_decode(void *self, const u8 **pp);
 u32 sjis_decode(void *self, const u8 **pp);
 u32 jis_to_unicode(void *self, u32 c);
 s32 utf8_seq_len(void *self, s32 c);
-void func_08893C6C(u8 *self, char *buf, u32 size, const char *fmt, u32 *args, int a);
-void func_08894754(u8 *self, char *buf, int a);
+void text_format(u8 *self, char *buf, u32 size, const char *fmt, u32 *args, int a);
+void font_store_text(u8 *self, char *buf, int a);
 void func_088921FC(u8 *self, s32 a, char *buf);
-void func_08892FB0(u8 *self, s32 l);
-void func_0889377C(u8 *self, u8 *e);
-u32 func_08894988(u8 *self);
-void func_08892A88(u8 *self, u8 *p, u32 n, u32 a);
-void func_088930A0(u8 *self);
-s32 func_08893198(u8 *self, u32 c);
-void func_08893390(u8 *self);
-s32 func_08894874(u8 *self, u32 ch);
+void font_begin_layer(u8 *self, s32 l);
+void font_draw_entry(u8 *self, u8 *e);
+u32 font_layer_dl(u8 *self);
+void font_draw_icons(u8 *self, u8 *p, u32 n, u32 a);
+void font_end_layer(u8 *self);
+s32 glyph_cache_add(u8 *self, u32 c);
+void glyph_render_all(u8 *self);
+s32 font_char_kind(u8 *self, u32 ch);
 
 #define F(o) (self[o])
 
 /* new entry of the queue of the current layer for the text in the string buffer */
 static int queue_entry(u8 *self, u32 n)
 {
-    s8 l = F(0x12F);
-    u8 *e = (u8 *)U32(self, 0x140 + l * 4) + n * 0xC;
+    s8 l = F(FONT_LAYER);
+    u8 *e = (u8 *)U32(self, FONT_LAYER_BUF + l * 4) + n * 0xC;
 
-    F(0x134 + (s8)F(0x12F))++;
-    U16(e, 0) = U16(self, 0x120);
-    U16(e, 2) = U16(self, 0x122);
-    e[4] = F(0x12C);
-    e[5] = F(0x12D);
-    e[7] = F(0x15F);
-    e[6] = F(0x12E);
-    U32(e, 8) = (u32)(self + 0x22CF8 + U16(self, 0x160));
+    F(FONT_LAYER_N + (s8)F(FONT_LAYER))++;
+    U16(e, 0) = U16(self, FONT_X);
+    U16(e, 2) = U16(self, FONT_Y);
+    e[4] = F(FONT_SIZE_W);
+    e[5] = F(FONT_SIZE_H);
+    e[7] = F(FONT_LINE_H);
+    e[6] = F(FONT_COLOR);
+    U32(e, 8) = (u32)(self + FONT_TEXT + U16(self, FONT_TEXT_POS));
     return 1;
 }
 
@@ -55,7 +56,7 @@ void font_printf(u8 *self, const char *fmt, u32 a, u32 b, u32 c, u32 d, u32 e, u
 {
     u32 args[6];
     char buf[0x300];
-    u8 n = F(0x134 + (s8)F(0x12F));
+    u8 n = F(FONT_LAYER_N + (s8)F(FONT_LAYER));
 
     if (n >= 0x80)
         return;
@@ -67,15 +68,15 @@ void font_printf(u8 *self, const char *fmt, u32 a, u32 b, u32 c, u32 d, u32 e, u
     args[4] = e;
     args[5] = f;
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 1);
-    func_08894754(self, buf, 1);
+    text_format(self, buf, 0x300, fmt, args, 1);
+    font_store_text(self, buf, 1);
 }
 
 void font_printf_at(u8 *self, int x, int y, const char *fmt, u32 a, u32 b, u32 c, u32 d)
 {
     u32 args[4];
     char buf[0x300];
-    u8 n = F(0x134 + (s8)F(0x12F));
+    u8 n = F(FONT_LAYER_N + (s8)F(FONT_LAYER));
 
     if (n >= 0x80)
         return;
@@ -86,15 +87,15 @@ void font_printf_at(u8 *self, int x, int y, const char *fmt, u32 a, u32 b, u32 c
     font_set_pos(self, x, y);
     queue_entry(self, n);
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 1);
-    func_08894754(self, buf, 1);
+    text_format(self, buf, 0x300, fmt, args, 1);
+    font_store_text(self, buf, 1);
 }
 
 void font_printf_at_color(u8 *self, int x, int y, int color, const char *fmt, u32 a, u32 b, u32 c)
 {
     u32 args[3];
     char buf[0x300];
-    u8 n = F(0x134 + (s8)F(0x12F));
+    u8 n = F(FONT_LAYER_N + (s8)F(FONT_LAYER));
 
     if (n >= 0x80)
         return;
@@ -105,8 +106,8 @@ void font_printf_at_color(u8 *self, int x, int y, int color, const char *fmt, u3
     font_set_color(self, color);
     queue_entry(self, n);
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 1);
-    func_08894754(self, buf, 1);
+    text_format(self, buf, 0x300, fmt, args, 1);
+    font_store_text(self, buf, 1);
 }
 
 /* the same, the format without the conversion of the characters */
@@ -114,7 +115,7 @@ void font_printf_at_raw(u8 *self, int x, int y, const char *fmt, u32 a, u32 b, u
 {
     u32 args[4];
     char buf[0x300];
-    u8 n = F(0x134 + (s8)F(0x12F));
+    u8 n = F(FONT_LAYER_N + (s8)F(FONT_LAYER));
 
     if (n >= 0x80)
         return;
@@ -125,8 +126,8 @@ void font_printf_at_raw(u8 *self, int x, int y, const char *fmt, u32 a, u32 b, u
     font_set_pos(self, x, y);
     queue_entry(self, n);
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 0);
-    func_08894754(self, buf, 0);
+    text_format(self, buf, 0x300, fmt, args, 0);
+    font_store_text(self, buf, 0);
 }
 
 void font_printf_at_color_raw(u8 *self, int x, int y, int color, const char *fmt, u32 a, u32 b,
@@ -134,7 +135,7 @@ void font_printf_at_color_raw(u8 *self, int x, int y, int color, const char *fmt
 {
     u32 args[3];
     char buf[0x300];
-    u8 n = F(0x134 + (s8)F(0x12F));
+    u8 n = F(FONT_LAYER_N + (s8)F(FONT_LAYER));
 
     if (n >= 0x80)
         return;
@@ -145,8 +146,8 @@ void font_printf_at_color_raw(u8 *self, int x, int y, int color, const char *fmt
     font_set_color(self, color);
     queue_entry(self, n);
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 0);
-    func_08894754(self, buf, 0);
+    text_format(self, buf, 0x300, fmt, args, 0);
+    font_store_text(self, buf, 0);
 }
 
 /* text with a shadow of color c1 moved by (dx, dy) */
@@ -166,18 +167,18 @@ void font_draw_layer(u8 *self, s8 l)
 
     if (l < 0 || l >= 6)
         return;
-    n = F(0x134 + l);
+    n = F(FONT_LAYER_N + l);
     if (n != 0) {
-        F(0x15D) = l;
-        func_08892FB0(self, l);
-        e = (u8 *)U32(self, 0x140 + l * 4);
+        F(FONT_DRAW_LAYER) = l;
+        font_begin_layer(self, l);
+        e = (u8 *)U32(self, FONT_LAYER_BUF + l * 4);
         for (i = 0; i < (s32)n; i++, e += 0xC)
-            func_0889377C(self, e);
+            font_draw_entry(self, e);
     }
-    n = F(0x13A + l);
+    n = F(FONT_ICON_N + l);
     if (n != 0) {
-        func_08892A88(self, self + l * 0x50 + 0x22B18, n, func_08894988(self));
-        func_088930A0(self);
+        font_draw_icons(self, self + l * 0x50 + 0x22B18, n, font_layer_dl(self));
+        font_end_layer(self);
     }
 }
 
@@ -196,7 +197,7 @@ u32 font_first_char_width(u8 *self, const char *s)
 
     if (s == NULL || *s == 0)
         return 0;
-    return func_08894874(self, utf8_decode(D_089CBBE8, &p)) == 0 ? 2 : 1;
+    return font_char_kind(self, utf8_decode(D_089CBBE8, &p)) == 0 ? 2 : 1;
 }
 
 /* copies s to d with the ASCII characters made full width (UTF-8) */
@@ -276,17 +277,17 @@ void font_cache_string(u8 *self, const char *s)
     const u8 *p = (const u8 *)s;
     u32 c;
 
-    memset(self + 0x22608, 0, 0x360);
+    memset(self + FONT_SLOT_CHAR, 0, 0x360);
     while (*p != 0) {
         c = (u16)jis_to_unicode(D_089CBBE8, (u16)sjis_decode(D_089CBBE8, &p));
         if (c == 0)
             break;
         if (c == 10 || c == 0x20 || c == 0xA0 || c == 0x2002 || c == 0x2003 || c == 0x3000)
             continue;
-        if ((s32)U16(self, 0x162) < U16(self, 0x11E) - 1 && func_08893198(self, c) != 0)
-            U16(self, 0x162)++;
+        if ((s32)U16(self, FONT_CACHE_OLD) < U16(self, FONT_CELLS_ALL) - 1 && glyph_cache_add(self, c) != 0)
+            U16(self, FONT_CACHE_OLD)++;
     }
-    func_08893390(self);
+    glyph_render_all(self);
 }
 
 /* characters of the UTF-8 string (the new lines are not counted) */
@@ -347,7 +348,7 @@ void font_draw_tagged(u8 *self, s16 limit, const char *src)
     char a[0x300], b[0x300];
     char *buf[2];
     s32 cur = 0, skip = 0, n = 0, kind, k, i;
-    s16 x0 = S16(self, 0x120), x = x0, y = S16(self, 0x122);
+    s16 x0 = S16(self, FONT_X), x = x0, y = S16(self, FONT_Y);
     const char *p, *q;
     char *out;
     u16 v;
@@ -385,8 +386,8 @@ void font_draw_tagged(u8 *self, s16 limit, const char *src)
                     continue;
                 }
                 if (t == 0x400) {
-                    font_add_icon(self, x, y, F(0x12D), (s8)F(0x12E), v & 0xFF);
-                    x = x + F(0x12C);
+                    font_add_icon(self, x, y, F(FONT_SIZE_H), (s8)F(FONT_COLOR), v & 0xFF);
+                    x = x + F(FONT_SIZE_W);
                     font_set_pos(self, x, y);
                     if (limit > 0)
                         limit--;
@@ -436,11 +437,11 @@ void font_draw_tagged(u8 *self, s16 limit, const char *src)
             return;
         }
         if (kind == 0) {
-            x = x + F(0x12C);
+            x = x + F(FONT_SIZE_W);
         } else if (kind == 1) {
-            x = x + (F(0x12C) >> 1);
+            x = x + (F(FONT_SIZE_W) >> 1);
         } else {
-            y = y + F(0x15F);
+            y = y + F(FONT_LINE_H);
             out[n - 1] = 0;
             x = x0;
             font_printf(self, D_089AD274, (u32)out, 0, 0, 0, 0, 0);
@@ -542,7 +543,7 @@ void font_draw(u8 *self, const char *fmt, u32 a, u32 b, u32 c, u32 d, u32 e, u32
     args[4] = e;
     args[5] = f;
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 1);
+    text_format(self, buf, 0x300, fmt, args, 1);
     func_088921FC(self, -1, buf);
 }
 
@@ -557,7 +558,7 @@ void font_draw_at(u8 *self, int x, int y, const char *fmt, u32 a, u32 b, u32 c, 
     args[3] = d;
     font_set_pos(self, x, y);
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 1);
+    text_format(self, buf, 0x300, fmt, args, 1);
     func_088921FC(self, -1, buf);
 }
 
@@ -572,6 +573,6 @@ void font_draw_at_color(u8 *self, int x, int y, int color, const char *fmt, u32 
     font_set_pos(self, x, y);
     font_set_color(self, color);
     memset(buf, 0, 0x300);
-    func_08893C6C(self, buf, 0x300, fmt, args, 1);
+    text_format(self, buf, 0x300, fmt, args, 1);
     func_088921FC(self, -1, buf);
 }

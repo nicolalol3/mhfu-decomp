@@ -5,6 +5,7 @@
  * 8 length, 0x10 sceSas voice, 0x14 id/conditions, 0x1B priority, 0x1C channel, 0x20/0x21
  * pan, 0x22/0x24 volumes, 0x26/0x28/0x2C pitch, 0x34 rate, 0x38/0x40 LFOs. */
 #include "common.h"
+#include "cse.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
 #define S16(p, off) (*(s16 *)((u8 *)(p) + (off)))
@@ -26,20 +27,20 @@ s32 cse_queue_get(s32 q, void *cmd);
 u8 *cse_used_first(void);
 u8 *cse_used_next(void);
 u32 cse_voice_give(u32 v);
-void func_088A0BEC(void);
-void func_088A0BF4(void *cmd);
+void stub_088a0bec(void);   /* -> cse_reset */
+void stub_088a0bf4(void *cmd);   /* -> cse_reset */
 s16 func_088A0BE4(s32 pan);
-s32 func_088A3554(void);
-u32 func_088A3560(void);
-void func_088A42F0(u8 *sas);
-void func_088A4344(u8 *sas);
+s32 sas_frame(void);
+u32 sas_ended(void);
+void sasv_key_off(u8 *sas);
+void sasv_reset(u8 *sas);
 void func_088A0DB0(void *cmd);
-void func_088A0DB8(void *cmd);
+void cse_cmd_play(void *cmd);
 void func_088A10E0(void *cmd);
 void func_088A10E8(void *cmd);
 void func_088A10F0(void *cmd);
-void func_088A10F8(void *cmd);
-void func_088A11F0(void *cmd);
+void cse_cmd_lfo(void *cmd);
+void cse_cmd_priority(void *cmd);
 
 void cse_chans_update(void);
 u32 cse_voices_update(void);
@@ -59,7 +60,7 @@ void cse_chan_stop_fade(u8 *cmd);
 u32 cse_set_data(u32 a)
 {
     D_09A0D138 = a;
-    func_088A0BEC();
+    stub_088a0bec();
     return 0;
 }
 
@@ -81,19 +82,19 @@ u32 cse_driver(void)
         if (r < 0)
             return 0;
         switch (cmd[0]) {
-        case 0x10000000: func_088A0DB8(cmd); break;
+        case 0x10000000: cse_cmd_play(cmd); break;
         case 0x10000001: func_088A10E0(cmd); break;
         case 0x10000002: func_088A10E8(cmd); break;
         case 0x10000003: func_088A10F0(cmd); break;
-        case 0x10000004: func_088A10F8(cmd); break;
-        case 0x10000006: func_088A11F0(cmd); break;
+        case 0x10000004: cse_cmd_lfo(cmd); break;
+        case 0x10000006: cse_cmd_priority(cmd); break;
         case 0x10000007: func_088A0DB0(cmd); break;
         case 0x10000008: break;
         case 0x10000009: cse_set_mono((u8 *)cmd); break;
         case 0x1000000A: cse_chan_volume((u8 *)cmd); break;
         case 0x1000000B: cse_chan_fade((u8 *)cmd); break;
         case 0x1000000C: cse_chan_stop_fade((u8 *)cmd); break;
-        case 0x1000000D: func_088A0BF4(cmd); break;
+        case 0x1000000D: stub_088a0bf4(cmd); break;
         default:
             printf(D_089B2374);
             printf(D_089B237C);
@@ -111,33 +112,33 @@ u32 cse_voices_update(void)
     u32 len;
 
     for (v = cse_used_first(); v != NULL; v = cse_used_next()) {
-        U32(v, 4)++;
-        v[0xC] = v[0xC] < 0x11 ? 0 : v[0xC] - 0x10;
-        cse_lfo_step(v + 0x38);
-        cse_lfo_step(v + 0x40);
-        st = U32(v, 0);
-        sas = (u8 *)U32(v, 0x10);
-        if (st == 1 && S16(sas, 4) == 0) {
-            if ((s32)U32(sas, 0) != func_088A3554()) {
-                U32(v, 0) = 2;
-                U16(sas, 4) = 1;
+        U32(v, CV_AGE)++;
+        v[CV_KEY] = v[CV_KEY] < 0x11 ? 0 : v[CV_KEY] - 0x10;
+        cse_lfo_step(v + CV_LFO1);
+        cse_lfo_step(v + CV_LFO2);
+        st = U32(v, CV_STATE);
+        sas = (u8 *)U32(v, CV_SAS);
+        if (st == 1 && S16(sas, SV_STATE) == 0) {
+            if ((s32)U32(sas, SV_FRAME) != sas_frame()) {
+                U32(v, CV_STATE) = 2;
+                U16(sas, SV_STATE) = 1;
             }
             continue;
         }
         if (st != 0 && st != 7)
             cse_voice_apply(v);
-        len = U32(v, 8);
-        if (len != 0 && len < U32(v, 4))
-            U32(v, 0) = 3;
-        if (U32(v, 0) == 4)
-            U32(v, 0) = 3;
-        if (U32(v, 0) == 3) {
-            func_088A42F0((u8 *)U32(v, 0x10));
-            U32(v, 0) = 5;
+        len = U32(v, CV_LENGTH);
+        if (len != 0 && len < U32(v, CV_AGE))
+            U32(v, CV_STATE) = 3;
+        if (U32(v, CV_STATE) == 4)
+            U32(v, CV_STATE) = 3;
+        if (U32(v, CV_STATE) == 3) {
+            sasv_key_off((u8 *)U32(v, CV_SAS));
+            U32(v, CV_STATE) = 5;
         }
-        if ((U32(U32(v, 0x10), 8) & func_088A3560()) != 0) {
+        if ((U32(U32(v, CV_SAS), 8) & sas_ended()) != 0) {
             cse_voice_stop(v);
-            U32(v, 0) = 7;
+            U32(v, CV_STATE) = 7;
         }
     }
     cse_voices_release();
@@ -147,21 +148,21 @@ u32 cse_voices_update(void)
 /* volume, pan and pitch of the voice to its sceSas voice */
 u32 cse_voice_apply(u8 *v)
 {
-    s16 ch = S16(D_09A0D140, (v[0x1C] & 0xF) * 0x10);
+    s16 ch = S16(D_09A0D140, (v[CV_CHANNEL] & 0xF) * 0x10);
     u8 *sas;
     s32 vol, pan, l, r, lfo;
     u32 rate;
     f32 f;
     u8 b;
 
-    lfo = cse_lfo_value(v + 0x40);
-    vol = ((s32)(ch * U16(v, 0x22)) / 0xFFF) * ((u32)(U16(v, 0x24) * v[0x2A]) / 100) / 0xFFF +
+    lfo = cse_lfo_value(v + CV_LFO2);
+    vol = ((s32)(ch * U16(v, CV_VOL)) / 0xFFF) * ((u32)(U16(v, CV_VOL2) * v[CV_X2A]) / 100) / 0xFFF +
           lfo;
     if (vol >= 0x1000)
         vol = 0xFFF;
     else if (vol < 0)
         vol = 0;
-    pan = v[0x20] + (v[0x21] - 0x40);
+    pan = v[CV_PAN] + (v[CV_PAN2] - 0x40);
     if (pan >= 0x80)
         pan = 0xFE;
     else if (pan < 0)
@@ -170,44 +171,44 @@ u32 cse_voice_apply(u8 *v)
         pan <<= 1;
     l = (vol * func_088A0BE4(pan)) / 0x7FFF;
     r = (vol * (s16)cse_sin(pan)) / 0x7FFF;
-    lfo = cse_lfo_value(v + 0x38);
-    rate = U32(v, 0x34);
-    f = powf(2.0f, (f32)(S16(v, 0x2C) + S16(v, 0x26) + S16(v, 0x28) + lfo) / 1200.0f);
+    lfo = cse_lfo_value(v + CV_LFO1);
+    rate = U32(v, CV_RATE);
+    f = powf(2.0f, (f32)(S16(v, CV_BEND) + S16(v, CV_PITCH) + S16(v, CV_PITCH2) + lfo) / 1200.0f);
     f = (f32)rate * f;
     rate = ((u32)f << 12) / 44100;
-    sas = (u8 *)U32(v, 0x10);
+    sas = (u8 *)U32(v, CV_SAS);
     if (D_09A0D13C == 0) {
-        S16(sas, 0x10) = l;
-        S16(sas, 0x12) = r;
+        S16(sas, SV_VOL_L) = l;
+        S16(sas, SV_VOL_R) = r;
     } else {
-        S16(sas, 0x10) = (l + r) / 2;
-        S16(sas, 0x12) = (l + r) / 2;
+        S16(sas, SV_VOL_L) = (l + r) / 2;
+        S16(sas, SV_VOL_R) = (l + r) / 2;
     }
-    U16(sas, 0x20) = U16(v, 0x32);
-    U16(sas, 0x22) = U16(v, 0x32);
-    U32(sas, 0xC) |= 0x400;
+    U16(sas, SV_ENV_A) = U16(v, CV_ENV);
+    U16(sas, SV_ENV_B) = U16(v, CV_ENV);
+    U32(sas, SV_FLAGS) |= 0x400;
     if (rate > 0x3FFF)
         rate = 0x3FFF;
-    S16(sas, 0x14) = rate;
-    U32(sas, 0xC) |= 4;
-    b = v[0x19] & 0xC0;
+    S16(sas, SV_PITCH) = rate;
+    U32(sas, SV_FLAGS) |= 4;
+    b = v[CV_FLAGS2] & 0xC0;
     if (b == 0) {
-        if ((v[0x18] & 0xC0) == 0x80)
-            v[0x1A] = -(s8)v[0x1A];
-    } else if (b == 0x80 && (v[0x18] & 0xC0) == 0) {
-        v[0x1A] = -(s8)v[0x1A];
+        if ((v[CV_FLAGS] & 0xC0) == 0x80)
+            v[CV_X1A] = -(s8)v[CV_X1A];
+    } else if (b == 0x80 && (v[CV_FLAGS] & 0xC0) == 0) {
+        v[CV_X1A] = -(s8)v[CV_X1A];
     }
-    v[0x19] = v[0x18];
-    S16(sas, 0x10) = S16(sas, 0x10) * (s8)v[0x1A];
-    S16(sas, 0x12) = S16(sas, 0x12) * (s8)v[0x1A];
-    if ((v[0x18] & 0x80) != 0)
-        S16(sas, 0x10) = -S16(sas, 0x10);
+    v[CV_FLAGS2] = v[CV_FLAGS];
+    S16(sas, SV_VOL_L) = S16(sas, SV_VOL_L) * (s8)v[CV_X1A];
+    S16(sas, SV_VOL_R) = S16(sas, SV_VOL_R) * (s8)v[CV_X1A];
+    if ((v[CV_FLAGS] & 0x80) != 0)
+        S16(sas, SV_VOL_L) = -S16(sas, SV_VOL_L);
     return 0;
 }
 
 u32 cse_voice_stop(u8 *v)
 {
-    func_088A4344((u8 *)U32(v, 0x10));
+    sasv_reset((u8 *)U32(v, CV_SAS));
     return 0;
 }
 
@@ -217,8 +218,8 @@ u32 cse_voices_release(void)
     u8 *v = cse_used_first(), *next;
 
     while (v != NULL) {
-        if (U32(v, 0) == 7) {
-            U32(v, 0) = 0;
+        if (U32(v, CV_STATE) == 7) {
+            U32(v, CV_STATE) = 0;
             next = cse_used_next();
             cse_voice_give((u32)v);
         } else {
@@ -300,25 +301,25 @@ u32 cse_voices_command(u16 *req, u32 mask, s32 cmd)
     s16 p;
 
     for (v = cse_used_first(); v != NULL; v = cse_used_next()) {
-        if (U32(v, 0) == 0 || cse_match(v + 0x14, r, mask) == 0)
+        if (U32(v, CV_STATE) == 0 || cse_match(v + CV_ID, r, mask) == 0)
             continue;
-        if (r[3] < v[0x1B]) {
+        if (r[3] < v[CV_PRIORITY]) {
             ret = 0;
         } else if (cmd == 0x10000003) {
             if ((req[0] & 0x100) != 0) {
                 x = (s16)req[4];
                 if (x >= 0 && x < 0x80)
-                    U16(v, 0x24) = x < 1 ? 0 : x * 0xFFF / 0x7F;
+                    U16(v, CV_VOL2) = x < 1 ? 0 : x * 0xFFF / 0x7F;
             }
             if ((req[0] & 0x200) != 0) {
                 x = (s16)req[5];
                 if (x >= 0 && x < 0x80) {
-                    v[0x21] = x;
-                    v[0x18] = (v[0x18] & 0x3F) | (r[2] & 0xC0);
+                    v[CV_PAN2] = x;
+                    v[CV_FLAGS] = (v[CV_FLAGS] & 0x3F) | (r[2] & 0xC0);
                 }
             }
             if ((req[0] & 0x400) != 0)
-                U16(v, 0x28) = req[6];
+                U16(v, CV_PITCH2) = req[6];
             if ((req[0] & 0x800) != 0) {
                 if ((s16)req[7] >= 0x2000)
                     req[7] = 0x1FFF;
@@ -326,26 +327,26 @@ u32 cse_voices_command(u16 *req, u32 mask, s32 cmd)
                     req[7] = 0xE000;
                 p = req[7];
                 if (p < 0)
-                    S16(v, 0x2C) = (s32)(U16(v, 0x30) * p) / 0x2000;
+                    S16(v, CV_BEND) = (s32)(U16(v, CV_BEND_DOWN) * p) / 0x2000;
                 else
-                    S16(v, 0x2C) = (s32)(U16(v, 0x2E) * p) / 0x1FFF;
+                    S16(v, CV_BEND) = (s32)(U16(v, CV_BEND_UP) * p) / 0x1FFF;
             }
             if ((req[0] & 0x4000) != 0)
-                v[0x1B] = r[3];
+                v[CV_PRIORITY] = r[3];
             if ((req[0] & 0x1000) != 0)
-                v[0x2A] = r[0x13];
+                v[CV_X2A] = r[0x13];
             if ((req[0] & 0x2000) != 0)
-                U16(v, 0x32) = r[0x11];
+                U16(v, CV_ENV) = r[0x11];
         } else if (cmd == 0x10000001) {
-            if (U32(v, 0) == 1) {
+            if (U32(v, CV_STATE) == 1) {
                 cse_voice_stop(v);
-                U32(v, 0) = 7;
+                U32(v, CV_STATE) = 7;
             } else {
-                U32(v, 0) = 3;
+                U32(v, CV_STATE) = 3;
             }
         } else if (cmd == 0x10000002) {
             cse_voice_stop(v);
-            U32(v, 0) = 7;
+            U32(v, CV_STATE) = 7;
         }
     }
     return ret;
@@ -358,18 +359,18 @@ u32 cse_voices_priority(u8 *req, u32 mask, u16 *upd)
     u32 s;
 
     for (v = cse_used_first(); v != NULL; v = cse_used_next()) {
-        if (U32(v, 0) == 0 || cse_match(v + 0x14, req, mask) == 0)
+        if (U32(v, CV_STATE) == 0 || cse_match(v + CV_ID, req, mask) == 0)
             continue;
         if ((upd[0] & 0x100) != 0) {
-            v[0x1B] = (u8)upd[1];
+            v[CV_PRIORITY] = (u8)upd[1];
         } else if ((upd[0] & 0x200) != 0) {
-            s = v[0x1B] + (u8)upd[1];
-            v[0x1B] = s < 0x80 ? s : 0x7F;
+            s = v[CV_PRIORITY] + (u8)upd[1];
+            v[CV_PRIORITY] = s < 0x80 ? s : 0x7F;
         }
         if ((upd[0] & 0x400) != 0)
-            v[0x1E] = u[3];
+            v[CV_ID1] = u[3];
         if ((upd[0] & 0x800) != 0)
-            v[0x1F] = (u8)upd[2];
+            v[CV_ID2] = (u8)upd[2];
     }
     return 0;
 }
@@ -381,15 +382,15 @@ u8 *cse_voice_to_replace(u16 *req)
     u8 *v, *best = NULL;
 
     for (v = cse_used_first(); v != NULL; v = cse_used_next()) {
-        if (U32(v, 0) != 1 && U32(v, 0) != 2)
+        if (U32(v, CV_STATE) != 1 && U32(v, CV_STATE) != 2)
             continue;
-        if (cse_match(v + 0x14, (u8 *)req, mask) == 0)
+        if (cse_match(v + CV_ID, (u8 *)req, mask) == 0)
             continue;
         if (best == NULL)
             best = v;
-        else if (v[0x1B] < best[0x1B])
+        else if (v[CV_PRIORITY] < best[CV_PRIORITY])
             best = v;
-        else if (v[0x1B] == best[0x1B] && U32(best, 4) < U32(v, 4))
+        else if (v[CV_PRIORITY] == best[CV_PRIORITY] && U32(best, CV_AGE) < U32(v, CV_AGE))
             best = v;
     }
     return best;
@@ -403,11 +404,11 @@ s32 cse_voices_count(u16 *req, s32 mode)
     s32 n = 0;
 
     for (v = cse_used_first(); v != NULL; v = cse_used_next()) {
-        if (cse_match(v + 0x14, (u8 *)req, mask) != 1)
+        if (cse_match(v + CV_ID, (u8 *)req, mask) != 1)
             continue;
         if (mode == 0)
             n++;
-        else if (mode == 1 && U32(v, 0) - 1 < 2)
+        else if (mode == 1 && U32(v, CV_STATE) - 1 < 2)
             n++;
     }
     return n;

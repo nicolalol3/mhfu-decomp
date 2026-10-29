@@ -13,12 +13,12 @@ s32 vec3_nonzero(f32 *v);
 void func_08886B68(u8 *self);
 void func_08888B84(u8 *self);
 s32 camscript_update(u8 *self);
-s32 func_0888C9F8(u8 *self);
+s32 cam_event_update(u8 *self);
 u8 func_0888A73C(u8 *self, u8 *st);
 void func_0888A8C0(u8 *self, u8 *st);
 s32 camrail_nearest(u8 *self, u8 *rail, f32 *pos);
 s32 camrail_locate(u8 *self, f32 *st, u8 *rail, u32 x);
-u8 func_0888D708(u8 *self);
+u8 cam_lockon_active(u8 *self);
 
 void cammode_none(u8 *self);
 void cammode_init_3(u8 *self);
@@ -129,7 +129,7 @@ void cammode_update_5(u8 *self)
 
     self[0x91] = 0;
     if (self[0x98] == 2) {
-        r = func_0888C9F8(self);
+        r = cam_event_update(self);
     } else if (self[0x98] == 1) {
         r = camscript_update(self);
     } else if (self[0x98] == 0) {
@@ -141,7 +141,7 @@ void cammode_update_5(u8 *self)
         U32(self, 0x9C) = 0;
         if (D_08938234[self[0xEE]] == -1) {
             self[0x98] = 2;
-            r = func_0888C9F8(self);
+            r = cam_event_update(self);
         } else {
             self[0x98] = 1;
             r = camscript_update(self);
@@ -273,7 +273,7 @@ void cammode_lockon(u8 *self, u8 *st)
     u32 k;
 
     self[0x91] = 0;
-    k = func_0888D708(self) & 0xFF;
+    k = cam_lockon_active(self) & 0xFF;
     U32(st, 4) = k;
     if (k == 0) {
         st[0] = 0;

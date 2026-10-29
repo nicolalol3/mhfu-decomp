@@ -2,6 +2,7 @@
  * formatted text to 16-bit characters, width class of the characters, the small objects
  * of the popup manager. (Guessed names.) */
 #include "libc.h"
+#include "font.h"
 #include "vfpu.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
@@ -42,16 +43,16 @@ void glyph_draw(u8 *self, u32 ch, s32 half, u8 *e)
     s32 c;
     s16 dy;
 
-    if (U16(self, 0x2628 + (ch & 0xFFFF) * 2) == 0xFFFF)
+    if (U16(self, FONT_SLOT_OF + (ch & 0xFFFF) * 2) == 0xFFFF)
         return;
     if ((s8)e[6] >= 0x30)
         e[6] = 0;
     c = (s8)e[6];
-    col = c < 0 ? U32(self, 0x164) : U32(self, 0x168 + c * 4);
-    slot = U16(self, 0x2628 + (ch & 0xFFFF) * 2);
-    u = F(0x118) * (slot % F(0x11A));
-    v = F(0x119) * ((slot / F(0x11A)) % F(0x11B));
-    vram_get_surface(g_vram, (slot / U16(self, 0x11C) + 3) & 0xFF, surf);
+    col = c < 0 ? U32(self, FONT_PALETTE) : U32(self, FONT_COLORS + c * 4);
+    slot = U16(self, FONT_SLOT_OF + (ch & 0xFFFF) * 2);
+    u = F(FONT_CELL_W) * (slot % F(FONT_COLS));
+    v = F(FONT_CELL_H) * ((slot / F(FONT_COLS)) % F(FONT_ROWS));
+    vram_get_surface(g_vram, (slot / U16(self, FONT_CELLS) + 3) & 0xFF, surf);
     if (half == 0 || half == 2)
         w = e[4];
     else
@@ -74,12 +75,12 @@ void glyph_draw(u8 *self, u32 ch, s32 half, u8 *e)
     p = dl_cur(D_08A62C40);
     p[0] = v << 16 | u;
     p[1] = (col & 0xFFFFFF) | 0xFF000000;
-    p[2] = U16(self, 0x126) | (S16(self, 0x128) + dy) << 16;
-    p[3] = U16(self, 0x12A);
-    p[4] = (v + F(0x119)) << 16 | (u + F(0x118));
+    p[2] = U16(self, FONT_DRAW_X) | (S16(self, FONT_DRAW_Y) + dy) << 16;
+    p[3] = U16(self, FONT_DRAW_Z);
+    p[4] = (v + F(FONT_CELL_H)) << 16 | (u + F(FONT_CELL_W));
     p[5] = (col & 0xFFFFFF) | 0xFF000000;
-    p[6] = (e[5] + S16(self, 0x128) + dy) << 16 | ((S16(self, 0x126) + (u8)w) & 0xFFFF);
-    p[7] = U16(self, 0x12A);
+    p[6] = (e[5] + S16(self, FONT_DRAW_Y) + dy) << 16 | ((S16(self, FONT_DRAW_X) + (u8)w) & 0xFFFF);
+    p[7] = U16(self, FONT_DRAW_Z);
     p[8] = ((u32)p & 0xFF000000) >> 8 | 0x10000000;
     p[9] = ((u32)p & 0xFFFFFF) | 0x01000000;
     p[10] = 0xC2000000;
@@ -110,7 +111,7 @@ void glyph_draw(u8 *self, u32 ch, s32 half, u8 *e)
 void font_store_text(u8 *self, const char *s, s8 utf8)
 {
     const u8 *p = (const u8 *)s;
-    u16 *d = &U16(self, 0x22CF8 + U16(self, 0x160));
+    u16 *d = &U16(self, FONT_TEXT + U16(self, FONT_TEXT_POS));
     s32 over = 0;
 
     while (*p != 0) {
@@ -118,19 +119,19 @@ void font_store_text(u8 *self, const char *s, s8 utf8)
             *d = utf8_decode(D_089CBBE8, &p);
         else
             *d = jis_to_unicode(D_089CBBE8, sjis_decode(D_089CBBE8, &p));
-        U16(self, 0x160) += 2;
+        U16(self, FONT_TEXT_POS) += 2;
         d++;
-        if (U16(self, 0x160) > 0x2FFF) {
-            U16(self, 0x160) = 0x2FFE;
+        if (U16(self, FONT_TEXT_POS) > 0x2FFF) {
+            U16(self, FONT_TEXT_POS) = 0x2FFE;
             over++;
-            d = &U16(self, 0x22CF8 + U16(self, 0x160));
+            d = &U16(self, FONT_TEXT + U16(self, FONT_TEXT_POS));
         }
     }
     *d = 0;
     if (over == 0) {
-        U16(self, 0x160) += 2;
-        if (U16(self, 0x160) > 0x2FFF)
-            U16(self, 0x160) = 0x2FFE;
+        U16(self, FONT_TEXT_POS) += 2;
+        if (U16(self, FONT_TEXT_POS) > 0x2FFF)
+            U16(self, FONT_TEXT_POS) = 0x2FFE;
     }
 }
 
@@ -161,7 +162,7 @@ u32 font_char_kind(u8 *self, u16 c)
 /* layer of the display lists for the font layer being drawn */
 u32 font_layer_dl(u8 *self)
 {
-    switch (F(0x15D)) {
+    switch (F(FONT_DRAW_LAYER)) {
     case 0: return 9;
     case 1: return 10;
     case 2: return 11;
@@ -175,7 +176,7 @@ u32 font_layer_dl(u8 *self)
 /* the color -1 blinks (red-orange) */
 void font_blink_color(u8 *self)
 {
-    f32 x = (f32)(u16)((F(0x15E) & 0x1F) << 11);
+    f32 x = (f32)(u16)((F(FONT_BLINK) & 0x1F) << 11);
     f32 s = vfpu_sinf(3.1415927f * x / 32768.0f);
     u32 r = (u8)((s8)(s32)(s * 64.0f) + 0x50);
     u32 g = (u8)((s8)(s32)(s * 20.0f) + 0xE4);
@@ -209,26 +210,26 @@ void font_tag_number(u8 *self, char *d, s16 kind, u8 utf8)
 /* icon in the text (up to 10 for each layer) */
 void font_add_icon(u8 *self, u16 x, u16 y, u16 id, u8 a, s16 b)
 {
-    u8 n = F(0x13A + (s8)F(0x12F));
+    u8 n = F(FONT_ICON_N + (s8)F(FONT_LAYER));
     u8 *e;
 
     if (n >= 10)
         return;
     if (b == 0xC)
         b = 0xB;
-    e = self + (s8)F(0x12F) * 0x50 + n * 8;
+    e = self + (s8)F(FONT_LAYER) * 0x50 + n * 8;
     U16(e, 0x22B18) = x;
     U16(e, 0x22B1A) = y;
     U16(e, 0x22B1C) = id;
     e[0x22B1E] = b;
     e[0x22B1F] = a;
-    F(0x13A + (s8)F(0x12F))++;
+    F(FONT_ICON_N + (s8)F(FONT_LAYER))++;
 }
 
 /* advance of the character (w: width of the string entry) */
 u32 font_char_advance(u8 *self, u32 ch, s32 half, u32 w)
 {
-    if (F(0x130) == 0) {
+    if (F(FONT_FIXED) == 0) {
         if (half == 0)
             return w & 0xFF;
         return (w & 0xFF) >> 1;
@@ -496,7 +497,7 @@ void font_draw_icons(u8 *self, u8 *e, s8 n, u32 layer)
             if ((s8)e[7] >= 0x30)
                 e[7] = 0;
             c = e[7];
-            col = (c < 0 ? U32(self, 0x164) : U32(self, 0x168 + c * 4)) | 0xFF000000;
+            col = (c < 0 ? U32(self, FONT_PALETTE) : U32(self, FONT_COLORS + c * 4)) | 0xFF000000;
         } else {
             col = 0xFFFFFFFF;
         }
@@ -504,11 +505,11 @@ void font_draw_icons(u8 *self, u8 *e, s8 n, u32 layer)
         p[0] = v << 16 | u;
         p[1] = col;
         p[2] = U32(e, 0);
-        p[3] = U16(self, 0x12A);
+        p[3] = U16(self, FONT_DRAW_Z);
         p[4] = (v + h) << 16 | (u + w);
         p[5] = col;
         p[6] = (S16(e, 2) + S16(e, 4)) << 16 | ((S16(e, 0) + S16(e, 4)) & 0xFFFF);
-        p[7] = U16(self, 0x12A);
+        p[7] = U16(self, FONT_DRAW_Z);
         p[8] = ((u32)p & 0xFF000000) >> 8 | 0x10000000;
         p[9] = ((u32)p & 0xFFFFFF) | 0x01000000;
         p[10] = 0x1E000001;

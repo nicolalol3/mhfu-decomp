@@ -24,8 +24,8 @@ void func_088B3718(u8 *info);
 void func_088B3744(u8 *mac);
 void func_088B3A3C(u8 *info);
 void func_088B3FFC(u8 *mac, u8 *v);
-void func_088B0D2C(u8 *buf);
-void func_088B0C8C(u8 *data);
+void lobbyapi_get_29d3c(u8 *buf);
+void lobbyapi_set_info(u8 *data);
 
 u8 *net_my_mac(u8 *self);
 void net_sort(u8 *self, s32 n, u8 *list, s32 size, u8 *key, u8 *tmp);
@@ -148,7 +148,7 @@ void net_cb_player_data(const u8 *ev)
     s32 i;
     u8 old;
 
-    func_088B0D2C(buf);
+    lobbyapi_get_29d3c(buf);
     for (i = 0; i < (s8)n[0xEE3]; i++) {
         e = n + i * 200 + 0x57C;
         if (mac_cmp(e, buf) != 0)
@@ -383,7 +383,7 @@ void net_send_my_data(u8 *self, const void *data, u32 size)
     e = my_entry(self);
     if (e != NULL) {
         memcpy(e + 0x20, data, size);
-        func_088B0C8C(e + 0x20);
+        lobbyapi_set_info(e + 0x20);
     }
     U32(self, 0x12D0) = 0x3C;
 }
@@ -449,7 +449,7 @@ void net_send_entry(u8 *self)
     for (i = 0; i < (s8)self[0xEE3]; i++) {
         me = net_my_mac(self);
         if (mac_cmp(self + i * 200 + 0x57C, me) == 0) {
-            func_088B0C8C(self + i * 200 + 0x59C);
+            lobbyapi_set_info(self + i * 200 + 0x59C);
             break;
         }
     }

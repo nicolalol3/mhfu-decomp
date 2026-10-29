@@ -10,7 +10,7 @@ extern const u32 D_089BAB98[], D_089BAA94[];
 extern const f32 D_089AD40C[3];
 
 void *heap_alloc(void *h, u32 size, u32 align);
-void *func_08897290(u32 size, void *p);
+void *placement_new(u32 size, void *p);
 s32 vec3_nonzero(f32 *v);
 u32 scene_slot_used(u8 **self, u32 i);
 u8 *popup_obj_ctor(void *p);
@@ -22,7 +22,7 @@ u8 *func_088B8374(void *p);
 u8 *func_088B9DA8(void *p);
 u8 *func_088BA0BC(void *p);
 u8 *func_089038C4(void *p);
-u8 *func_088A6FEC(void *p);
+u8 *ovltask_ctor(void *p);
 u8 *func_088B97BC(void *p);
 u8 *func_088CC568(void *p);
 u8 *func_08906744(void *p);
@@ -32,7 +32,7 @@ typedef u8 *(*SceneCtor)(void *p);
 /* the fade object (scene 12) */
 static u8 *fade_obj_ctor(void *mem)
 {
-    u32 *o = func_08897290(0x34, mem);
+    u32 *o = placement_new(0x34, mem);
     f32 v[3];
 
     if (o == NULL)
@@ -94,7 +94,7 @@ void scene_start(u8 **self, u8 slot, u32 kind)
     };
     static const SceneCtor ctor[15] = {
         NULL, popup_obj_ctor, func_088B9B0C, posobj_ctor, pos_obj2_ctor, pos_obj_ctor,
-        func_088B8374, func_088B9DA8, func_088BA0BC, func_089038C4, func_088A6FEC, func_088B97BC,
+        func_088B8374, func_088B9DA8, func_088BA0BC, func_089038C4, ovltask_ctor, func_088B97BC,
         NULL, func_088CC568, func_08906744
     };
     void *mem;
@@ -112,7 +112,7 @@ void scene_start(u8 **self, u8 slot, u32 kind)
     if (kind == 12) {
         o = fade_obj_ctor(mem);
     } else {
-        o = func_08897290(size[kind], mem);
+        o = placement_new(size[kind], mem);
         if (o != NULL)
             o = ctor[kind](o);
     }

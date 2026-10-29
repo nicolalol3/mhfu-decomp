@@ -16,12 +16,12 @@ void heap_free(void *h, void *p);
 void *memset(void *p, int c, u32 n);
 char *strcpy(char *d, const char *s);
 s32 temp_find_free(u8 *self);
-void func_0889E440(u8 *p);
-void func_0889E670(u8 *p);
-void func_088B0C68(u8 *self);
-void func_088B0A58(char *name);
-void func_088B06C0(void *cb, u8 *self);
-u8 *func_0889C518(u8 *self);
+void netreq_clear(u8 *p);
+void netmsg_clear(u8 *p);
+void lobbyapi_term(u8 *self);
+void lobbyapi_init(char *name);
+void lobbyapi_scan(void *cb, u8 *self);
+u8 *net_my_mac(u8 *self);
 
 void temp_init(u8 *self, u32 size)
 {
@@ -109,14 +109,14 @@ void net_init_state(u8 *self)
     self[0x146C] = 0;
     self[0x146D] = 0xFF;
     self[0x146E] = 0;
-    func_0889E440(self + 0x1B00);
-    func_0889E670(self + 0x1B28);
-    func_0889E670(self + 0x1B48);
+    netreq_clear(self + 0x1B00);
+    netmsg_clear(self + 0x1B28);
+    netmsg_clear(self + 0x1B48);
 }
 
 void net_reset(u8 *self)
 {
-    func_088B0C68(self);
+    lobbyapi_term(self);
     self[4] = 0;
     self[0x1AFC] = 0;
     self[0x12D5] = 0;
@@ -124,14 +124,14 @@ void net_reset(u8 *self)
     U32(self, 0x12C0) = 0;
 }
 
-/* the 8 bytes of the address of the console (from func_0889C518) */
+/* the 8 bytes of the address of the console (from net_my_mac) */
 void net_get_mac(u8 *self, u8 *out)
 {
     u8 *m;
     s32 i;
 
     memset(out, 0, 0x20);
-    m = func_0889C518(self);
+    m = net_my_mac(self);
     for (i = 0; i < 3; i++) {
         out[i * 2] = m[i * 2];
         out[i * 2 + 1] = m[i * 2 + 1];
@@ -141,16 +141,16 @@ void net_get_mac(u8 *self, u8 *out)
 }
 
 void *memcpy(void *d, const void *s, u32 n);
-void func_0889E47C(u8 *p, u8 *mac, u32 a);
+void netreq_start(u8 *p, u8 *mac, u32 a);
 void func_088B3A68(u8 *peer, u8 *data, void *cb, u8 *self);
 void func_088B3DE4(u8 *peer, void *cb, u8 *self);
 void func_088B3684(u8 *n, u8 *list);
-void func_088B0E2C(u8 *n, u8 *list);
-u8 *func_0889CE10(u8 *self);
-void func_0889CF34(u8 *self, s32 a);
-void func_0889D6EC(u8 *self);
-void func_0889C75C(u8 *self);
-void func_0889C788(u8 *self);
+void lobbyapi_players(u8 *n, u8 *list);
+u8 *net_room_find(u8 *self);
+void net_set_state(u8 *self, s32 a);
+void net_send_entry(u8 *self);
+void net_sort_players(u8 *self);
+void net_sort_rooms(u8 *self);
 void net_join(u8 *self, s8 i, const u8 *data);
 u8 *net_select(u8 *self, u32 i);
 void net_select_mac(u8 *self, const u8 *mac);
@@ -186,7 +186,7 @@ u32 net_join_by_mac(u8 *self, const u8 *mac, const u8 *data)
 u8 *net_connect_index(u8 *self, u32 i, u32 a)
 {
     net_select(self, i);
-    func_0889E47C(self + 0x1B00, self + 0x12C8, a);
+    netreq_start(self + 0x1B00, self + 0x12C8, a);
     return self + 0x12C8;
 }
 
@@ -227,7 +227,7 @@ u8 *net_select(u8 *self, u32 i)
 void net_select_mac(u8 *self, const u8 *mac)
 {
     U32(self, 0x12C0) |= 0x200;
-    func_088B3DE4(func_0889CE10(self), (void *)0x0889A828, self);
+    func_088B3DE4(net_room_find(self), (void *)0x0889A828, self);
     copy_mac(self + 0x12C8, mac);
     self[0x12CE] = mac[6];
     self[0x12CF] = mac[7];
@@ -236,7 +236,7 @@ void net_select_mac(u8 *self, const u8 *mac)
 void net_connect_mac(u8 *self, const u8 *mac, u32 a)
 {
     net_select_mac(self, mac);
-    func_0889E47C(self + 0x1B00, (u8 *)mac, a);
+    netreq_start(self + 0x1B00, (u8 *)mac, a);
 }
 
 /* ---- callbacks of the ad hoc library: event {.., net, result, error} ---- */
@@ -265,8 +265,8 @@ void net_cb_create(const u8 *ev)
         net_event_error(n);
         return;
     }
-    func_0889CF34(n, 1);
-    func_0889D6EC(n);
+    net_set_state(n, 1);
+    net_send_entry(n);
 }
 
 void net_cb_connect(const u8 *ev)
@@ -277,8 +277,8 @@ void net_cb_connect(const u8 *ev)
         net_event_error(n);
         return;
     }
-    func_0889CF34(n, 0);
-    func_0889D6EC(n);
+    net_set_state(n, 0);
+    net_send_entry(n);
 }
 
 void net_cb_leave(const u8 *ev)
@@ -289,8 +289,8 @@ void net_cb_leave(const u8 *ev)
         n[0x1AFC] = 1;
         return;
     }
-    func_0889CF34(n, 2);
-    func_0889D6EC(n);
+    net_set_state(n, 2);
+    net_send_entry(n);
 }
 
 void net_cb_join(const u8 *ev)
@@ -301,8 +301,8 @@ void net_cb_join(const u8 *ev)
         net_event_error(n);
         return;
     }
-    func_0889CF34(n, 1);
-    func_0889D6EC(n);
+    net_set_state(n, 1);
+    net_send_entry(n);
 }
 
 /* list of the players (200 bytes each from 0x57C): our entry gets our data */
@@ -317,9 +317,9 @@ void net_cb_players(const u8 *ev)
         return;
     }
     memset(n + 0x57C, 0, 800);
-    func_088B0E2C(n + 0xEE3, n + 0x57C);
-    func_0889C75C(n);
-    me = func_0889C518(n);
+    lobbyapi_players(n + 0xEE3, n + 0x57C);
+    net_sort_players(n);
+    me = net_my_mac(n);
     for (i = 0; i < (s8)n[0xEE3]; i++) {
         if (mac_cmp(me, n + i * 200 + 0x57C) == 0) {
             e = n + i * 200 + 0x57C;
@@ -342,17 +342,17 @@ void net_cb_scan(const u8 *ev)
         return;
     }
     func_088B3684(n + 0x12D8, n + 0x12DC);
-    func_0889C788(n);
+    net_sort_rooms(n);
 }
 
-void func_0889D244(u8 *self, s32 a);
+void net_set_host(u8 *self, s32 a);
 void func_088B3A3C(u8 *info);
-void func_0889D318(u8 *self, u8 *info);
-void func_0889CA88(u8 *self, u8 *info);
-void func_0889D008(u8 *self, u32 a);
+void net_set_my_group(u8 *self, u8 *info);
+void net_room_add(u8 *self, u8 *info);
+void net_set_my_b3(u8 *self, u32 a);
 void func_088B3F60(u8 *n, u8 *list);
-void func_0889C7B4(u8 *self);
-void func_0889CD24(u8 *self, u8 *mac);
+void net_sort_room_list(u8 *self);
+void net_room_remove(u8 *self, u8 *mac);
 
 static void net_event_error3(u8 *n)
 {
@@ -372,14 +372,14 @@ void net_cb_host(const u8 *ev)
         net_event_error(n);
         return;
     }
-    func_0889CF34(n, 3);
-    func_0889D244(n, 1);
+    net_set_state(n, 3);
+    net_set_host(n, 1);
     func_088B3A3C(b);
-    func_0889D318(n, b);
+    net_set_my_group(n, b);
     func_088B3A3C(a);
-    func_0889CA88(n, a);
-    func_0889D008(n, a[0x5D]);
-    func_0889D6EC(n);
+    net_room_add(n, a);
+    net_set_my_b3(n, a[0x5D]);
+    net_send_entry(n);
 }
 
 /* joined the room */
@@ -399,12 +399,12 @@ void net_cb_joined(const u8 *ev)
             U32(n, 0x12C4) &= ~0x200;
         return;
     }
-    func_0889CF34(n, 3);
-    func_0889D244(n, 0);
+    net_set_state(n, 3);
+    net_set_host(n, 0);
     func_088B3A3C(a);
-    func_0889D318(n, a);
-    func_0889D008(n, a[0x5D]);
-    func_0889D6EC(n);
+    net_set_my_group(n, a);
+    net_set_my_b3(n, a[0x5D]);
+    net_send_entry(n);
 }
 
 /* list of the rooms */
@@ -422,7 +422,7 @@ void net_cb_rooms(const u8 *ev)
     }
     memset(n + 0x25C, 0, 800);
     func_088B3F60(n + 0xEE1, n + 0x25C);
-    func_0889C7B4(n);
+    net_sort_room_list(n);
 }
 
 void net_cb_left(const u8 *ev)
@@ -433,11 +433,11 @@ void net_cb_left(const u8 *ev)
         net_event_error3(n);
         return;
     }
-    func_0889CF34(n, 2);
+    net_set_state(n, 2);
     if (n[0x12D6] != 0)
-        func_0889CD24(n, func_0889C518(n));
-    func_0889D244(n, 0);
-    func_0889D6EC(n);
+        net_room_remove(n, net_my_mac(n));
+    net_set_host(n, 0);
+    net_send_entry(n);
 }
 
 void net_cb_closed(const u8 *ev)
@@ -448,8 +448,8 @@ void net_cb_closed(const u8 *ev)
         net_event_error3(n);
         return;
     }
-    func_0889CF34(n, 4);
-    func_0889D6EC(n);
+    net_set_state(n, 4);
+    net_send_entry(n);
 }
 
 void net_cb_info(const u8 *ev)
@@ -461,10 +461,10 @@ void net_cb_info(const u8 *ev)
         net_event_error3(n);
         return;
     }
-    func_0889CF34(n, 3);
+    net_set_state(n, 3);
     func_088B3A3C(a);
-    func_0889D318(n, a);
-    func_0889D6EC(n);
+    net_set_my_group(n, a);
+    net_send_entry(n);
 }
 
 void net_cb_end(const u8 *ev)
@@ -475,9 +475,9 @@ void net_cb_end(const u8 *ev)
         n[0x1AFC] = 1;
 }
 
-void func_088B19CC(u8 *p);
-void func_0889C81C(u8 *self);
-void func_088B1A04(u8 *p);
+void lobbyapi_host_entry(u8 *p);
+void net_sort_members(u8 *self);
+void lobbyapi_slot(u8 *p);
 u8 net_all_members_known(u8 *n);
 
 /* the player of the room with the console mac (200 bytes each from 0x57C), or NULL */
@@ -505,10 +505,10 @@ void net_cb_members(const u8 *ev)
     if (n[0x12D5] != 4)
         return;
     memset(n + 0xBBC, 0, 0x324);
-    func_088B19CC(n + 0xBBC);
-    func_0889C81C(n);
-    func_0889CF34(n, 5);
-    func_0889D6EC(n);
+    lobbyapi_host_entry(n + 0xBBC);
+    net_sort_members(n);
+    net_set_state(n, 5);
+    net_send_entry(n);
     cnt = n[0xBBD];
     e = n + 0xBC0;
     for (i = 0; i < cnt; i++, e += 200) {
@@ -550,7 +550,7 @@ void net_cb_flag2(const u8 *ev)
     u8 *n = (u8 *)U32(ev, 8);
 
     U32(n, 0x12C4) |= 2;
-    func_088B1A04(n + 0x146C);
+    lobbyapi_slot(n + 0x146C);
 }
 
 void net_cb_flag10(const u8 *ev)
@@ -572,8 +572,8 @@ void net_start(u8 *self, s32 alt)
     else
         strcpy((char *)self + 0x11, D_089B16D4);
     self[0x19] = 0;
-    func_088B0A58((char *)self + 5);
+    lobbyapi_init((char *)self + 5);
     U32(self, 0x12C0) |= 1;
-    func_088B06C0((void *)0x0889A09C, self);
+    lobbyapi_scan((void *)0x0889A09C, self);
     self[4] = 1;
 }

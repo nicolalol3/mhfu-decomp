@@ -2,6 +2,7 @@
  * font textures (cells of 0x118 x 0x119 pixels, slot table 0x2628 by character, characters
  * of the slots 0x22608, age of the slots 0x22968). (Guessed names.) */
 #include "libc.h"
+#include "font.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
 #define S16(p, off) (*(s16 *)((u8 *)(p) + (off)))
@@ -26,10 +27,10 @@ u32 sceFontOpen(u32 lib, u32 index, int mode, s32 *err);
 s32 sceFontGetFontInfo(u32 font, void *info);
 s32 sceFontGetCharInfo(u32 font, u32 ch, s32 *info);
 s32 sceFontGetCharGlyphImage(u32 font, u32 ch, void *img);
-s32 func_08894874(u8 *self, u32 ch);
-u32 func_08894988(u8 *self);
-void func_08893894(u8 *self, u32 ch, s32 half, u8 *e);
-u32 func_088952A4(u8 *self, u32 ch, s32 half, u32 w);
+s32 font_char_kind(u8 *self, u32 ch);
+u32 font_layer_dl(u8 *self);
+void glyph_draw(u8 *self, u32 ch, s32 half, u8 *e);
+u32 font_char_advance(u8 *self, u32 ch, s32 half, u32 w);
 
 u32 glyph_cache_add(u8 *self, u16 ch);
 u32 glyph_cache_slot(u8 *self);
@@ -73,7 +74,7 @@ void *font_lib_alloc(u8 *self, u32 size)
 /* GE states for the text, then the glyphs of the layer */
 void font_begin_layer(u8 *self)
 {
-    u32 layer = func_08894988(self);
+    u32 layer = font_layer_dl(self);
     u32 *p = dl_cur(D_08A62C40);
 
     p[0] = 0x23000000;
@@ -107,9 +108,9 @@ void glyph_mark_layer(u8 *self)
     s16 *s;
     s16 c;
 
-    memset(self + 0x22608, 0, 0x360);
-    e = (u8 *)U32(self, 0x140 + (s8)F(0x15D) * 4);
-    n = F(0x134 + (s8)F(0x15D));
+    memset(self + FONT_SLOT_CHAR, 0, 0x360);
+    e = (u8 *)U32(self, FONT_LAYER_BUF + (s8)F(FONT_DRAW_LAYER) * 4);
+    n = F(FONT_LAYER_N + (s8)F(FONT_DRAW_LAYER));
     for (i = 0; i < (s32)n; i++, e += 0xC) {
         for (s = (s16 *)U32(e, 8); (c = *s++) != 0;) {
             if (c == 10 || c == 0x20 || c == 0xA0 || c == 0x2002 || c == 0x2003 || c == 0x3000)
@@ -127,40 +128,40 @@ u32 glyph_cache_add(u8 *self, u16 ch)
 
     if (ch >= 0xFFF0)
         return 0;
-    t = &U16(self, 0x2628 + ch * 2);
+    t = &U16(self, FONT_SLOT_OF + ch * 2);
     s = *t;
     if (s != 0xFFFF) {
-        F(0x22968 + s) = 2;
+        F(FONT_SLOT_AGE + s) = 2;
         return 0;
     }
-    U16(self, 0x158) = glyph_cache_slot(self);
-    *t = U16(self, 0x158);
-    U16(self, 0x22608 + U16(self, 0x158) * 2) = ch;
-    F(0x22968 + U16(self, 0x158)) = 2;
-    U16(self, 0x15A)++;
-    if (U16(self, 0x15A) > U16(self, 0x11E))
-        U16(self, 0x15A) = U16(self, 0x11E);
-    if (U16(self, 0x15A) < U16(self, 0x11E))
-        U16(self, 0x158)++;
+    U16(self, FONT_CACHE_NEXT) = glyph_cache_slot(self);
+    *t = U16(self, FONT_CACHE_NEXT);
+    U16(self, FONT_SLOT_CHAR + U16(self, FONT_CACHE_NEXT) * 2) = ch;
+    F(FONT_SLOT_AGE + U16(self, FONT_CACHE_NEXT)) = 2;
+    U16(self, FONT_CACHE_N)++;
+    if (U16(self, FONT_CACHE_N) > U16(self, FONT_CELLS_ALL))
+        U16(self, FONT_CACHE_N) = U16(self, FONT_CELLS_ALL);
+    if (U16(self, FONT_CACHE_N) < U16(self, FONT_CELLS_ALL))
+        U16(self, FONT_CACHE_NEXT)++;
     return 1;
 }
 
 /* a free slot: the next one, or one not used for 2 frames, or the oldest */
 u32 glyph_cache_slot(u8 *self)
 {
-    u32 n = U16(self, 0x11E);
-    u32 first = U16(self, 0x162);
+    u32 n = U16(self, FONT_CELLS_ALL);
+    u32 first = U16(self, FONT_CACHE_OLD);
     u32 s;
     s32 i;
     s16 v;
 
-    if (U16(self, 0x15A) < n)
-        return U16(self, 0x158);
+    if (U16(self, FONT_CACHE_N) < n)
+        return U16(self, FONT_CACHE_NEXT);
     for (s = first; s < n; s++) {
-        if (F(0x22968 + s) == 0) {
+        if (F(FONT_SLOT_AGE + s) == 0) {
             for (i = 0; i < 0xFFF0; i++) {
-                if (U16(self, 0x2628 + i * 2) == s) {
-                    U16(self, 0x2628 + i * 2) = 0xFFFF;
+                if (U16(self, FONT_SLOT_OF + i * 2) == s) {
+                    U16(self, FONT_SLOT_OF + i * 2) = 0xFFFF;
                     break;
                 }
             }
@@ -168,15 +169,15 @@ u32 glyph_cache_slot(u8 *self)
         }
     }
     if (first != 0)
-        S16(self, 0x162)--;
-    v = S16(self, 0x162);
+        S16(self, FONT_CACHE_OLD)--;
+    v = S16(self, FONT_CACHE_OLD);
     for (i = 0; i < 0xFFF0; i++) {
-        if (S16(self, 0x2628 + i * 2) == v) {
-            U16(self, 0x2628 + i * 2) = 0xFFFF;
+        if (S16(self, FONT_SLOT_OF + i * 2) == v) {
+            U16(self, FONT_SLOT_OF + i * 2) = 0xFFFF;
             break;
         }
     }
-    return U16(self, 0x162);
+    return U16(self, FONT_CACHE_OLD);
 }
 
 /* draws the glyphs of the new characters in their cells */
@@ -185,12 +186,12 @@ void glyph_render_all(u8 *self)
     s32 i;
     s16 c;
 
-    for (i = 0; i < U16(self, 0x11E); i++) {
-        c = S16(self, 0x22608 + i * 2);
+    for (i = 0; i < U16(self, FONT_CELLS_ALL); i++) {
+        c = S16(self, FONT_SLOT_CHAR + i * 2);
         if (c == 0)
             continue;
-        glyph_render(self, c, i / U16(self, 0x11C), F(0x118) * (i % F(0x11A)),
-                     F(0x119) * ((i / F(0x11A)) % F(0x11B)));
+        glyph_render(self, c, i / U16(self, FONT_CELLS), F(FONT_CELL_W) * (i % F(FONT_COLS)),
+                     F(FONT_CELL_H) * ((i / F(FONT_COLS)) % F(FONT_ROWS)));
     }
 }
 
@@ -217,44 +218,44 @@ void glyph_render(u8 *self, u32 ch, u32 tex, s32 x, s32 y)
     img.pitch = 0x80;
     img.buf = U32(surf, 8);
     d = (u8 *)img.buf + x / 2 + y * 0x80;
-    for (r = 0; r < F(0x119); r++) {
-        for (i = 0; i < (F(0x118) >> 1); i++)
+    for (r = 0; r < F(FONT_CELL_H); r++) {
+        for (i = 0; i < (F(FONT_CELL_W) >> 1); i++)
             *d++ = 0;
-        d += (0x100 - F(0x118)) / 2;
+        d += (0x100 - F(FONT_CELL_W)) / 2;
     }
     c = ch & 0xFFFF;
     if (c == 0x20 || c == 0xA0 || c == 0x2002 || c == 0x2003 || c == 0x3000)
         return;
     if (c == 0x5C)
         ch = 0x3035;
-    if (sceFontGetCharInfo(U32(self, 8), ch, info) != 0)
+    if (sceFontGetCharInfo(U32(self, FONT_HANDLE), ch, info) != 0)
         return;
     gx = info[2] << 6;
-    base = (F(0x117) >> 1) * 0x40 + (s32)U32(self, 0x14);
-    gy = (s32)U32(self, 0x14) + (y + (F(0x117) >> 1)) * 0x40;
-    ry = (x + (F(0x116) >> 1)) << 6;
+    base = (F(FONT_PAD_Y) >> 1) * 0x40 + (s32)U32(self, FONT_PIXELS);
+    gy = (s32)U32(self, FONT_PIXELS) + (y + (F(FONT_PAD_Y) >> 1)) * 0x40;
+    ry = (x + (F(FONT_PAD_X) >> 1)) << 6;
     top = -(info[3] << 6);
-    if (func_08894874(self, ch) == 1 && F(0x130) == 0)
-        gx = ((u32)(F(0x114) - info[0]) >> 1) << 6;
-    if (U32(self, 4) == 0 && base + top < 0) {
-        gy = (y + (F(0x117) >> 1)) << 6;
-        top = (F(0x115) - info[1]) << 6;
+    if (font_char_kind(self, ch) == 1 && F(FONT_FIXED) == 0)
+        gx = ((u32)(F(FONT_GLYPH_W) - info[0]) >> 1) << 6;
+    if (U32(self, FONT_SYS) == 0 && base + top < 0) {
+        gy = (y + (F(FONT_PAD_Y) >> 1)) << 6;
+        top = (F(FONT_GLYPH_H) - info[1]) << 6;
     }
     c = ch & 0xFFFF;
     if (c == 0x2A || c == 0xD7) {
-        gy = (y + (F(0x117) >> 1)) << 6;
-        top = ((u32)(F(0x115) - info[1]) >> 1) << 6;
+        gy = (y + (F(FONT_PAD_Y) >> 1)) << 6;
+        top = ((u32)(F(FONT_GLYPH_H) - info[1]) >> 1) << 6;
     }
     if (c == 0xC6 || c == 0xD0 || c == 0xD8) {
-        gy = (y + (F(0x117) >> 1)) << 6;
-        top = (F(0x115) - info[1]) << 6;
+        gy = (y + (F(FONT_PAD_Y) >> 1)) << 6;
+        top = (F(FONT_GLYPH_H) - info[1]) << 6;
     }
     img.x64 = ry + gx;
     img.y64 = gy + top;
-    if (sceFontGetCharGlyphImage(U32(self, 8), ch, &img) == 0 && U32(self, 4) == 0 &&
-        func_08894874(self, ch) == 1) {
+    if (sceFontGetCharGlyphImage(U32(self, FONT_HANDLE), ch, &img) == 0 && U32(self, FONT_SYS) == 0 &&
+        font_char_kind(self, ch) == 1) {
         img.x64 -= 0x1F;
-        sceFontGetCharGlyphImage(U32(self, 8), ch, &img);
+        sceFontGetCharGlyphImage(U32(self, FONT_HANDLE), ch, &img);
     }
 }
 
@@ -265,18 +266,18 @@ void font_draw_entry(u8 *self, u8 *e)
     u32 c;
     s32 half;
 
-    S16(self, 0x126) = S16(e, 0);
-    S16(self, 0x128) = S16(e, 2);
-    S16(self, 0x12A) = S16(self, 0x124);
+    S16(self, FONT_DRAW_X) = S16(e, 0);
+    S16(self, FONT_DRAW_Y) = S16(e, 2);
+    S16(self, FONT_DRAW_Z) = S16(self, FONT_Z);
     while ((c = *s++) != 0) {
         if (c == 10) {
-            S16(self, 0x126) = S16(e, 0);
-            S16(self, 0x128) += e[7];
+            S16(self, FONT_DRAW_X) = S16(e, 0);
+            S16(self, FONT_DRAW_Y) += e[7];
             continue;
         }
-        half = func_08894874(self, c);
+        half = font_char_kind(self, c);
         if (c != 0x20 && c != 0xA0 && c != 0x2002 && c != 0x2003 && c != 0x3000)
-            func_08893894(self, c, half, e);
-        S16(self, 0x126) += (u8)func_088952A4(self, c, half, e[4]);
+            glyph_draw(self, c, half, e);
+        S16(self, FONT_DRAW_X) += (u8)font_char_advance(self, c, half, e[4]);
     }
 }

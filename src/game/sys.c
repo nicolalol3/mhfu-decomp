@@ -1,6 +1,7 @@
 /* The system object g_sys: start of the game, main loop, random generators, threads and
  * timers, system language, system overlays (code loaded in memory). (Guessed names.) */
 #include "menu.h"
+#include "sys.h"
 
 extern u8 *g_sys;
 extern u8 *g_game;
@@ -68,20 +69,20 @@ void rl_clear(u8 *r);
 void sound_update(u8 *s);
 void *heap_alloc(void *h, u32 size, u32 align);
 u8 *popup_obj_ctor(void *p);
-void *func_08897290(u32 size, void *p);
-void func_08897BC0(int a);
-void func_08898590(void *heap, u32 size);
+void *placement_new(u32 size, void *p);
+void fpu_set_fcsr(int a);
+void temp_init(void *heap, u32 size);
 void func_088DD838(u8 *m);
 void func_088DD868(u8 *m);
 void func_088DDA44(u8 *m);
 s32 func_088DE014(u8 *models, u32 id);
 s32 func_088DDD9C(u8 *models, void *dest, s32 idx, s32 size);
 void func_0890DD9C(void *p, u32 size);
-void func_088907D8(u8 *font);
-void func_08890BBC(u8 *font);
-void func_08891B14(u8 *font);
-void func_08895538(u8 *p);
-void func_088ADD3C(u8 *p);
+void font_init(u8 *font);
+void font_begin_frame(u8 *font);
+void font_draw_layers(u8 *font);
+void scenes_update(u8 *p);
+void netmgr_init(u8 *p);
 void func_088BA2A0(u8 *p);
 
 void sys_init(u8 *self);
@@ -102,16 +103,16 @@ void sys_main_loop(u8 *self)
     for (;;) {
         dl_end_frame(D_08A62C40);
         pad_read(D_08A62C64);
-        func_08890BBC(g_font);
+        font_begin_frame(g_font);
         LOADER(0x14, LdFn0)(g_loader);
         func_088DDA44(g_monster_models);
         rl_set_states(D_089CBFFC);
-        func_08895538((u8 *)D_08A8B1E8);
+        scenes_update((u8 *)D_08A8B1E8);
         rl_draw_all(D_089CBFFC);
         rl_clear(D_089CBFFC);
         sound_update(g_sound);
-        func_08891B14(g_font);
-        U32(self, 0xF7A554)++;
+        font_draw_layers(g_font);
+        U32(self, SYS_FRAME)++;
     }
 }
 
@@ -121,36 +122,36 @@ void sys_init(u8 *self)
     void *p;
     u8 *o;
 
-    U32(self, 0xF7F024) = sceKernelGetThreadId();
+    U32(self, SYS_MAIN_THREAD) = sceKernelGetThreadId();
     self[0xF7F034] = 0;
-    U32(self, 0xF7A554) = 0;
+    U32(self, SYS_FRAME) = 0;
     sys_read_language(self);
-    U32(self, 0xF7A568) = 0;
+    U32(self, SYS_EXIT_FLAG) = 0;
     sceKernelChangeCurrentThreadAttr(0, 0x4000);
     sys_create_vtimer(self);
-    func_08897BC0(0);
+    fpu_set_fcsr(0);
     sys_start_prio_thread(self);
-    U32(self, 0xF7A564) = sceKernelCreateThread(D_089AD230, sys_exit_thread, 0x6F, 0x1000, 0, NULL);
-    if (sceKernelStartThread(U32(self, 0xF7A564), 0, NULL) < 0)
-        sceKernelDeleteThread(U32(self, 0xF7A564));
+    U32(self, SYS_EXIT_THREAD) = sceKernelCreateThread(D_089AD230, sys_exit_thread, 0x6F, 0x1000, 0, NULL);
+    if (sceKernelStartThread(U32(self, SYS_EXIT_THREAD), 0, NULL) < 0)
+        sceKernelDeleteThread(U32(self, SYS_EXIT_THREAD));
     vram_init(g_vram);
     dl_init(D_08A62C40);
     pad_init(D_08A62C64);
     LOADER(0xC, LdFn0)(g_loader);
-    func_08898590(g_heap, 0x83C000);
+    temp_init(g_heap, 0x83C000);
     func_088DD838(g_monster_models);
     dl_set_vblank_handler(D_08A62C40);
     LOADER(0x44, LdFn2)(g_loader, 0x2A, 2);
     sceUtilityLoadModule(0x100);
     sceUtilityLoadModule(0x101);
     rl_begin_frame(D_089CBFFC);
-    func_088907D8(g_font);
+    font_init(g_font);
     camera_init(g_camera);
-    func_088ADD3C(D_09A1FDDC);
+    netmgr_init(D_09A1FDDC);
     pp = D_08A8B1E8;
     p = heap_alloc((u8 *)pp + 0x14010, 0x20, 0x10);
     if (p != NULL) {
-        p = func_08897290(0x20, p);
+        p = placement_new(0x20, p);
         if (p == NULL) {
             *pp = NULL;
             o = NULL;
@@ -181,7 +182,7 @@ s32 sys_exit_thread(void)
 
 void sys_seed(u8 *self, u16 seed)
 {
-    U16(self, 0xF7A56C) = seed & 0xFF;
+    U16(self, SYS_RAND) = seed & 0xFF;
     U16(self, 0xF7A56E) = seed & 0xFF;
 }
 
@@ -193,7 +194,7 @@ void sys_restore_seed(void)
 /* random generator i (0-2) of the game */
 u16 game_rand(u8 *self, s32 i)
 {
-    u16 *p = &U16(self, 0xF7A56C + i * 2);
+    u16 *p = &U16(self, SYS_RAND + i * 2);
     u32 x = *p;
 
     if (x == 0)
@@ -236,24 +237,24 @@ void sys_overlay_ready(u8 *self, u16 id, s32 slot)
     u8 *dest = D_089CBA70[slot];
 
     func_0890DD9C(dest, LOADER(0x18, LdFn1)(g_loader, id));
-    U16(self, 0xF7A580 + slot * 2) = id;
+    U16(self, SYS_OVERLAY + slot * 2) = id;
     sceKernelIcacheInvalidateAll();
 }
 
 u8 sys_overlay_is(u8 *self, s16 id, s32 slot)
 {
-    return S16(self, 0xF7A580 + slot * 2) == id;
+    return S16(self, SYS_OVERLAY + slot * 2) == id;
 }
 
 /* kind of text of the language (0: Japanese / English letters, 1: European) */
 void sys_set_text_kind(u8 *self)
 {
-    switch (U32(self, 0xF7A574)) {
+    switch (U32(self, SYS_LANGUAGE)) {
     case 1: case 2: case 3: case 4: case 5:
-        U32(self, 0xF7A578) = 1;
+        U32(self, SYS_TEXT_KIND) = 1;
         break;
     default:
-        U32(self, 0xF7A578) = 0;
+        U32(self, SYS_TEXT_KIND) = 0;
         break;
     }
 }
@@ -261,7 +262,7 @@ void sys_set_text_kind(u8 *self)
 /* code of the language for the system dialogs */
 u32 sys_lang_code(u8 *self)
 {
-    switch (U32(self, 0xF7A574)) {
+    switch (U32(self, SYS_LANGUAGE)) {
     case 0: return 0;
     case 1: return 1;
     case 2: return 4;
@@ -275,8 +276,8 @@ u32 sys_lang_code(u8 *self)
 
 void sys_start_prio_thread(u8 *self)
 {
-    U32(self, 0xF7F020) = sceKernelCreateThread(D_089AD248, sys_prio_thread, 0x28, 0x200, 0, NULL);
-    sceKernelStartThread(U32(self, 0xF7F020), 4, &g_sys);
+    U32(self, SYS_PRIO_THREAD) = sceKernelCreateThread(D_089AD248, sys_prio_thread, 0x28, 0x200, 0, NULL);
+    sceKernelStartThread(U32(self, SYS_PRIO_THREAD), 4, &g_sys);
 }
 
 /* raises the priority of the game threads when woken (during the loading) */
@@ -290,9 +291,9 @@ s32 sys_prio_thread(u32 args, u8 **argp)
             self = *argp;
             d = sceKernelSuspendDispatchThread();
             i = sceKernelCpuSuspendIntr();
-            sceKernelChangeThreadPriority(U32(self, 0xF7F024), 0x26);
+            sceKernelChangeThreadPriority(U32(self, SYS_MAIN_THREAD), 0x26);
             if (self[0xF7F034] != 0)
-                sceKernelChangeThreadPriority(U32(self, 0xF7F030), 0x27);
+                sceKernelChangeThreadPriority(U32(self, SYS_PRIO_SAVED), 0x27);
             sceKernelCpuResumeIntr(i);
             sceKernelResumeDispatchThread(d);
         }
@@ -302,28 +303,28 @@ s32 sys_prio_thread(u32 args, u8 **argp)
 
 void sys_prio_restore(u8 *self)
 {
-    sceKernelChangeThreadPriority(U32(self, 0xF7F024), 0x30);
+    sceKernelChangeThreadPriority(U32(self, SYS_MAIN_THREAD), 0x30);
     if (self[0xF7F034] != 0)
-        sceKernelChangeThreadPriority(U32(self, 0xF7F030), 0x31);
-    sceKernelWakeupThread(U32(self, 0xF7F020));
+        sceKernelChangeThreadPriority(U32(self, SYS_PRIO_SAVED), 0x31);
+    sceKernelWakeupThread(U32(self, SYS_PRIO_THREAD));
 }
 
 void sys_create_vtimer(u8 *self)
 {
-    U32(self, 0xF7F028) = sceKernelCreateVTimer(D_089AD258, NULL);
+    U32(self, SYS_VTIMER) = sceKernelCreateVTimer(D_089AD258, NULL);
 }
 
 void sys_start_vtimer(u8 *self, u32 t)
 {
-    sceKernelSetVTimerHandlerWide(U32(self, 0xF7F028), t, 0, 0, sys_vtimer_handler, self);
-    sceKernelStartVTimer(U32(self, 0xF7F028));
-    U32(self, 0xF7F02C) = 0;
+    sceKernelSetVTimerHandlerWide(U32(self, SYS_VTIMER), t, 0, 0, sys_vtimer_handler, self);
+    sceKernelStartVTimer(U32(self, SYS_VTIMER));
+    U32(self, SYS_VTIMER_ON) = 0;
 }
 
 u32 sys_vtimer_handler(int uid, u32 a, u32 b, u8 *self)
 {
     sys_prio_restore(g_sys);
-    if (++U32(self, 0xF7F02C) < 2)
+    if (++U32(self, SYS_VTIMER_ON) < 2)
         return 0x411A;
     return 0;
 }
@@ -347,7 +348,7 @@ void sys_read_language(u8 *self)
     } else {
         l = 1;
     }
-    U32(self, 0xF7A574) = l;
+    U32(self, SYS_LANGUAGE) = l;
     D_09A1DB50 = l;
     sys_set_text_kind(self);
     D_0899BE20 = l;

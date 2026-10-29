@@ -38,8 +38,8 @@ u8 entity_is(u8 *e, u32 a, u32 b);
 void entity_hide(u8 *e);
 void menu_msg_push_text(u8 *m, u32 text);
 void menu_msg_push(u8 *m, u32 a, u32 b, s32 c);
-u32 func_0885151C(u8 *game, u32 id);  /* text_menu */
-u8 func_0884FA5C(u8 *game);           /* game_quest_locked */
+u32 text_menu(u8 *game, u32 id);  /* text_menu */
+u8 game_quest_locked(u8 *game);           /* game_quest_locked */
 void quest_event(void *q, u32 who, u8 *pkt);
 void quest_slot_set(void *q, s32 i, u32 v);
 u8 quest_slot_is_set(void *q, s32 i);
@@ -424,7 +424,7 @@ void netgame_msg7(u8 *g, u32 from, u8 *msg)
         m[0] = from;
         if (quest_slot_is_set(g_quest, 0) == 1) {
             m[1] = 0xFF;
-        } else if (func_0884FA5C(g_game) == 0) {
+        } else if (game_quest_locked(g_game) == 0) {
             m[1] = 0;
             quest_slot_set(g_quest, 0, 0x7F);
         }
@@ -450,7 +450,7 @@ void netgame_check_left(u8 *g)
     s32 slot;
 
     if (g[0x176] != (sceWlanGetSwitchState() == 1) && sceWlanGetSwitchState() != 1)
-        menu_msg_push_text(g_menu, func_0885151C(g_game, D_089ACF9C));
+        menu_msg_push_text(g_menu, text_menu(g_game, D_089ACF9C));
     if (g[0x176] != 0)
         g[0x176] = sceWlanGetSwitchState() == 1;
     for (i = 0; i < 4; i++) {

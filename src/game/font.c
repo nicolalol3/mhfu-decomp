@@ -1,6 +1,7 @@
 /* The font g_font (1): setup, colors, text state, widths of the strings and the queue of the
  * strings to draw (6 layers of up to 128 strings). (Guessed names.) */
 #include "menu.h"
+#include "font.h"
 
 extern u8 *g_vram;
 extern u32 D_08A8B1E0, D_08A8B1E4;
@@ -16,11 +17,11 @@ u32 utf8_decode(void *self, const u8 **pp);
 size_t strlen(const char *s);
 char *strstr(const char *s, const char *t);
 void *memset(void *p, int c, size_t n);
-void func_08892E7C(u8 *self);
-void func_08894B00(u8 *self);
-void func_088949EC(u8 *self);
-s32 func_08894874(u8 *self, u32 ch);
-const char *func_08894B0C(u8 *self, const char *s, s16 *out, int a, int b);
+void font_open_system(u8 *self);
+void font_cache_digits(u8 *self);
+void font_blink_color(u8 *self);
+s32 font_char_kind(u8 *self, u32 ch);
+const char *font_parse_tag(u8 *self, const char *s, s16 *out, int a, int b);
 
 void font_init_textures(u8 *self);
 void font_clear_cache(u8 *self);
@@ -38,21 +39,21 @@ void font_init(u8 *self)
     heap_init((void *)0x08A631B8, (void *)0x08A631E0, 0x28000);
     D_08A8B1E0 = 0;
     D_08A8B1E4 = 0;
-    func_08892E7C(self);
-    F(0x114) = U16(self, 0x5C);
-    F(0x114) = (F(0x114) + 1) & 0xFE;
-    F(0x115) = U16(self, 0x5E);
-    F(0x115) = (F(0x115) + 1) & 0xFE;
-    F(0x116) = 0;
-    F(0x116) = (F(0x116) + 1) & 0xFE;
-    F(0x117) = 2;
-    F(0x117) = (F(0x117) + 1) & 0xFE;
-    F(0x118) = F(0x114) + F(0x116);
-    F(0x119) = F(0x115) + F(0x117);
-    F(0x11A) = 0x100 / F(0x118);
-    F(0x11B) = 0x100 / F(0x119);
-    U16(self, 0x11C) = (u16)F(0x11A) * (u16)F(0x11B);
-    U16(self, 0x11E) = U16(self, 0x11C) * 3;
+    font_open_system(self);
+    F(FONT_GLYPH_W) = U16(self, FONT_SYS_W);
+    F(FONT_GLYPH_W) = (F(FONT_GLYPH_W) + 1) & 0xFE;
+    F(FONT_GLYPH_H) = U16(self, FONT_SYS_H);
+    F(FONT_GLYPH_H) = (F(FONT_GLYPH_H) + 1) & 0xFE;
+    F(FONT_PAD_X) = 0;
+    F(FONT_PAD_X) = (F(FONT_PAD_X) + 1) & 0xFE;
+    F(FONT_PAD_Y) = 2;
+    F(FONT_PAD_Y) = (F(FONT_PAD_Y) + 1) & 0xFE;
+    F(FONT_CELL_W) = F(FONT_GLYPH_W) + F(FONT_PAD_X);
+    F(FONT_CELL_H) = F(FONT_GLYPH_H) + F(FONT_PAD_Y);
+    F(FONT_COLS) = 0x100 / F(FONT_CELL_W);
+    F(FONT_ROWS) = 0x100 / F(FONT_CELL_H);
+    U16(self, FONT_CELLS) = (u16)F(FONT_COLS) * (u16)F(FONT_ROWS);
+    U16(self, FONT_CELLS_ALL) = U16(self, FONT_CELLS) * 3;
     font_init_textures(self);
 }
 
@@ -71,25 +72,25 @@ void font_init_textures(u8 *self)
             d[i] = D_08931ABC[i];
     }
     for (i = 0; i < 6; i++)
-        U32(self, 0x140 + i * 4) = (u32)(self + 0x228 + i * 0x600);
-    F(0x130) = 0;
+        U32(self, FONT_LAYER_BUF + i * 4) = (u32)(self + FONT_LAYERS + i * 0x600);
+    F(FONT_FIXED) = 0;
     font_clear_cache(self);
     font_begin_frame(self);
     font_init_palette(self);
-    func_08894B00(self);
+    font_cache_digits(self);
 }
 
 void font_clear_cache(u8 *self)
 {
-    u16 *p = &U16(self, 0x2628);
+    u16 *p = &U16(self, FONT_SLOT_OF);
     s32 i;
 
     for (i = 0; i < 0xFFF0; i++)
         p[i] = 0xFFFF;
-    U16(self, 0x158) = 0;
-    memset(self + 0x22968, 0, 0x1B0);
-    U16(self, 0x15A) = 0;
-    U16(self, 0x162) = 0;
+    U16(self, FONT_CACHE_NEXT) = 0;
+    memset(self + FONT_SLOT_AGE, 0, 0x1B0);
+    U16(self, FONT_CACHE_N) = 0;
+    U16(self, FONT_CACHE_OLD) = 0;
 }
 
 /* start of a frame: empty queues, default state */
@@ -98,25 +99,25 @@ void font_begin_frame(u8 *self)
     s32 i;
 
     for (i = 0; i < 6; i++) {
-        F(0x134 + i) = 0;
-        F(0x13A + i) = 0;
+        F(FONT_LAYER_N + i) = 0;
+        F(FONT_ICON_N + i) = 0;
     }
-    U16(self, 0x160) = 0;
+    U16(self, FONT_TEXT_POS) = 0;
     for (i = 0; i < 0x1B0; i++)
-        if (F(0x22968 + i) != 0)
-            F(0x22968 + i)--;
-    U16(self, 0x120) = 0;
-    U16(self, 0x122) = 0;
-    U16(self, 0x124) = 0;
-    F(0x12C) = 0x14;
-    F(0x12D) = 0x14;
-    F(0x15F) = F(0x12D);
-    F(0x12E) = 0;
-    F(0x12F) = 0;
-    F(0x15C) = 1;
-    F(0x131) = 0x20;
-    func_088949EC(self);
-    F(0x15E)++;
+        if (F(FONT_SLOT_AGE + i) != 0)
+            F(FONT_SLOT_AGE + i)--;
+    U16(self, FONT_X) = 0;
+    U16(self, FONT_Y) = 0;
+    U16(self, FONT_Z) = 0;
+    F(FONT_SIZE_W) = 0x14;
+    F(FONT_SIZE_H) = 0x14;
+    F(FONT_LINE_H) = F(FONT_SIZE_H);
+    F(FONT_COLOR) = 0;
+    F(FONT_LAYER) = 0;
+    F(FONT_ON) = 1;
+    F(FONT_TAGS) = 0x20;
+    font_blink_color(self);
+    F(FONT_BLINK)++;
 }
 
 /* color i (alpha from alpha, the rest from the 0x00BBGGRR rgb turned to RGB) */
@@ -125,9 +126,9 @@ void font_set_palette(u8 *self, s32 i, u32 alpha, u32 rgb)
     u32 *p;
 
     if (i < 0)
-        p = &U32(self, 0x164);
+        p = &U32(self, FONT_PALETTE);
     else
-        p = &U32(self, 0x168 + i * 4);
+        p = &U32(self, FONT_COLORS + i * 4);
     *p = (rgb & 0xFF) << 16 | (rgb & 0xFF00) | (alpha & 0xFF000000) | (rgb & 0xFF0000) >> 16;
 }
 
@@ -147,11 +148,11 @@ void font_init_palette(u8 *self)
 /* new color for this frame; it becomes the current one */
 s32 font_add_color(u8 *self, u32 rgb)
 {
-    s32 i = (s8)F(0x131);
+    s32 i = (s8)F(FONT_TAGS);
 
     font_set_palette(self, i, 0, rgb);
     font_set_color(self, i);
-    F(0x131)++;
+    F(FONT_TAGS)++;
     return i;
 }
 
@@ -159,17 +160,17 @@ void font_set_size(void *font, int w, int h)
 {
     u8 *self = font;
 
-    F(0x12C) = w;
-    F(0x12D) = h;
-    F(0x15F) = F(0x12D);
+    F(FONT_SIZE_W) = w;
+    F(FONT_SIZE_H) = h;
+    F(FONT_LINE_H) = F(FONT_SIZE_H);
 }
 
 void font_set_pos(void *font, int x, int y)
 {
     u8 *self = font;
 
-    U16(self, 0x120) = x;
-    U16(self, 0x122) = y;
+    U16(self, FONT_X) = x;
+    U16(self, FONT_Y) = y;
 }
 
 void font_set_layer(void *font, int l)
@@ -180,19 +181,19 @@ void font_set_layer(void *font, int l)
     if (v < 0)
         v = 0;
     if (v < 6)
-        F(0x12F) = v;
+        F(FONT_LAYER) = v;
     else
-        F(0x12F) = 5;
+        F(FONT_LAYER) = 5;
 }
 
 void font_set_color(void *font, int color)
 {
-    U8(font, 0x12E) = color;
+    U8(font, FONT_COLOR) = color;
 }
 
 void font_set_height2(u8 *self, u8 h)
 {
-    F(0x15F) = h;
+    F(FONT_LINE_H) = h;
 }
 
 /* width of the string in half characters (the full-width ones count 2) */
@@ -203,7 +204,7 @@ int font_char_count(void *font, const char *s)
     u32 c;
 
     for (c = (u16)utf8_decode(D_089CBBE8, &p); c != 0; c = (u16)utf8_decode(D_089CBBE8, &p))
-        n += func_08894874(font, c) == 0 ? 2 : 1;
+        n += font_char_kind(font, c) == 0 ? 2 : 1;
     return n;
 }
 
@@ -215,7 +216,7 @@ s32 font_line_char_count(u8 *self, const char *s)
     u32 c;
 
     for (c = (u16)utf8_decode(D_089CBBE8, &p); c != 10; c = (u16)utf8_decode(D_089CBBE8, &p))
-        n += func_08894874(self, c) == 0 ? 2 : 1;
+        n += font_char_kind(self, c) == 0 ? 2 : 1;
     return n;
 }
 
@@ -236,15 +237,15 @@ s32 font_text_width(void *font, const char *s)
         t = strstr(s, D_089AD26C);
         if (t == NULL)
             break;
-        func_08894B0C(font, t, &v, 0, 1);
+        font_parse_tag(font, t, &v, 0, 1);
         if ((v & 0xFF00) == 0x800) {
             skip ^= 1;
-            s = func_08894B0C(font, t, &v, 1, 1);
+            s = font_parse_tag(font, t, &v, 1, 1);
             n += v;
         } else if (skip) {
             s = t + 1;
         } else {
-            s = func_08894B0C(font, t, &v, 1, 1);
+            s = font_parse_tag(font, t, &v, 1, 1);
             n += v;
         }
     }
@@ -268,15 +269,15 @@ s32 font_line_width(u8 *self, const char *s)
             return n;
         if ((u32)nl <= (u32)t)
             return n;
-        func_08894B0C(self, t, &v, 0, 1);
+        font_parse_tag(self, t, &v, 0, 1);
         if ((v & 0xFF00) == 0x800) {
             skip ^= 1;
-            s = func_08894B0C(self, t, &v, 1, 1);
+            s = font_parse_tag(self, t, &v, 1, 1);
             n += v;
         } else if (skip) {
             s = t + 1;
         } else {
-            s = func_08894B0C(self, t, &v, 1, 1);
+            s = font_parse_tag(self, t, &v, 1, 1);
             n += v;
         }
     }
@@ -286,22 +287,22 @@ s32 font_line_width(u8 *self, const char *s)
 void font_push_text(u8 *self, const u16 *s)
 {
     s32 over = 0;
-    u8 l = F(0x12F);
-    u8 n = F(0x134 + (s8)l);
+    u8 l = F(FONT_LAYER);
+    u8 n = F(FONT_LAYER_N + (s8)l);
     u8 *e;
     u16 *d;
 
     if (n >= 0x80)
         return;
-    e = (u8 *)U32(self, 0x140 + (s8)l * 4) + n * 0xC;
-    F(0x134 + (s8)l) = n + 1;
-    U16(e, 0) = U16(self, 0x120);
-    U16(e, 2) = U16(self, 0x122);
-    e[4] = F(0x12C);
-    e[5] = F(0x12D);
-    e[7] = F(0x15F);
-    e[6] = F(0x12E);
-    d = &U16(self, 0x22CF8 + U16(self, 0x160));
+    e = (u8 *)U32(self, FONT_LAYER_BUF + (s8)l * 4) + n * 0xC;
+    F(FONT_LAYER_N + (s8)l) = n + 1;
+    U16(e, 0) = U16(self, FONT_X);
+    U16(e, 2) = U16(self, FONT_Y);
+    e[4] = F(FONT_SIZE_W);
+    e[5] = F(FONT_SIZE_H);
+    e[7] = F(FONT_LINE_H);
+    e[6] = F(FONT_COLOR);
+    d = &U16(self, FONT_TEXT + U16(self, FONT_TEXT_POS));
     U32(e, 8) = (u32)d;
     if (*s == 0) {
         *d = 0;
@@ -309,12 +310,12 @@ void font_push_text(u8 *self, const u16 *s)
         *d = *s;
         for (;;) {
             d++;
-            U16(self, 0x160) += 2;
+            U16(self, FONT_TEXT_POS) += 2;
             s++;
-            if (U16(self, 0x160) > 0x2FFF) {
-                U16(self, 0x160) = 0x2FFE;
+            if (U16(self, FONT_TEXT_POS) > 0x2FFF) {
+                U16(self, FONT_TEXT_POS) = 0x2FFE;
                 over++;
-                d = &U16(self, 0x22CF8 + U16(self, 0x160));
+                d = &U16(self, FONT_TEXT + U16(self, FONT_TEXT_POS));
             }
             if (*s == 0)
                 break;
@@ -323,9 +324,9 @@ void font_push_text(u8 *self, const u16 *s)
         *d = 0;
     }
     if (over == 0) {
-        U16(self, 0x160) += 2;
-        if (U16(self, 0x160) > 0x2FFF)
-            U16(self, 0x160) = 0x2FFE;
+        U16(self, FONT_TEXT_POS) += 2;
+        if (U16(self, FONT_TEXT_POS) > 0x2FFF)
+            U16(self, FONT_TEXT_POS) = 0x2FFE;
     }
 }
 

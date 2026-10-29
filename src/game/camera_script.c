@@ -11,9 +11,9 @@ extern u8 D_08A62DA0[];           /* 64 bytes per rail segment */
 f32 func_08897D4C(f32 x, f32 y);
 void func_0888E788(u8 *self, u8 *v);
 void func_0888E8E8(u8 *self, u8 *v);
-void func_0888EA44(u8 *self, s32 i);
+void cam_script_copy(u8 *self, s32 i);
 void func_0888EAF8(u8 *self, u8 *cmd);
-void func_0888C3AC(u8 *self, u8 *pts, u32 n);
+void spline_build(u8 *self, u8 *pts, u32 n);
 s32 func_0888BC40(u8 *self, f32 *out, u8 *seg, u32 x, u32 k);
 void func_0888B600(f32 f, u8 *self, u32 a, u8 *seg);
 s32 camscript_run(u8 *self);
@@ -148,7 +148,7 @@ s32 camscript_run(u8 *self)
         case 33: U16(self, 0x128) = v; break;
         case 34: U16(self, 0x12A) = v; break;
         case 35: self[0x12C + p[2]] = p[3]; break;
-        case 36: func_0888EA44(self, p[2]); break;
+        case 36: cam_script_copy(self, p[2]); break;
         case 37:
             self[0x138] = (v >> 14) & 3;
             F32(self, 0x134) = (1.0f / 1024.0f) * (f32)(v & 0x3FFF);
@@ -213,7 +213,7 @@ void camrail_point(u8 *self, u32 a, u8 *rail)
     u8 *cam = g_camera;
     u32 k;
 
-    func_0888C3AC(self, rail + 0x20, rail[0x280]);
+    spline_build(self, rail + 0x20, rail[0x280]);
     k = cam[0xAA0];
     func_0888B600(F32(cam, 0xA9C) * F32(rail, k * 0x10 + 0x2C), self, a, D_08A62DA0 + k * 0x40);
 }
@@ -249,7 +249,7 @@ s32 camrail_locate(u8 *self, f32 *st, u8 *rail, u32 x)
     f32 d[5];
     s32 n, r;
 
-    func_0888C3AC(self, rail + 0x100, rail[0x260]);
+    spline_build(self, rail + 0x100, rail[0x260]);
     n = func_0888BC40(self, d, D_08A62DA0 + ST_SEG(st) * 0x40, x, rail[0x261]);
     if (n == 0) {
         st[0] = 0.0f;

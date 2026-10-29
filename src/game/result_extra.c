@@ -29,7 +29,7 @@ extern const s32 D_0899D1A8[];            /* item table, 6 words per item */
 extern const s16 D_089A89E4[7], D_089A8A00[7];
 
 u32 sound_play(void *snd, int a, int b, int c, int d, int e, int f, int g, int h);
-void func_088854A0(u8 *snd, u32 h, int a);
+void sound_stop(u8 *snd, u32 h, int a);
 u32 game_buttons(void *g);
 int game_test_flag64(u8 *g, u32 i);
 void game_set_flag64(u8 *g, u32 i);
@@ -63,7 +63,7 @@ void game_add_points(u8 *g, s32 n);
 int has_kitchen_skill(u8 *g, u32 k);
 int quest_flag_10(void);
 u32 equip_rarity(void *p, u32 k, u32 id);
-u16 *func_08856884(void *game, int idx);
+u16 *pouch_slot(void *game, int idx);
 void func_088D893C(u32 h);
 void menu_begin_draw(void *menu);
 void menu_draw_sprite(void *menu, u32 x, u32 y, u32 id);
@@ -227,7 +227,7 @@ void result_notice_draw(u8 *self)
 {
     char buf[0x100];
 
-    U8(g_menu, 0x534) = 9;
+    U8(g_menu, MENU_LAYER) = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(g_menu);
     gfx_dim_screen(g_menu, 0);
@@ -333,7 +333,7 @@ void result_rankup_draw(u8 *self)
 {
     char buf[0x100];
 
-    U8(g_menu, 0x534) = 9;
+    U8(g_menu, MENU_LAYER) = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(g_menu);
     gfx_dim_screen(g_menu, 0);
@@ -397,7 +397,7 @@ void result_tscore_compute(u8 *self)
         pct = 0;
     U32(self, 0x114) = U32(self, 0x10C) * pct / 100;
     U32(self, 0x118) = 0;
-    it = func_08856884(g_game, 0);
+    it = pouch_slot(g_game, 0);
     for (i = 0; i < 24; i++, it += 2)
         U32(self, 0x118) += (s16)it[1] * D_0899D1A8[it[0] * 6];
     U32(self, RES_POINTS_TOTAL) = U32(self, 0x11C) *
@@ -425,7 +425,7 @@ s32 result_tscore_update(u8 *self)
         break;
     case 7:
         if (U32(self, RES_VALUE) == U32(self, RES_POINTS_TOTAL)) {
-            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            sound_stop(g_sound, U32(self, RES_SOUND), 0);
             S16(self, RES_STEP)++;
             SE(0x19);
         } else {
@@ -486,7 +486,7 @@ void result_tscore_draw(u8 *self)
 {
     s32 t;
 
-    U8(g_menu, 0x534) = 9;
+    U8(g_menu, MENU_LAYER) = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(g_menu);
     result_draw_windows(self);
@@ -547,7 +547,7 @@ s32 result_tpoints_update(u8 *self)
         }
     } else if (s == 3) {
         if (U32(self, RES_VALUE) == 0) {
-            func_088854A0(g_sound, U32(self, RES_SOUND), 0);
+            sound_stop(g_sound, U32(self, RES_SOUND), 0);
             S16(self, RES_STEP)++;
             SE(0x19);
         } else {
@@ -583,7 +583,7 @@ void result_tpoints_draw(u8 *self)
 {
     s16 s;
 
-    U8(g_menu, 0x534) = 9;
+    U8(g_menu, MENU_LAYER) = 9;
     font_set_layer(g_font, 0);
     menu_begin_draw(g_menu);
     result_draw_windows(self);

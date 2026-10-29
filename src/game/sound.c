@@ -2,6 +2,7 @@
  * (sndbank_*, single object D_08A62D84). The functions 0x0889E8xx-0x0889EBxx are the
  * sound library (not decompiled yet). (Guessed names.) */
 #include "menu.h"
+#include "sound.h"
 
 extern u8 *g_sound;
 extern u8 *g_sys;
@@ -23,48 +24,48 @@ typedef struct SndParam {
     u32 w[15];
 } SndParam;
 
-void func_0889E848(u8 *mem, int a, int b, int c);
-void func_0889E984(void);
-void func_0889EA4C(u32 size);
-void func_0889EAD4(void *cb);
-void func_0889E9D4(void);
-void func_0889E9DC(s32 mode);
-void func_0889EA54(s32 n);
-s32 func_0889EA5C(s32 i);
-void func_0889EA64(s32 i, u32 a);
-void func_0889EA6C(s32 i, u32 b);
-u32 func_0889EA74(u32 h);
-s32 func_0889EA7C(u32 a, u32 b, u32 c);
-void func_0889EA84(u32 h, int a, s32 b);
-void func_0889EA8C(void *p);
-void func_0889EA94(void);
-void func_0889EA9C(u32 h);
-void func_0889EAA4(u32 h);
-void func_0889EAAC(void);
-void func_0889EAB4(u32 h);
-void func_0889EABC(u32 h);
-void func_0889EAC4(u32 a, u32 b, u32 c);
-void func_0889EACC(u32 a, u32 b, u32 c, SndParam *p);
-u32 func_0889EADC(u32 a, u32 b, SndParam *p);
-u32 func_0889EAE8(u32 a, u32 b, u32 c);
-void func_0889EE80(u32 a, u32 b, u32 c);
+void cse_start(u8 *mem, int a, int b, int c);
+void cse_core_start(void);
+void stub_0889ea4c(u32 size);   /* -> bank_init */
+void stub_0889ead4(void *cb);   /* -> setbl_set_cb */
+void stub_0889e9d4(void);   /* -> cse_frame */
+void cse_set_output(s32 mode);
+void stub_0889ea54(s32 n);   /* -> bank_select */
+s32 stub_0889ea5c(s32 i);   /* -> sound_map_offset */
+void stub_0889ea64(s32 i, u32 a);   /* -> bank_set */
+void stub_0889ea6c(s32 i, u32 b);   /* -> setbl_set */
+u32 stub_0889ea74(u32 h);   /* -> bank_data_size */
+s32 stub_0889ea7c(u32 a, u32 b, u32 c);   /* -> bank_merge */
+void stub_0889ea84(u32 h, int a, s32 b);   /* -> se_chan_volume */
+void stub_0889ea8c(void *p);   /* -> se_send_7 */
+void stub_0889ea94(void);   /* -> se_stop_all */
+void stub_0889ea9c(u32 h);   /* -> se_stop_chan */
+void stub_0889eaa4(u32 h);   /* -> se_stop_id */
+void stub_0889eaac(void);   /* -> se_release_all */
+void stub_0889eab4(u32 h);   /* -> se_release_chan */
+void stub_0889eabc(u32 h);   /* -> se_release_id */
+void stub_0889eac4(u32 a, u32 b, u32 c);   /* -> se_release_match */
+void stub_0889eacc(u32 a, u32 b, u32 c, SndParam *p);   /* -> se_change_match */
+u32 cse_cmd16(u32 a, u32 b, SndParam *p);
+u32 cse_voice_cmd(u32 a, u32 b, u32 c);
+void stub_0889ee80(u32 a, u32 b, u32 c);   /* -> se_stop_match */
 u32 func_088B826C(f32 f, u32 a, u32 b, SndParam *p);
 void func_088B8320(f32 ang, SndParam *p);
-void func_088A3480(void);
-void func_088A34E4(void);
+void sas_render_pause(void);
+void sas_render_resume(void);
 u32 game_rand(void *a, int b);
-void func_0888637C(u8 *self);
-void func_08885D80(u8 *self);
-void func_08885DB0(u8 *self, s32 a);
-void func_088863BC(u8 *self, s32 a);
-void func_0888640C(u8 *self);
-void func_08886468(u8 *self);
-void func_088868A0(u8 *self, s32 a);
-void func_08881824(u8 *self);
-void func_08881840(u8 *self);
-void func_08883374(u8 *self);
-void func_088832B4(u8 *self, int a, int b);
-void func_08882A74(u8 *self, int a, int b);
+void musplay_ctor(u8 *self);
+void sound_mgr3_ctor(u8 *self);
+void musctl_dtor(u8 *self, s32 a);
+void musplay_dtor(u8 *self, s32 a);
+void musplay_init(u8 *self);
+void musplay_update(u8 *self);
+void musplay_set_global(u8 *self, s32 a);
+void sound_req_done(u8 *self);
+void sound_load_step(u8 *self);
+void sound_listener_reset(u8 *self);
+void sound_select_bank(u8 *self, int a, int b);
+void music_select_set(u8 *self, int a, int b);
 int sceKernelCreateThread(const char *name, void *entry, int prio, int stack, u32 attr, void *opt);
 int sceKernelStartThread(int thid, u32 arglen, void *argp);
 int sceKernelDelayThreadCB(u32 delay);
@@ -138,10 +139,10 @@ u32 *posobj_dtor(u32 *self, s32 del)
     return self;
 }
 
-s32 func_088901E0(u8 *sys);
-void func_088901F8(u8 *sys, int a, int b);
-u8 func_08890284(u8 *sys, int a, int b);
-void func_08890144(u8 *sys, int a, int b);
+s32 sys_loader_busy(u8 *sys);
+void sys_overlay_ready(u8 *sys, int a, int b);
+u8 sys_overlay_is(u8 *sys, int a, int b);
+void sys_load_overlay(u8 *sys, int a, int b);
 void fade_start(u8 *f, u32 n, u32 c, s32 out);
 extern u8 *D_089CC01C;
 extern u8 *D_09A44C60;
@@ -167,13 +168,13 @@ void posobj_update(u32 *self)
     s32 s = (s32)self[7];
 
     if (s == 3) {
-        if (func_088901E0(g_sys) != 0)
+        if (sys_loader_busy(g_sys) != 0)
             return;
-        func_088901F8(g_sys, 0x4B, 2);
+        sys_overlay_ready(g_sys, 0x4B, 2);
     } else if (s == 0) {
         fade_start(D_089CC01C, 1, 0, 1);
-        if (func_08890284(g_sys, 0x3F, 1) == 0) {
-            func_08890144(g_sys, 0x3F, 1);
+        if (sys_overlay_is(g_sys, 0x3F, 1) == 0) {
+            sys_load_overlay(g_sys, 0x3F, 1);
             self[7]++;
             return;
         }
@@ -181,13 +182,13 @@ void posobj_update(u32 *self)
         return;
     } else if (s == 1 || s == 2) {
         if (s == 1) {
-            if (func_088901E0(g_sys) != 0)
+            if (sys_loader_busy(g_sys) != 0)
                 return;
-            func_088901F8(g_sys, 0x3F, 1);
+            sys_overlay_ready(g_sys, 0x3F, 1);
             self[7]++;
         }
-        if (func_08890284(g_sys, 0x4B, 2) == 0) {
-            func_08890144(g_sys, 0x4B, 2);
+        if (sys_overlay_is(g_sys, 0x4B, 2) == 0) {
+            sys_load_overlay(g_sys, 0x4B, 2);
             self[7]++;
         } else {
             self[7] = -1;
@@ -215,16 +216,16 @@ u8 *sndbank_ctor(u8 *self)
     D_08A62D84 = self;
     sndbank_clear_all(self);
     sndbank_fx_init(self);
-    U32(self, 0) = 0;
-    U32(self, 4) = 0;
-    U32(self, 8) = -1;
-    U32(self, 0x10) = -1;
-    self[0x14] = 0;
-    self[0x158] = 0;
-    U16(self, 0x174) = 0;
-    U16(self, 0x176) = 0;
-    U16(self, 0x178) = 0;
-    U16(self, 0x17A) = 0;
+    U32(self, SB_MEM) = 0;
+    U32(self, SB_MEM_SIZE) = 0;
+    U32(self, SB_SELECTED) = -1;
+    U32(self, SB_MODE) = -1;
+    self[SB_PAUSED] = 0;
+    self[SB_PARAMS_SET] = 0;
+    U16(self, SB_FADE_FROM) = 0;
+    U16(self, SB_FADE_TO) = 0;
+    U16(self, SB_FADE_LEN) = 0;
+    U16(self, SB_FADE_LEFT) = 0;
     return self;
 }
 
@@ -241,25 +242,25 @@ u8 *sndbank_dtor(u8 *self, s32 del)
 
 void sndbank_init(u8 *self, u8 *mem, u32 size)
 {
-    func_0889E848(mem, 0x12, 0x11, 0);
-    func_0889E984();
-    func_0889EA4C(size);
-    U32(self, 0) = (u32)mem;
-    U32(self, 4) = size;
+    cse_start(mem, 0x12, 0x11, 0);
+    cse_core_start();
+    stub_0889ea4c(size);
+    U32(self, SB_MEM) = (u32)mem;
+    U32(self, SB_MEM_SIZE) = size;
     sndbank_select(self, 0, 1);
     sndbank_set_mode(self, 1);
-    func_0889EAD4(sndbank_rand_cb);
+    stub_0889ead4(sndbank_rand_cb);
 }
 
 /* volume fade (0x174 from, 0x176 to, 0x178 length, 0x17A frames left) */
 void sndbank_update(u8 *self)
 {
-    if (S16(self, 0x17A) > 0) {
-        S16(self, 0x17A)--;
-        sndbank_set_volume(self, S16(self, 0x174) + (S16(self, 0x176) - S16(self, 0x174)) *
-                                 (S16(self, 0x178) - S16(self, 0x17A)) / S16(self, 0x178));
+    if (S16(self, SB_FADE_LEFT) > 0) {
+        S16(self, SB_FADE_LEFT)--;
+        sndbank_set_volume(self, S16(self, SB_FADE_FROM) + (S16(self, SB_FADE_TO) - S16(self, SB_FADE_FROM)) *
+                                 (S16(self, SB_FADE_LEN) - S16(self, SB_FADE_LEFT)) / S16(self, SB_FADE_LEN));
     }
-    func_0889E9D4();
+    stub_0889e9d4();
 }
 
 /* callback of the library for each new voice: random pitch / pan / volume */
@@ -294,17 +295,17 @@ void sndbank_rand_cb(u8 *voice, u8 *def)
 
 void sndbank_pause(u8 *self)
 {
-    if (self[0x14] == 0) {
-        func_088A3480();
-        self[0x14] = 1;
+    if (self[SB_PAUSED] == 0) {
+        sas_render_pause();
+        self[SB_PAUSED] = 1;
     }
 }
 
 void sndbank_resume(u8 *self)
 {
-    if (self[0x14] == 1) {
-        func_088A34E4();
-        self[0x14] = 0;
+    if (self[SB_PAUSED] == 1) {
+        sas_render_resume();
+        self[SB_PAUSED] = 0;
     }
 }
 
@@ -317,29 +318,29 @@ void sndbank_set_mode(u8 *self, s32 mode)
         D_09A0DB44 = 3;
         m = 1;
         sndbank_set_global_a(D_08A62D84, 1);
-        func_088868A0(D_08A62D94, 1);
+        musplay_set_global(D_08A62D94, 1);
         sndbank_set_global_b(D_08A62D84, 1);
     }
-    func_0889E9DC(m);
-    U32(self, 0x10) = mode;
+    cse_set_output(m);
+    U32(self, SB_MODE) = mode;
 }
 
 u32 sndbank_get_mode(u8 *self)
 {
-    return U32(self, 0x10);
+    return U32(self, SB_MODE);
 }
 
 void sndbank_clear_slot(u8 *self, s32 i)
 {
     u8 *s = SLOT(self, i);
 
-    U32(s, 0x18) = 0;
-    U32(s, 0x1C) = 0;
-    U32(s, 0x20) = 0;
-    U16(s, 0x24) = 0xFFFF;
-    U16(s, 0x26) = 0xFFFF;
-    U16(s, 0x28) = 0xFFFF;
-    U16(s, 0x2A) = 0;
+    U32(s, SB_CH_DATA) = 0;
+    U32(s, SB_CH_SIZE) = 0;
+    U32(s, SB_CH_ADDR) = 0;
+    U16(s, SB_CH_A) = 0xFFFF;
+    U16(s, SB_CH_B) = 0xFFFF;
+    U16(s, SB_CH_C) = 0xFFFF;
+    U16(s, SB_CH_FLAGS) = 0;
 }
 
 void sndbank_clear_all(u8 *self)
@@ -354,11 +355,11 @@ void sndbank_set_slot(u8 *self, s32 i, u32 a, u32 b)
 {
     u8 *s = SLOT(self, i);
 
-    U32(s, 0x18) = a;
-    U32(s, 0x1C) = b;
-    U32(s + 0x18, 8) = U32(self, 0) + func_0889EA5C(i);
-    func_0889EA64(i, U32(s + 0x18, 0));
-    func_0889EA6C(i, U32(s + 0x18, 4));
+    U32(s, SB_CH_DATA) = a;
+    U32(s, SB_CH_SIZE) = b;
+    U32(s + 0x18, 8) = U32(self, SB_MEM) + stub_0889ea5c(i);
+    stub_0889ea64(i, U32(s + 0x18, 0));
+    stub_0889ea6c(i, U32(s + 0x18, 4));
 }
 
 void sndbank_set_a(u8 *self, s32 i, u16 v) { U16(SLOT(self, i), 0x24) = v; }
@@ -369,8 +370,8 @@ void sndbank_clear_a(u8 *self, s32 i)
 {
     u8 *s = SLOT(self, i);
 
-    U16(s, 0x24) = 0xFFFF;
-    U16(s, 0x2A) &= 0xFFFE;
+    U16(s, SB_CH_A) = 0xFFFF;
+    U16(s, SB_CH_FLAGS) &= 0xFFFE;
 }
 
 void sndbank_clear_b(u8 *self, s32 i) { U16(SLOT(self, i), 0x26) = 0xFFFF; }
@@ -400,39 +401,39 @@ void sndbank_select(u8 *self, s32 n, s8 reset)
 {
     s32 i = 1;
 
-    func_0889EA54(n);
+    stub_0889ea54(n);
     if (reset == 1) {
         sndbank_clear_all(self);
-        U32(self, 8) = n;
+        U32(self, SB_SELECTED) = n;
         return;
     }
-    if (U32(self, 8) != (u32)n) {
+    if (U32(self, SB_SELECTED) != (u32)n) {
         do {
             sndbank_clear_slot(self, i);
             i++;
         } while (i < 16);
     }
-    U32(self, 8) = n;
+    U32(self, SB_SELECTED) = n;
 }
 
 void sndbank_select_raw(u8 *self, s32 n)
 {
-    func_0889EA54(n);
-    U32(self, 8) = n;
+    stub_0889ea54(n);
+    U32(self, SB_SELECTED) = n;
 }
 
 u32 sndbank_get_selected(u8 *self)
 {
-    return U32(self, 8);
+    return U32(self, SB_SELECTED);
 }
 
 u32 sndbank_slot_ready(u8 *self, s32 i)
 {
     u8 *s = SLOT(self, i);
 
-    if (S16(s, 0x24) == -1)
+    if (S16(s, SB_CH_A) == -1)
         return 0;
-    if (S16(s, 0x26) == -1 || S16(s, 0x28) == -1)
+    if (S16(s, SB_CH_B) == -1 || S16(s, SB_CH_C) == -1)
         return 0;
     return 1;
 }
@@ -442,17 +443,17 @@ s32 sndbank_slot_play(u8 *self, s32 i, u32 a, u32 b)
     u8 *s = SLOT(self, i);
     s32 r = -1;
 
-    if (U32(s, 0x18) != 0 && S16(s, 0x24) == -1) {
-        r = func_0889EA7C(U32(s, 0x18), a, b);
+    if (U32(s, SB_CH_DATA) != 0 && S16(s, SB_CH_A) == -1) {
+        r = stub_0889ea7c(U32(s, SB_CH_DATA), a, b);
         if (r > 0)
-            U16(s, 0x2A) |= 1;
+            U16(s, SB_CH_FLAGS) |= 1;
     }
     return r;
 }
 
 u32 sndbank_data_size(u8 *self, u32 h)
 {
-    return func_0889EA74(h);
+    return stub_0889ea74(h);
 }
 
 u32 sndbank_play(u8 *self, s32 ch, u32 id, u32 a, s32 b, s32 c, u32 d, u32 e, u32 f, u32 g)
@@ -475,7 +476,7 @@ u32 sndbank_play(u8 *self, s32 ch, u32 id, u32 a, s32 b, s32 c, u32 d, u32 e, u3
         p.w[4] = c;
         p.w[0] |= 8;
     }
-    return func_0889EADC(ch, id, &p);
+    return cse_cmd16(ch, id, &p);
 }
 
 u32 sndbank_play_f(u8 *self, s32 ch, u32 id, u32 a, s32 b, s32 c, u32 d, u32 e, u32 f, f32 x)
@@ -510,7 +511,7 @@ void sndbank_play_at(u8 *self, u32 x, u32 a, u32 y, u32 z, u32 d, u32 e, u32 f, 
     p.w[9] = e;
     p.w[10] = f;
     p.w[14] = g;
-    func_0889EACC(x, y, z, &p);
+    stub_0889eacc(x, y, z, &p);
 }
 
 void sndbank_play_at_f(u8 *self, u32 x, u32 a, u32 y, u32 z, u32 d, u32 e, u32 f, f32 ang)
@@ -523,56 +524,56 @@ void sndbank_play_at_f(u8 *self, u32 x, u32 a, u32 y, u32 z, u32 d, u32 e, u32 f
     p.w[10] = e;
     p.w[14] = f;
     func_088B8320(ang, &p);
-    func_0889EACC(x, y, z, &p);
+    stub_0889eacc(x, y, z, &p);
 }
 
 void sndbank_set_3(u8 *self, u32 a, u32 b, u32 c, s32 alt)
 {
     if (alt == 0)
-        func_0889EAC4(a, b, c);
+        stub_0889eac4(a, b, c);
     else
-        func_0889EE80(a, b, c);
+        stub_0889ee80(a, b, c);
 }
 
 void sndbank_stop_voice(u8 *self, u32 h, s32 now)
 {
     if (now == 0)
-        func_0889EABC(h);
+        stub_0889eabc(h);
     else
-        func_0889EAA4(h);
+        stub_0889eaa4(h);
 }
 
 void sndbank_stop_ch(u8 *self, u32 h, s32 now)
 {
     if (now == 0)
-        func_0889EAB4(h);
+        stub_0889eab4(h);
     else
-        func_0889EA9C(h);
+        stub_0889ea9c(h);
 }
 
 void sndbank_stop_all(u8 *self, s32 now)
 {
     if (now == 0)
-        func_0889EAAC();
+        stub_0889eaac();
     else
-        func_0889EA94();
+        stub_0889ea94();
 }
 
 u8 sndbank_check(u8 *self, u32 a, u32 b, u32 c)
 {
-    return (u8)func_0889EAE8(a, b, c) > 0;
+    return (u8)cse_voice_cmd(a, b, c) > 0;
 }
 
 void sndbank_set_params(u8 *self, u32 a, u32 b, u32 c, u32 d, u32 e, u32 f)
 {
-    self[0x158] = 1;
-    U32(self, 0x15C) = a;
-    U32(self, 0x160) = b;
-    U32(self, 0x164) = c;
-    U32(self, 0x168) = d;
-    U32(self, 0x16C) = e;
-    U32(self, 0x170) = f;
-    func_0889EA8C(self + 0x15C);
+    self[SB_PARAMS_SET] = 1;
+    U32(self, SB_PARAMS) = a;
+    U32(self, SB_PARAM_B) = b;
+    U32(self, SB_PARAM_C) = c;
+    U32(self, SB_VOLUME) = d;
+    U32(self, SB_PARAM_E) = e;
+    U32(self, SB_PARAM_F) = f;
+    stub_0889ea8c(self + 0x15C);
 }
 
 void sndbank_fx_init(u8 *self)
@@ -583,26 +584,26 @@ void sndbank_fx_init(u8 *self)
 /* fade in / out of a voice in n frames */
 void sndbank_fade_in(u8 *self, u32 h, s32 n)
 {
-    func_0889EA84(h, 0x7F, n == 0 ? 0x10000000 : 0x10000000 / n);
+    stub_0889ea84(h, 0x7F, n == 0 ? 0x10000000 : 0x10000000 / n);
 }
 
 void sndbank_fade_out(u8 *self, u32 h, s32 n)
 {
-    func_0889EA84(h, 0, n == 0 ? 0x10000000 : 0x10000000 / n);
+    stub_0889ea84(h, 0, n == 0 ? 0x10000000 : 0x10000000 / n);
 }
 
 void sndbank_start_fade(u8 *self, u16 from, u16 to, u16 n)
 {
-    U16(self, 0x174) = from;
-    U16(self, 0x176) = to;
-    U16(self, 0x178) = n;
-    U16(self, 0x17A) = n;
+    U16(self, SB_FADE_FROM) = from;
+    U16(self, SB_FADE_TO) = to;
+    U16(self, SB_FADE_LEN) = n;
+    U16(self, SB_FADE_LEFT) = n;
 }
 
 void sndbank_set_volume(u8 *self, u32 v)
 {
-    U32(self, 0x168) = v;
-    func_0889EA8C(self + 0x15C);
+    U32(self, SB_VOLUME) = v;
+    stub_0889ea8c(self + 0x15C);
 }
 
 void sndbank_set_global_a(u8 *self, u32 v)
@@ -620,14 +621,14 @@ void sndbank_set_global_b(u8 *self, u32 v)
 u8 *sound_ctor(u8 *self)
 {
     g_sound = self;
-    func_0888637C(self);
+    musplay_ctor(self);
     sndbank_ctor(self + 0x8980);
-    func_08885D80(self + 0x8B00);
-    func_08881824(self);
-    func_08883374(self);
-    U32(self, 0x5623D0) = 7;
-    U32(self, 0x5623D4) = 7;
-    U32(self, 0x308BC0) = -1;
+    sound_mgr3_ctor(self + 0x8B00);
+    sound_req_done(self);
+    sound_listener_reset(self);
+    U32(self, SND_VOL_A) = 7;
+    U32(self, SND_VOL_B) = 7;
+    U32(self, SND_MUSIC_SEL) = -1;
     self[0x562420] = 0;
     self[0x562421] = 0;
     return self;
@@ -636,9 +637,9 @@ u8 *sound_ctor(u8 *self)
 u8 *sound_dtor(u8 *self, s32 del)
 {
     if (self != NULL) {
-        func_08885DB0(self + 0x8B00, -1);
+        musctl_dtor(self + 0x8B00, -1);
         sndbank_dtor(self + 0x8980, -1);
-        func_088863BC(self, -1);
+        musplay_dtor(self, -1);
         if (self != NULL)
             g_sound = NULL;
         if ((s16)del > 0)
@@ -654,19 +655,19 @@ void sound_load_prx(u8 *self)
 
     if (self[0x562421] == 1)
         return;
-    U32(self, 0x562424) = sceKernelCreateThread(D_089AC554, sound_prx_thread, 0x10, 0x1000, 0, NULL);
+    U32(self, SND_PRX_THREAD) = sceKernelCreateThread(D_089AC554, sound_prx_thread, 0x10, 0x1000, 0, NULL);
     arg = self;
-    sceKernelStartThread(U32(self, 0x562424), 4, &arg);
+    sceKernelStartThread(U32(self, SND_PRX_THREAD), 4, &arg);
 }
 
 s32 sound_prx_thread(u32 args, u8 **argp)
 {
     u8 *self = *argp;
 
-    U32(self, 0x562428) = sceUtilityLoadModule(0x300);
-    U32(self, 0x56242C) = sceUtilityLoadModule(0x301);
-    U32(self, 0x562430) = sceUtilityLoadModule(0x302);
-    U32(self, 0x308BC4) = (u32)D_089B918C;
+    U32(self, SND_PRX_MOD) = sceUtilityLoadModule(0x300);
+    U32(self, SND_PRX_MOD + 4) = sceUtilityLoadModule(0x301);
+    U32(self, SND_PRX_MOD + 8) = sceUtilityLoadModule(0x302);
+    U32(self, SND_DATA) = (u32)D_089B918C;
     while (((LoaderBusy)((void **)g_loader[0])[0x38 / 4])(g_loader) != 0)
         sceKernelDelayThreadCB(10000);
     self[0x562421] = 1;
@@ -678,10 +679,10 @@ void sound_start(u8 *self)
 {
     if (self[0x562421] == 0 || self[0x562420] == 1)
         return;
-    sndbank_init(D_08A62D84, self + 0x308BD0, U32(self, 0x308BC4));
-    func_0888640C(D_08A62D94);
-    func_088832B4(self, 0, 1);
-    func_08882A74(self, 0, 0);
+    sndbank_init(D_08A62D84, self + 0x308BD0, U32(self, SND_DATA));
+    musplay_init(D_08A62D94);
+    sound_select_bank(self, 0, 1);
+    music_select_set(self, 0, 0);
     self[0x562420] = 1;
 }
 
@@ -689,10 +690,10 @@ void sound_update(u8 *self)
 {
     if (self[0x562420] == 0)
         return;
-    func_08881840(self);
-    func_08886468(D_08A62D94);
+    sound_load_step(self);
+    musplay_update(D_08A62D94);
     sndbank_update(D_08A62D84);
-    func_08883374(self);
+    sound_listener_reset(self);
 }
 
 void sound_set_mode(u8 *self, s32 mode)
@@ -713,12 +714,12 @@ void sound_bgm_area(u8 *self, u32 id)
 
 void sound_set_vol_a(u8 *self, u32 v)
 {
-    U32(self, 0x5623D0) = v;
+    U32(self, SND_VOL_A) = v;
 }
 
 void sound_set_vol_b(u8 *self, u32 v)
 {
-    U32(self, 0x5623D4) = v;
+    U32(self, SND_VOL_B) = v;
 }
 
 /* volume v (0-7 scale) applied to a */
@@ -762,13 +763,13 @@ u8 sound_request_change(u8 *self, s32 ch, u32 a, u32 c, u32 b)
         if (b != 0xFFFF)
             sndbank_clear_b(D_08A62D84, ch);
     }
-    if (U32(self, 0x8B94) != 0)
+    if (U32(self, SND_REQ_KIND) != 0)
         return 0;
-    S16(self, 0x8B32) = ch;
-    S16(self, 0x8B2C) = a;
-    S16(self, 0x8B2E) = c;
-    S16(self, 0x8B30) = b;
-    U32(self, 0x8B94) = 2;
+    S16(self, SND_RQ_CH) = ch;
+    S16(self, SND_RQ_ARG) = a;
+    S16(self, SND_RQ_C) = c;
+    S16(self, SND_RQ_B) = b;
+    U32(self, SND_REQ_KIND) = 2;
     return 1;
 }
 
@@ -791,47 +792,47 @@ u32 sound_request_load(u8 *self, s32 ch, u16 *a, u16 *b, u16 k, s32 n)
         sndbank_stop_ch(D_08A62D84, ch, 0);
         sndbank_clear_abc(D_08A62D84, ch);
     }
-    if (U32(self, 0x8B94) != 0)
+    if (U32(self, SND_REQ_KIND) != 0)
         return 0;
     for (i = 0; i < n; i++) {
-        U16(self, 0x8B2C + i * 2) = a[i];
-        U16(self, 0x8B34 + i * 2) = b[i];
+        U16(self, SND_RQ_ARG + i * 2) = a[i];
+        U16(self, SND_RQ_LOAD_B + i * 2) = b[i];
     }
-    S16(self, 0x8B3E) = ch;
-    U16(self, 0x8B3C) = k;
-    U32(self, 0x8B40) = n;
-    U32(self, 0x8B94) = 3;
+    S16(self, SND_RQ_LOAD_CH) = ch;
+    U16(self, SND_RQ_LOAD_K) = k;
+    U32(self, SND_RQ_LOAD_N) = n;
+    U32(self, SND_REQ_KIND) = 3;
     return 1;
 }
 
 void sound_slot_clear(u8 *self, s32 i)
 {
-    u16 *p = &U16(self, 0x8B64 + i * 2);
+    u16 *p = &U16(self, SND_CH_A + i * 2);
 
     p[0] = 0xFFFF;
     p[4] = 0xFFFF;
     p[8] = 0xFFFF;
     p[12] = 0;
-    self[0x8B84 + i] = 0;
+    self[SND_CH_EXTRA + i] = 0;
     if (i == 0) {
-        U32(self, 0x8B88) = -1;
-        U32(self, 0x8B8C) = -1;
+        U32(self, SND_MON_A) = -1;
+        U32(self, SND_MON_B) = -1;
     }
-    p = &U16(self, 0x56243C + i * 2);
+    p = &U16(self, SND_LOADED_A + i * 2);
     p[0] = 0xFFFF;
     p[4] = 0xFFFF;
     p[8] = 0xFFFF;
     p[12] = 0;
-    self[0x56245C + i] = 0;
+    self[SND_LOADED_EXTRA + i] = 0;
 }
 
 void sound_slot_set(u8 *self, u16 d, u16 a, u16 b, u16 c, u8 e, s32 i)
 {
-    u16 *p = &U16(self, 0x56243C + i * 2);
+    u16 *p = &U16(self, SND_LOADED_A + i * 2);
 
     p[0] = a;
     p[4] = b;
     p[8] = c;
     p[12] = d;
-    self[0x56245C + i] = e;
+    self[SND_LOADED_EXTRA + i] = e;
 }

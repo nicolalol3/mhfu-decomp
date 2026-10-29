@@ -2,6 +2,7 @@
  * queue of the commands (RPC) and the list of the 32 voices. (Guessed names; the texts
  * printed by the engine name some of them.) */
 #include "common.h"
+#include "cse.h"
 
 #define U32(p, off) (*(u32 *)((u8 *)(p) + (off)))
 #define U16(p, off) (*(u16 *)((u8 *)(p) + (off)))
@@ -37,25 +38,25 @@ int sceKernelSuspendDispatchThread(void);
 int sceKernelResumeDispatchThread(int s);
 int sceKernelCpuSuspendIntr(void);
 void sceKernelCpuResumeIntr(int s);
-void func_088A3F30(u32 a);
-void func_088A3FF4(void *cb);
-void func_088A32A0(u32 a, u32 b);
-void func_0889EE40(int a);
+void sas_driver_start(u32 a);
+void sas_driver_set(void *cb);
+void sas_render_start(u32 a, u32 b);
+void stub_0889ee40(int a);   /* -> se_set_mono */
 void func_088A464C(u32 a);
-void func_088A59FC(void);
-void func_088A4A30(void);
-void func_088A658C(u32 a);
-void func_088A5FC0(void);
-void func_088A600C(void);
-void func_088A5D38(void);
-s32 func_088A6CC4(void *p);
-void func_088A6100(u32 a, u32 b, u32 *p);
-void func_088A4184(void);
-u32 func_088A4248(s32 i);
-u32 func_0889F9A0(u32 a);
-void func_088A16A4(u32 *out, s32 *in);
-u32 func_088A1554(u32 *out);
-void func_0889F9C4(void);
+void rpcq_init(void);
+void cse_ids_init(void);
+void se_rpc_309(u32 a);
+void setbl_init(void);
+void setbl_nop(void);
+void rpcq_flush(void);
+s32 se_count(void *p);
+void se_request(u32 a, u32 b, u32 *p);
+void sasv_init(void);
+u32 sasv_get(s32 i);
+u32 cse_set_data(u32 a);
+void cse_count_status(u32 *out, s32 *in);
+u32 cse_status(u32 *out);
+void cse_driver(void);
 
 s32 cse_create_semas(void);
 s32 cse_create_timer(void);
@@ -75,9 +76,9 @@ void cse_start(u32 data, u32 a, u32 b, u32 c)
     printf(D_089B1F54, D_089B1F88, 1, 8);
     cse_create_semas();
     cse_create_timer();
-    func_088A3F30(a);
-    func_088A3FF4(func_0889F9C4);
-    func_088A32A0(b, c);
+    sas_driver_start(a);
+    sas_driver_set(cse_driver);
+    sas_render_start(b, c);
     D_09A0B560 = data;
 }
 
@@ -91,7 +92,7 @@ void cse_request(u32 x, s32 kind, u32 y, s32 *cmd, u32 z, u32 *out)
     else if (kind == 1)
         cse_rpc_cmd(1, cmd, out);
     else if (kind == 0x309) {
-        *out = func_0889F9A0(D_09A0B560);
+        *out = cse_set_data(D_09A0B560);
         cse_start_timer();
     }
 }
@@ -102,20 +103,20 @@ void cse_core_start(void)
     printf(D_089B1F98);
     printf(D_089B1FA0, 2, 0);
     cse_init(0);
-    func_0889EE40(0);
+    stub_0889ee40(0);
 }
 
 void cse_set_output(s32 m)
 {
     if (m == 2) {
         D_089B1F8C = 2;
-        func_0889EE40(0);
+        stub_0889ee40(0);
     } else if (m == 1) {
         D_089B1F8C = 1;
-        func_0889EE40(0);
+        stub_0889ee40(0);
     } else if (m == 0) {
         D_089B1F8C = 0;
-        func_0889EE40(1);
+        stub_0889ee40(1);
     }
 }
 
@@ -157,10 +158,10 @@ u32 cse_init(u32 a)
     u32 i;
 
     func_088A464C(a);
-    func_088A59FC();
-    func_088A4A30();
-    func_088A658C(a);
-    func_088A5FC0();
+    rpcq_init();
+    cse_ids_init();
+    se_rpc_309(a);
+    setbl_init();
     D_09A0B56C = 0;
     for (i = 0; i < 0x10; i++)
         p[i + 1] = -1;
@@ -169,15 +170,15 @@ u32 cse_init(u32 a)
 
 u32 cse_frame(void)
 {
-    func_088A600C();
-    func_088A5D38();
+    setbl_nop();
+    rpcq_flush();
     D_09A0B56C++;
     return 0;
 }
 
 u8 cse_cmd_ok(void *p)
 {
-    s32 r = func_088A6CC4(p);
+    s32 r = se_count(p);
 
     if (r < 0)
         return 0;
@@ -213,7 +214,7 @@ void cse_cmd(u16 a, u16 b, u32 *p)
             }
         }
     }
-    func_088A6100(a, b, c);
+    se_request(a, b, c);
 }
 
 s32 cse_create_semas(void)
@@ -483,12 +484,12 @@ u32 cse_voices_clear(void)
 
     for (i = 0; i < 0x48; i++)
         ((u8 *)z)[i] = 0;
-    func_088A4184();
+    sasv_init();
     for (i = 0; i < 0x20; i++, v += 0x48) {
         for (j = 0; j < 0x12; j++)
             U32(v, j * 4) = z[j];
-        U32(v, 0) = 0;
-        U32(v, 0x10) = func_088A4248(i);
+        U32(v, CV_STATE) = 0;
+        U32(v, CV_SAS) = sasv_get(i);
     }
     return 0;
 }
@@ -527,12 +528,12 @@ u32 cse_rpc_stat(u32 a, s32 *cmd, u32 *out)
     u32 r = 0;
 
     if (*cmd == 0x20000002) {
-        func_088A16A4(out, cmd + 2);
+        cse_count_status(out, cmd + 2);
         *out = 0;
         return 0;
     }
     if (*cmd == 0x20000001) {
-        r = func_088A1554(out);
+        r = cse_status(out);
     } else {
         printf(D_089B2110);
         printf(D_089B2118);

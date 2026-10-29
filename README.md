@@ -43,6 +43,11 @@ the game is complete and tested:
 - camera (`include/camera.h`), result screens (`include/result.h`), menu (`MENU_*` in
   `include/menu.h`), file loader, object manager, entities (`E_*`), game state (`G_*`):
   named offsets used with `U8/U16/U32/F32(...)`, so the compiled code does not change;
+- sound and music (`include/sound.h`: `SB_*`, `SND_*`, `MC_*`, `MP_*`), font (`include/font.h`),
+  system object (`include/sys.h`), sound engine voices, sceSas voices and ATRAC players
+  (`include/cse.h`), network session and lobby (`include/net.h`): named offsets, same code;
+- the calls to the 8-byte jump stubs keep the stub (`stub_XXXXXXXX`) with the final target
+  in a comment;
 - functions and global objects with a known name are written with it (`g_game`, `g_font`,
   `font_printf_at`, ...); `symbols.txt` has the names.
 

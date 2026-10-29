@@ -5,6 +5,7 @@
  * 0x18}; the header: {4, kind, u16 id (big endian), u16 size, u16 sequence, u16 code,
  * destination MAC, repeat, ..}. (Guessed names.) */
 #include "common.h"
+#include "net.h"
 
 #define U16(p, off) (*(u16 *)((u8 *)(p) + (off)))
 #define S16(p, off) (*(s16 *)((u8 *)(p) + (off)))
@@ -35,10 +36,10 @@ s32 bcast_recv(s32 sock, u8 *mac, u16 *port, u8 *buf, s32 size);
 s32 bcast_send(s32 sock, u8 *mac, u32 port, u8 *data, s32 size, u32 repeat);
 u32 bcast_peers_update(s32 *list, s32 n);
 void lobby_own_id(u8 *out);
-void func_088B1668(u8 *id, u8 *info);
+void lobbyapi_on_info(u8 *id, u8 *info);
 void func_088B7AF4(u8 *e);
 void func_088B7BD8(u8 *id);
-void stub_088b1584(u8 *id);
+void stub_088b1584(u8 *id);   /* -> func_088B7350 */
 
 u8 *lobby_pkt(void);
 u32 lobby_root(void);
@@ -106,14 +107,14 @@ void lobby_update_info(void)
     if (lobby_find(id) == 0) {
         lobby_set_info(id, info);
         if (D_09A1FDE0 != 2)
-            func_088B1668(id, info);
+            lobbyapi_on_info(id, info);
     }
 }
 
 /* 0 if the player is in the table */
 s32 lobby_find(u8 *id)
 {
-    u8 *e = PLAYERS + 0xB8;
+    u8 *e = PLAYERS + LP_ENTRY;
     s32 i;
 
     for (i = 0; i < 4; i++, e += 200)
@@ -129,18 +130,18 @@ s32 lobby_add(u8 *e)
     s32 i, r;
 
     for (i = 0; i < 4; i++, pl += 200) {
-        if (mac_differs(pl + 0xB8, e) == 0) {
-            memcpy(pl + 0xB8, e, 200);
-            pl[0x17E] = 1;
+        if (mac_differs(pl + LP_ENTRY, e) == 0) {
+            memcpy(pl + LP_ENTRY, e, 200);
+            pl[LP_SEEN] = 1;
             return 2;
         }
     }
     r = 0;
     for (i = 0, pl = PLAYERS; i < 4; i++, pl += 200) {
-        if (mac_nonzero(pl + 0xB8) == 0) {
-            memcpy(pl + 0xB8, e, 200);
+        if (mac_nonzero(pl + LP_ENTRY) == 0) {
+            memcpy(pl + LP_ENTRY, e, 200);
             r = 1;
-            pl[0x17E] = 1;
+            pl[LP_SEEN] = 1;
             break;
         }
     }
@@ -155,8 +156,8 @@ u32 lobby_remove(u8 *id)
     s32 i;
 
     for (i = 0; i < 4; i++, pl += 200) {
-        if (mac_differs(pl + 0xB8, id) == 0) {
-            memset(PLAYERS + 0xB8 + i * 200, 0, 200);
+        if (mac_differs(pl + LP_ENTRY, id) == 0) {
+            memset(PLAYERS + LP_ENTRY + i * 200, 0, 200);
             break;
         }
     }
@@ -171,8 +172,8 @@ void lobby_set_info(u8 *id, u8 *info)
     s32 i;
 
     for (i = 0; i < 4; i++, pl += 200) {
-        if (mac_differs(pl + 0xB8, id) == 0) {
-            memcpy(pl + 0xD8, info, 0xA4);
+        if (mac_differs(pl + LP_ENTRY, id) == 0) {
+            memcpy(pl + LP_INFO, info, 0xA4);
             return;
         }
     }
@@ -184,9 +185,9 @@ void lobby_touch(u8 *id)
     s32 i;
 
     for (i = 0; i < 4; i++, pl += 200) {
-        if (mac_differs(pl + 0xB8, id) == 0) {
-            pl[0x17E] = 1;
-            pl[0x17F] = 0;
+        if (mac_differs(pl + LP_ENTRY, id) == 0) {
+            pl[LP_SEEN] = 1;
+            pl[LP_SILENT] = 0;
             return;
         }
     }
@@ -199,7 +200,7 @@ s32 lobby_lost(u8 *id)
     s32 i;
 
     for (i = 0; i < 4; i++, pl += 200)
-        if (mac_differs(pl + 0xB8, id) == 0 && pl[0x17F] == 0)
+        if (mac_differs(pl + LP_ENTRY, id) == 0 && pl[LP_SILENT] == 0)
             return 0;
     return 1;
 }
@@ -211,7 +212,7 @@ u8 lobby_count(void)
     s32 i;
 
     for (i = 0; i < 4; i++, pl += 200)
-        if (mac_nonzero(pl + 0xB8) != 0)
+        if (mac_nonzero(pl + LP_ENTRY) != 0)
             n++;
     return n;
 }
